@@ -8,10 +8,19 @@
   <!-- Chart.js für Diagramm-Darstellung -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Mobile App Meta-Tags -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BoulderLog">
-<meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BoulderLog">
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- Supabase JS Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = 'https://bjsaavuuxdzmldtaswft.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_sJWoqlpDOk7bhUlw-2Ts2Q_CxtI2v2g';
+    
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col md:flex-row">
 
@@ -52,8 +61,20 @@
       </nav>
     </div>
 
-    <div class="mt-8 pt-4 border-t border-slate-700/50 text-xs text-slate-500">
-      Hallen registriert: <span class="text-slate-300 font-semibold" id="sidebar-gym-count">1</span>
+    <!-- AUTH STATUS & SIDEBAR FOOTER -->
+    <div class="mt-8 pt-4 border-t border-slate-700/50 space-y-3">
+      <div id="auth-status-container" class="bg-slate-900/80 p-3 rounded-lg border border-slate-700/80 text-xs flex flex-col gap-2">
+        <div id="auth-user-info" class="text-slate-300 truncate">
+          <span class="text-slate-500">Status:</span> Nicht angemeldet
+        </div>
+        <button id="auth-main-btn" onclick="openAuthModal('login')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded text-xs transition">
+          🔐 Anmelden / Registrieren
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-500">
+        Hallen registriert: <span class="text-slate-300 font-semibold" id="sidebar-gym-count">1</span>
+      </div>
     </div>
   </aside>
 
@@ -119,7 +140,7 @@
         </div>
 
         <div class="bg-slate-900/60 p-3 rounded-lg border border-amber-500/30 text-xs text-slate-400 space-y-1 mt-4">
-          <p class="font-semibold text-amber-400">⚠️ Hinweis zur Interpretation</p>
+          <p class="font-semibold text-amber-400">⚠️️ Hinweis zur Interpretation</p>
           <p>Statistiken berücksichtigen nur Projekte, die nicht ausdrücklich aus der Wertung ausgenommen wurden.</p>
         </div>
       </section>
@@ -204,7 +225,6 @@
           <h2 class="text-2xl font-bold text-slate-100">Projekt-Videos</h2>
           <p class="text-xs text-slate-400">Video-Ordner nach Projekten strukturiert</p>
         </div>
-        <!-- Filter für Video-Ordner -->
         <select id="video-folder-filter" onchange="renderVideos()" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-slate-200 self-start sm:self-auto">
           <option value="ALL">Alle Projekte anzeigen</option>
           <option value="WITH_VIDEOS_ONLY" selected>Nur Projekte mit Videos</option>
@@ -289,13 +309,11 @@
           <input type="text" id="p-name" required placeholder="z. B. Gelber Dyno an der Volumenecke" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
         </div>
 
-        <!-- Notiz / Beta zum Projekt -->
         <div>
           <label class="block text-xs text-slate-400 mb-1">Projektnotiz / Beta / Beschreibung (Eintrag fürs Logbuch)</label>
           <textarea id="p-entry-note" rows="2" placeholder="z. B. Schlüsselzug ist der Heelhook links..." class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100 text-xs"></textarea>
         </div>
 
-        <!-- Verortung auf Hallenplan -->
         <div id="p-pinning-section" class="bg-slate-900 p-3 rounded-lg border border-slate-700 flex items-center justify-between">
           <div>
             <span class="block text-xs font-semibold text-slate-300">Verortung auf Hallenplan</span>
@@ -306,7 +324,6 @@
           </button>
         </div>
 
-        <!-- Wandneigung, Grifftyp & Stil -->
         <div class="grid grid-cols-3 gap-2">
           <div>
             <label class="block text-xs text-slate-400 mb-1">Wandneigung</label>
@@ -345,7 +362,6 @@
           </div>
         </div>
 
-        <!-- Bild Upload & Zeitstempel -->
         <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 space-y-2">
           <label class="block text-xs font-semibold text-slate-300">Routenbild hochladen</label>
           <input type="file" id="p-image-input" accept="image/*" onchange="handleImageUpload(event)" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600 cursor-pointer">
@@ -373,7 +389,6 @@
           </div>
         </div>
 
-        <!-- Startdatum Section -->
         <div id="p-start-date-section" class="bg-slate-900 p-3 rounded-lg border border-slate-700 space-y-2">
           <div id="p-new-start-toggle" class="space-y-2">
             <label class="block text-xs font-semibold text-slate-300">Projekt heute gestartet?</label>
@@ -393,7 +408,6 @@
           </div>
         </div>
 
-        <!-- Enddatum Section -->
         <div id="p-end-date-section" class="hidden bg-slate-900 p-3 rounded-lg border border-slate-700 space-y-1">
           <label class="block text-xs font-semibold text-slate-300">Durchstiegsdatum (Enddatum):</label>
           <input type="date" id="p-custom-end-date" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100 text-xs">
@@ -461,7 +475,6 @@
           </div>
         </div>
 
-        <!-- Lerneffekt Abfrage -->
         <div class="bg-slate-900 p-3 rounded-lg border border-blue-500/40 space-y-2">
           <label class="flex items-center gap-2 text-xs font-semibold text-blue-300 cursor-pointer">
             <input type="checkbox" id="ascend-learned-check" onchange="toggleAscendLearnedField()" class="rounded bg-slate-800 border-slate-700 text-blue-500 focus:ring-blue-500">
@@ -596,7 +609,6 @@
           <input type="text" id="cs-gym-zones" placeholder="z. B. Sektor A, Wettkampfwand, Empore" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
         </div>
 
-        <!-- Hallenplan Upload -->
         <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 space-y-2">
           <label class="block text-xs font-semibold text-slate-300">Hallenplan (Grundriss-Bild) hochladen</label>
           <input type="file" id="cs-plan-input" accept="image/*" onchange="handlePlanUpload(event)" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600 cursor-pointer">
@@ -658,10 +670,172 @@
     </div>
   </div>
 
+  <!-- MODAL 8: ANMELDUNG & REGISTRIERUNG (POPUP) -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-sm w-full space-y-4 shadow-xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <div class="flex gap-4">
+          <button id="auth-tab-login-btn" onclick="switchAuthTab('login')" class="text-sm font-bold text-emerald-400 border-b-2 border-emerald-400 pb-1">Anmelden</button>
+          <button id="auth-tab-register-btn" onclick="switchAuthTab('register')" class="text-sm font-bold text-slate-400 hover:text-slate-200 pb-1">Registrieren</button>
+        </div>
+        <button onclick="closeModal('auth-modal')" class="text-slate-400 hover:text-slate-100 font-bold text-sm">✕</button>
+      </div>
+
+      <!-- FORMULAR LOGIN -->
+      <form id="auth-login-form" onsubmit="handleLoginSubmit(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">E-Mail</label>
+          <input type="email" id="auth-login-email" required placeholder="name@beispiel.de" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Passwort</label>
+          <input type="password" id="auth-login-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded text-xs transition">
+          Einloggen
+        </button>
+      </form>
+
+      <!-- FORMULAR REGISTRIERUNG -->
+      <form id="auth-register-form" onsubmit="handleRegisterSubmit(event)" class="hidden space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Benutzername</label>
+          <input type="text" id="auth-reg-username" required placeholder="Boulderer123" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">E-Mail</label>
+          <input type="email" id="auth-reg-email" required placeholder="name@beispiel.de" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Passwort</label>
+          <input type="password" id="auth-reg-password" required placeholder="Mindestens 6 Zeichen" minlength="6" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="auth-reg-adult" required class="rounded bg-slate-900 border-slate-700 text-emerald-600 focus:ring-emerald-500">
+          <label for="auth-reg-adult" class="text-xs text-slate-300">Ich bestätige, dass ich mindestens 18 Jahre alt bin.</label>
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded text-xs transition">
+          Konto erstellen
+        </button>
+      </form>
+    </div>
+  </div>
+
 
   <!-- JAVASCRIPT LOGIK -->
   <script>
-    // Standard-Skala Definition
+    // --- SUPABASE AUTH & POPUP LOGIK ---
+    function openAuthModal(tab = 'login') {
+      switchAuthTab(tab);
+      openModal('auth-modal');
+    }
+
+    function switchAuthTab(tab) {
+      const loginForm = document.getElementById('auth-login-form');
+      const regForm = document.getElementById('auth-register-form');
+      const loginBtn = document.getElementById('auth-tab-login-btn');
+      const regBtn = document.getElementById('auth-tab-register-btn');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        regForm.classList.add('hidden');
+        loginBtn.className = 'text-sm font-bold text-emerald-400 border-b-2 border-emerald-400 pb-1';
+        regBtn.className = 'text-sm font-bold text-slate-400 hover:text-slate-200 pb-1';
+      } else {
+        loginForm.classList.add('hidden');
+        regForm.classList.remove('hidden');
+        regBtn.className = 'text-sm font-bold text-emerald-400 border-b-2 border-emerald-400 pb-1';
+        loginBtn.className = 'text-sm font-bold text-slate-400 hover:text-slate-200 pb-1';
+      }
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-login-email').value;
+      const password = document.getElementById('auth-login-password').value;
+      await loginUser(email, password);
+    }
+
+    async function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-reg-email').value;
+      const password = document.getElementById('auth-reg-password').value;
+      const username = document.getElementById('auth-reg-username').value;
+      const isAdult = document.getElementById('auth-reg-adult').checked;
+      await registerUser(email, password, username, isAdult);
+    }
+
+    async function registerUser(email, password, username, isAdult) {
+      if (!isAdult) {
+        alert("Die Nutzung ist erst ab 18 Jahren gestattet.");
+        return;
+      }
+
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+      });
+
+      if (authError) {
+        alert("Registrierungsfehler: " + authError.message);
+        return;
+      }
+
+      if (authData.user) {
+        const { error: profileError } = await supabaseClient
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            username: username,
+            is_adult: isAdult
+          });
+
+        if (profileError) {
+          alert("Profil konnte nicht erstellt werden: " + profileError.message);
+        } else {
+          alert("Registrierung erfolgreich!");
+          closeModal('auth-modal');
+        }
+      }
+    }
+
+    async function loginUser(email, password) {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        alert("Login fehlgeschlagen: " + error.message);
+      } else {
+        alert("Erfolgreich eingeloggt!");
+        closeModal('auth-modal');
+      }
+    }
+
+    async function logoutUser() {
+      await supabaseClient.auth.signOut();
+      alert("Ausgeloggt.");
+    }
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      const userInfoEl = document.getElementById('auth-user-info');
+      const mainBtn = document.getElementById('auth-main-btn');
+
+      if (session && session.user) {
+        userInfoEl.innerHTML = `<span class="text-slate-500">Angemeldet:</span> <br><strong class="text-emerald-400">${session.user.email}</strong>`;
+        mainBtn.innerText = '🚪 Abmelden';
+        mainBtn.onclick = logoutUser;
+        mainBtn.className = 'w-full bg-slate-700 hover:bg-red-900/60 text-slate-200 font-bold py-1.5 px-3 rounded text-xs transition';
+      } else {
+        userInfoEl.innerHTML = `<span class="text-slate-500">Status:</span> Nicht angemeldet`;
+        mainBtn.innerText = '🔐 Anmelden / Registrieren';
+        mainBtn.onclick = () => openAuthModal('login');
+        mainBtn.className = 'w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded text-xs transition';
+      }
+    });
+
+    // --- ANWENDUNGS-STATE & LOGIK ---
     const defaultScales = {
       "Boulderwelt Dortmund": {
         hasFB: true,
@@ -682,7 +856,6 @@
       }
     };
 
-    // State
     let scales = loadStorage('boulder_scales', defaultScales);
     let projects = loadStorage('boulder_projects', []);
     let sessions = loadStorage('boulder_sessions', []);
@@ -692,23 +865,14 @@
     let currentEntryFilter = 'ALL';
     let chartInstances = {};
 
-    // Temp state für Projekt-Modal
     let currentUploadedImage = null;
     let currentImageTimestamp = null;
     let currentProjectPinX = null;
     let currentProjectPinY = null;
-
-    // Temp state für Verortung-Modal
     let tempPinX = null;
     let tempPinY = null;
-
-    // Temp state für Hallenplan Upload
     let currentUploadedPlan = null;
 
-    // State für Hallenplan Popup
-    let selectedPlanProjectId = null;
-
-    // Hilfsfunktion: Sicheres Laden aus LocalStorage
     function loadStorage(key, fallback) {
       try {
         const item = localStorage.getItem(key);
@@ -719,16 +883,14 @@
       }
     }
 
-    // Hilfsfunktion: Sicheres Speichern in LocalStorage mit Catch
     function saveStorage(key, val) {
       try {
         localStorage.setItem(key, JSON.stringify(val));
       } catch (e) {
-        console.warn(`LocalStorage Limit überschritten für ${key}. Stoppe direktes Ablegen im LocalStorage.`, e);
+        console.warn(`LocalStorage Limit überschritten für ${key}.`, e);
       }
     }
 
-    // Migration alter Datenstruktur (Einzel-Video -> Multi-Video Array)
     function migrateProjectVideos() {
       projects.forEach(p => {
         if (!p.videos) p.videos = [];
@@ -744,7 +906,6 @@
       });
     }
 
-    // Initialisierung
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('p-setdate').valueAsDate = new Date();
       document.getElementById('p-custom-start-date').valueAsDate = new Date();
@@ -787,7 +948,6 @@
       saveStorage('boulder_widgets', activeWidgets);
     }
 
-    // Navigation umschalten
     function switchView(viewName) {
       const views = ['projects', 'completed', 'sessions', 'entries', 'videos', 'timer', 'settings'];
       views.forEach(v => {
@@ -904,7 +1064,6 @@
 
     function renderEntries() {
       const container = document.getElementById('entries-list');
-
       let allCombined = [];
 
       entries.forEach(e => {
@@ -966,7 +1125,6 @@
         }
 
         const gymStr = item.gym ? ` • ${item.gym}` : '';
-
         const actionButtons = item.source === 'entry' ? `
           <div class="flex gap-1">
             <button onclick="openEntryModal(${item.id})" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs" title="Bearbeiten">✏️</button>
@@ -986,14 +1144,13 @@
               </div>
               ${actionButtons}
             </div>
-
             <p class="text-xs text-slate-200 whitespace-pre-line leading-relaxed bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">${item.content}</p>
           </div>
         `;
       }).join('');
     }
 
-    // VIDEOS LOGIK & RENDER (VERLINKTE ORDNER MIT MEHREREN VIDEOS)
+    // VIDEOS LOGIK
     function uploadVideoToFolder(projId, e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1069,7 +1226,6 @@
 
         return `
           <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-md">
-            <!-- Ordner Header -->
             <div class="p-4 bg-slate-800/90 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div class="flex items-center gap-3">
                 <span class="text-2xl">📁</span>
@@ -1083,14 +1239,12 @@
                 </div>
               </div>
 
-              <!-- Action: Neues Video zum Ordner hinzufügen -->
               <label class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer transition shadow flex items-center gap-1 self-start sm:self-auto">
                 <span>+ Video hinzufügen</span>
                 <input type="file" accept="video/*" onchange="uploadVideoToFolder(${p.id}, event)" class="hidden">
               </label>
             </div>
 
-            <!-- Ordner Inhalt (Grid aus Videos) -->
             <div class="p-4 bg-slate-900/40">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 ${videoGridHTML}
@@ -1101,7 +1255,7 @@
       }).join('');
     }
 
-    // BILD UPLOAD & HANDLER
+    // BILD UPLOAD & COMPRESSION
     function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1203,7 +1357,7 @@
     function openEnlargedPreviewFromModal() {
       if (!currentUploadedImage) return;
       document.getElementById('iv-img').src = currentUploadedImage;
-      document.getElementById('iv-timestamp').innerText = currentImageTimestamp ? `Aufgenommen / Datierung: ${currentImageTimestamp}` : 'Kein Zeitstempel';
+      document.getElementById('iv-timestamp').innerText = currentImageTimestamp ? `Aufgenommen: ${currentImageTimestamp}` : '';
       document.getElementById('iv-title').innerText = 'Vorschau Routenbild';
       openModal('image-viewer-modal');
     }
@@ -1213,12 +1367,12 @@
       if (!proj || !proj.imageUrl) return;
 
       document.getElementById('iv-img').src = proj.imageUrl;
-      document.getElementById('iv-timestamp').innerText = proj.imageTimestamp ? `Aufgenommen / Datierung: ${proj.imageTimestamp}` : 'Kein Zeitstempel vorhanden';
+      document.getElementById('iv-timestamp').innerText = proj.imageTimestamp ? `Aufgenommen: ${proj.imageTimestamp}` : '';
       document.getElementById('iv-title').innerText = `${proj.name} (${proj.gym})`;
       openModal('image-viewer-modal');
     }
 
-    // VERORTUNG MODAL LOGIK
+    // VERORTUNG AUF HALLENPLAN
     function openPinningModal() {
       const gym = document.getElementById('p-gym').value;
       const scale = scales[gym];
@@ -1290,7 +1444,7 @@
       }
     }
 
-    // PROJEKT LOGIK
+    // PROJEKT SPEICHERN & BEARBEITEN
     function openProjectModal(editId = null) {
       const gymSelect = document.getElementById('p-gym');
       gymSelect.innerHTML = Object.keys(scales).map(g => `<option value="${g}">${g}</option>`).join('');
@@ -1507,7 +1661,7 @@
       }
     }
 
-    // ASCEND MODAL
+    // ASCEND LOGIK
     function openAscendModal(id) {
       const proj = projects.find(p => p.id === id);
       if (!proj) return;
@@ -1583,7 +1737,7 @@
       }
     }
 
-    // SESSION TRACKER LOGIK
+    // SESSION LOGIK
     function openSessionModal(editId = null) {
       const gymSelect = document.getElementById('s-gym');
       gymSelect.innerHTML = Object.keys(scales).map(g => `<option value="${g}">${g}</option>`).join('');
@@ -1791,7 +1945,7 @@
       `;
     }
 
-    // AKTIVE PROJEKTE RENDER
+    // PROJEKTE RENDERN
     function renderProjects() {
       const container = document.getElementById('active-projects-list');
       const active = projects.filter(p => p.status === 'active');
@@ -1873,7 +2027,7 @@
       }).join('');
     }
 
-    // ABGESCHLOSSENE PROJEKTE RENDER
+    // ABGESCHLOSSENE PROJEKTE RENDERN
     function renderCompleted() {
       const container = document.getElementById('completed-projects-list');
       const completed = projects.filter(p => p.status === 'completed');
@@ -1932,7 +2086,7 @@
       }).join('');
     }
 
-    // STATISTIK MODUS & FILTER (PROJEKTE)
+    // STATISTIK RENDERER
     function initStatsGymFilter() {
       const select = document.getElementById('stats-gym-filter');
       const gymNames = Object.keys(scales);
@@ -2033,566 +2187,342 @@
       });
     }
 
-    // HALLENPLAN WIDGET & POPUP
-    function renderPlanWidget(container, filterGym) {
-      const gymName = filterGym === 'ALL' ? Object.keys(scales)[0] : filterGym;
-      const scale = scales[gymName];
-
-      if (!scale || !scale.planUrl) {
-        container.innerHTML = `<p class="text-slate-500 py-6 text-center">Für "${gymName || 'diese Halle'}" ist noch kein Hallenplan hochgeladen.</p>`;
+    function renderTextWidget(type, container, filteredProjects) {
+      if (filteredProjects.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-2">Keine Projektdaten vorhanden.</p>`;
         return;
       }
 
-      const gymProjects = projects.filter(p => p.gym === gymName && !p.excludeFromStats && p.pinX !== null && p.pinX !== undefined);
-
-      const todayStr = new Date().toISOString().split('T')[0];
-      let dates = gymProjects.map(p => p.createdDate).concat([todayStr]);
-      gymProjects.forEach(p => { if (p.completedDate) dates.push(p.completedDate); });
-      dates.sort();
-
-      const minDateStr = dates[0] || todayStr;
-      const maxDateStr = dates[dates.length - 1] || todayStr;
-
-      container.innerHTML = `
-        <div class="space-y-4">
-          <!-- Zeitstrahl Slider -->
-          <div class="bg-slate-800 p-3 rounded-lg border border-slate-700/80 space-y-2">
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-slate-400">Zeitstrahl: <strong id="plan-slider-val" class="text-emerald-400">${todayStr}</strong></span>
-              <span class="text-[10px] text-slate-500">${minDateStr} bis ${maxDateStr}</span>
-            </div>
-            <input type="range" id="plan-timeline-slider" min="0" max="100" value="100" oninput="updatePlanTimelineView('${gymName}')" class="w-full accent-emerald-500 cursor-pointer">
+      if (type === 'level') {
+        const counts = {};
+        filteredProjects.forEach(p => { counts[p.level] = (counts[p.level] || 0) + 1; });
+        container.innerHTML = Object.entries(counts).map(([lvl, cnt]) => `
+          <div class="flex justify-between items-center py-1 border-b border-slate-800">
+            <span class="text-slate-300 font-medium">${lvl}</span>
+            <span class="text-emerald-400 font-bold">${cnt} Projekt(e)</span>
           </div>
+        `).join('');
+      } else if (type === 'style') {
+        const styles = {}, inclines = {}, holdTypes = {};
+        filteredProjects.forEach(p => {
+          styles[p.style || 'Unbekannt'] = (styles[p.style || 'Unbekannt'] || 0) + 1;
+          inclines[p.incline || 'Unbekannt'] = (inclines[p.incline || 'Unbekannt'] || 0) + 1;
+          holdTypes[p.holdType || 'Unbekannt'] = (holdTypes[p.holdType || 'Unbekannt'] || 0) + 1;
+        });
+        const topStyle = Object.entries(styles).sort((a,b) => b[1] - a[1])[0]?.[0] || '-';
+        const topIncline = Object.entries(inclines).sort((a,b) => b[1] - a[1])[0]?.[0] || '-';
+        const topHold = Object.entries(holdTypes).sort((a,b) => b[1] - a[1])[0]?.[0] || '-';
 
-          <!-- Hallenplan mit Pins & Pop-ups -->
-          <div class="relative bg-slate-950 rounded-xl border border-slate-700/80 p-2 overflow-hidden flex justify-center items-center min-h-[350px] max-h-[550px]" id="plan-widget-viewport" onclick="closePlanPopup(event)">
-            <img id="plan-widget-img" src="${scale.planUrl}" alt="Hallenplan" class="max-h-[500px] w-auto object-contain select-none">
-            <div id="plan-pins-layer" class="absolute inset-0 pointer-events-none"></div>
+        container.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex justify-between"><span class="text-slate-400">Häufigster Stil:</span><span class="font-bold text-slate-200">${topStyle}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Häufigste Neigung:</span><span class="font-bold text-slate-200">${topIncline}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Häufigster Grifftyp:</span><span class="font-bold text-slate-200">${topHold}</span></div>
           </div>
-        </div>
-      `;
+        `;
+      } else if (type === 'zone') {
+        const zones = {};
+        filteredProjects.forEach(p => { zones[p.zone || 'Allgemein'] = (zones[p.zone || 'Allgemein'] || 0) + 1; });
+        container.innerHTML = Object.entries(zones).map(([z, cnt]) => `
+          <div class="flex justify-between items-center py-1 border-b border-slate-800">
+            <span class="text-slate-300">${z}</span>
+            <span class="text-emerald-400 font-bold">${cnt}</span>
+          </div>
+        `).join('');
+      } else if (type === 'kpi') {
+        const activeCount = filteredProjects.filter(p => p.status === 'active').length;
+        const doneCount = filteredProjects.filter(p => p.status === 'completed').length;
+        const totalAttempts = filteredProjects.reduce((sum, p) => sum + (p.attempts || 1), 0);
+        const avgAttempts = (totalAttempts / (filteredProjects.length || 1)).toFixed(1);
 
-      container.setAttribute('data-min-date', minDateStr);
-      container.setAttribute('data-max-date', maxDateStr);
-      container.setAttribute('data-gym', gymName);
-
-      updatePlanTimelineView(gymName);
+        container.innerHTML = `
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-slate-800 p-2 rounded"><span class="block text-[10px] text-slate-400">Aktiv</span><span class="text-lg font-bold text-amber-400">${activeCount}</span></div>
+            <div class="bg-slate-800 p-2 rounded"><span class="block text-[10px] text-slate-400">Durchstiege</span><span class="text-lg font-bold text-emerald-400">${doneCount}</span></div>
+            <div class="bg-slate-800 p-2 rounded"><span class="block text-[10px] text-slate-400">Ø Attempts</span><span class="text-lg font-bold text-slate-200">${avgAttempts}</span></div>
+          </div>
+        `;
+      }
     }
 
-    function closePlanPopup(e) {
-      if (e) e.stopPropagation();
-      selectedPlanProjectId = null;
-      const filterGym = document.getElementById('stats-gym-filter').value;
-      const gymName = filterGym === 'ALL' ? Object.keys(scales)[0] : filterGym;
-      updatePlanTimelineView(gymName);
-    }
+    function renderChartWidget(type, container, filteredProjects) {
+      const canvasId = `chart-${type}`;
+      container.innerHTML = `<div class="h-40 relative"><canvas id="${canvasId}"></canvas></div>`;
 
-    function selectPlanPin(projId, e) {
-      if (e) e.stopPropagation();
-      selectedPlanProjectId = projId;
-      const filterGym = document.getElementById('stats-gym-filter').value;
-      const gymName = filterGym === 'ALL' ? Object.keys(scales)[0] : filterGym;
-      updatePlanTimelineView(gymName);
-    }
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
 
-    function updatePlanTimelineView(gymName) {
-      const container = document.getElementById(`widget-content-plan`);
-      if (!container) return;
+      let labels = [];
+      let data = [];
+      let chartType = 'bar';
 
-      const minDateStr = container.getAttribute('data-min-date');
-      const maxDateStr = container.getAttribute('data-max-date');
+      if (type === 'level') {
+        const counts = {};
+        filteredProjects.forEach(p => { counts[p.level] = (counts[p.level] || 0) + 1; });
+        labels = Object.keys(counts);
+        data = Object.values(counts);
+      } else if (type === 'style') {
+        const styles = {};
+        filteredProjects.forEach(p => { styles[p.style || 'Unbekannt'] = (styles[p.style || 'Unbekannt'] || 0) + 1; });
+        labels = Object.keys(styles);
+        data = Object.values(styles);
+        chartType = 'doughnut';
+      } else if (type === 'zone') {
+        const zones = {};
+        filteredProjects.forEach(p => { zones[p.zone || 'Allgemein'] = (zones[p.zone || 'Allgemein'] || 0) + 1; });
+        labels = Object.keys(zones);
+        data = Object.values(zones);
+      } else if (type === 'kpi') {
+        const activeCount = filteredProjects.filter(p => p.status === 'active').length;
+        const doneCount = filteredProjects.filter(p => p.status === 'completed').length;
+        labels = ['Aktiv', 'Abgeschlossen'];
+        data = [activeCount, doneCount];
+        chartType = 'pie';
+      }
 
-      const slider = document.getElementById('plan-timeline-slider');
-      if (!slider) return;
-
-      const pct = parseInt(slider.value) / 100;
-      const minTime = new Date(minDateStr).getTime();
-      const maxTime = new Date(maxDateStr).getTime();
-      const selectedTime = minTime + pct * (maxTime - minTime);
-      const selectedDateStr = new Date(selectedTime).toISOString().split('T')[0];
-
-      document.getElementById('plan-slider-val').innerText = selectedDateStr;
-
-      const activeAtDate = projects.filter(p => {
-        if (p.gym !== gymName || p.excludeFromStats || p.pinX === null || p.pinX === undefined) return false;
-        const start = p.createdDate;
-        const end = p.completedDate || '9999-12-31';
-        return selectedDateStr >= start && selectedDateStr <= end;
+      chartInstances[type] = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Anzahl',
+            data: data,
+            backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: chartType !== 'bar', labels: { color: '#94a3b8', font: { size: 10 } } } }
+        }
       });
+    }
 
-      const pinsLayer = document.getElementById('plan-pins-layer');
-      const img = document.getElementById('plan-widget-img');
+    function renderPlanWidget(container, filterGym) {
+      if (filterGym === 'ALL') {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">Bitte wähle oben eine spezifische Halle aus, um den Hallenplan anzuzeigen.</p>`;
+        return;
+      }
 
-      if (!img || !pinsLayer) return;
+      const scale = scales[filterGym];
+      if (!scale || !scale.planUrl) {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">Für "${filterGym}" wurde noch kein Hallenplan hochgeladen.</p>`;
+        return;
+      }
 
-      const rect = img.getBoundingClientRect();
-      const viewportRect = document.getElementById('plan-widget-viewport').getBoundingClientRect();
+      const gymProjects = projects.filter(p => p.gym === filterGym && p.pinX !== null && p.pinX !== undefined);
 
-      const imgLeftPct = ((rect.left - viewportRect.left) / viewportRect.width) * 100;
-      const imgTopPct = ((rect.top - viewportRect.top) / viewportRect.height) * 100;
-      const imgWidthPct = (rect.width / viewportRect.width) * 100;
-      const imgHeightPct = (rect.height / viewportRect.height) * 100;
-
-      pinsLayer.innerHTML = activeAtDate.map(p => {
-        const absLeft = imgLeftPct + (p.pinX / 100) * imgWidthPct;
-        const absTop = imgTopPct + (p.pinY / 100) * imgHeightPct;
+      const pinsHTML = gymProjects.map(p => {
         const isCompleted = p.status === 'completed';
-        const isSelected = selectedPlanProjectId === p.id;
-
-        const gymScale = scales[p.gym] || { hasFB: false, mapping: {} };
-        const fbGrade = gymScale.hasFB && gymScale.mapping[p.level] ? ` (FB ${gymScale.mapping[p.level]})` : '';
-
-        const isNearTop = absTop < 35;
-        const transformClass = isNearTop ? '-translate-x-1/2 mt-3' : '-translate-x-1/2 -translate-y-full mb-3';
-        const arrowClass = isNearTop 
-          ? 'absolute left-1/2 -top-1.5 -ml-1.5 w-3 h-3 bg-slate-800 border-l border-t border-emerald-500/60 rotate-45'
-          : 'absolute left-1/2 -bottom-1.5 -ml-1.5 w-3 h-3 bg-slate-800 border-r border-b border-emerald-500/60 rotate-45';
-
-        const imageHTML = p.imageUrl ? `
-          <img src="${p.imageUrl}" onclick="openImageViewerModal(${p.id})" alt="Routenbild" class="w-10 h-10 object-cover rounded border border-slate-700 cursor-pointer hover:opacity-80 transition flex-shrink-0" title="Klicken zum Vergrößern">
-        ` : '';
-
-        const popupHTML = isSelected ? `
-          <div class="absolute z-30 bg-slate-800/95 border border-emerald-500/60 backdrop-blur-md p-3 rounded-xl shadow-2xl w-60 text-xs text-slate-100 pointer-events-auto ${transformClass}" style="left: ${absLeft}%; top: ${absTop}%;" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-start gap-1 mb-2">
-              <div>
-                <span class="font-bold text-slate-100 text-sm leading-tight block">${p.name}</span>
-                <span class="font-bold text-emerald-400 text-xs">${p.level}${fbGrade}</span>
-              </div>
-              <button onclick="closePlanPopup(event)" class="text-slate-400 hover:text-slate-100 font-bold text-xs p-0.5" title="Schließen">✕</button>
-            </div>
-
-            <div class="flex items-center gap-2 mb-2 bg-slate-900/60 p-1.5 rounded border border-slate-700/60">
-              ${imageHTML}
-              <div class="text-[11px] text-slate-300 space-y-0.5">
-                <p class="text-slate-400 truncate">${p.gym} • ${p.zone || 'Allgemein'}</p>
-                <p>${p.incline || 'Slab'} / ${p.style || 'Balance'}</p>
-                <p><span class="text-emerald-400 font-semibold">${p.attempts}</span> Attempts</p>
-              </div>
-            </div>
-
-            <button onclick="openProjectModal(${p.id})" class="w-full bg-slate-700 hover:bg-slate-600 text-emerald-400 font-semibold px-2 py-1.5 rounded text-[11px] transition text-center">
-              ✏️ Neu verorten / Bearbeiten
-            </button>
-
-            <div class="${arrowClass}"></div>
-          </div>
-        ` : '';
-
+        const colorClass = isCompleted ? 'bg-emerald-500' : 'bg-amber-500';
         return `
-          <button onclick="selectPlanPin(${p.id}, event)" style="left: ${absLeft}%; top: ${absTop}%;" class="absolute w-6 h-6 -ml-3 -mt-3 ${isCompleted ? 'bg-emerald-500 border-emerald-300' : 'bg-amber-500 border-amber-300'} text-slate-900 font-bold rounded-full border-2 flex items-center justify-center text-[10px] shadow-lg hover:scale-125 transition z-10 pointer-events-auto" title="${p.name}">
-            📍
-          </button>
-          ${popupHTML}
+          <div class="absolute w-5 h-5 -ml-2.5 -mt-2.5 ${colorClass} text-white font-bold rounded-full border-2 border-white flex items-center justify-center text-[10px] shadow cursor-pointer hover:scale-125 transition"
+               style="left: ${p.pinX}%; top: ${p.pinY}%;"
+               title="${p.name} (${p.level})">
+            ${isCompleted ? '✓' : '🎯'}
+          </div>
         `;
       }).join('');
+
+      container.innerHTML = `
+        <div class="relative bg-slate-900 rounded-lg p-1 overflow-hidden flex justify-center items-center">
+          <img src="${scale.planUrl}" alt="Hallenplan" class="max-h-80 w-auto object-contain">
+          ${pinsHTML}
+        </div>
+      `;
     }
 
-    function renderTextWidget(wType, container, filtered) {
-      if (wType === 'level') {
-        const counts = {};
-        filtered.forEach(p => {
-          const gymScale = scales[p.gym] || { hasFB: false, mapping: {} };
-          const label = gymScale.hasFB && gymScale.mapping[p.level] ? `${p.level} (FB ${gymScale.mapping[p.level]})` : p.level;
-          counts[label] = (counts[label] || 0) + 1;
-        });
-        const rows = Object.entries(counts).map(([k, v]) => `<div class="flex justify-between border-b border-slate-700/40 py-1"><span class="text-slate-300">${k}</span><span class="font-bold text-emerald-400">${v}</span></div>`).join('') || '<p class="text-slate-500">Keine Daten</p>';
-        container.innerHTML = `<div class="space-y-1 max-h-40 overflow-y-auto">${rows}</div>`;
-      }
+    // HALLEN & SKALEN
+    function renderGymScalesView() {
+      const container = document.getElementById('gym-scales-container');
+      const countEl = document.getElementById('sidebar-gym-count');
 
-      if (wType === 'style') {
-        const counts = {};
-        filtered.forEach(p => {
-          const key = `${p.incline || 'Slab'} | ${p.holdType || 'Crimps'} | ${p.style || 'Balance'}`;
-          counts[key] = (counts[key] || 0) + 1;
-        });
-        const rows = Object.entries(counts).map(([k, v]) => `<div class="flex justify-between border-b border-slate-700/40 py-1"><span class="text-slate-300">${k}</span><span class="font-bold text-emerald-400">${v}</span></div>`).join('') || '<p class="text-slate-500">Keine Daten</p>';
-        container.innerHTML = `<div class="space-y-1 max-h-40 overflow-y-auto">${rows}</div>`;
-      }
+      const gymKeys = Object.keys(scales);
+      if (countEl) countEl.innerText = gymKeys.length;
 
-      if (wType === 'zone') {
-        const counts = {};
-        filtered.forEach(p => {
-          const key = p.zone || 'Allgemein';
-          counts[key] = (counts[key] || 0) + 1;
-        });
-        const rows = Object.entries(counts).map(([k, v]) => `<div class="flex justify-between border-b border-slate-700/40 py-1"><span class="text-slate-300">${k}</span><span class="font-bold text-emerald-400">${v}</span></div>`).join('') || '<p class="text-slate-500">Keine Daten</p>';
-        container.innerHTML = `<div class="space-y-1 max-h-40 overflow-y-auto">${rows}</div>`;
-      }
-
-      if (wType === 'kpi') {
-        const totalAttempts = filtered.reduce((sum, p) => sum + p.attempts, 0);
-        const avgAttempts = filtered.length > 0 ? (totalAttempts / filtered.length).toFixed(1) : 0;
-        
-        const completed = filtered.filter(p => p.status === 'completed');
-        let avgDurationDays = 0;
-        if (completed.length > 0) {
-          const totalDays = completed.reduce((sum, p) => {
-            const days = Math.max(1, Math.ceil((new Date(p.completedDate) - new Date(p.createdDate)) / (1000 * 60 * 60 * 24)));
-            return sum + days;
-          }, 0);
-          avgDurationDays = (totalDays / completed.length).toFixed(1);
-        }
-
-        container.innerHTML = `
-          <div class="space-y-2 pt-1">
-            <p class="text-slate-200">Projekte in Wertung: <span class="font-bold text-emerald-400">${filtered.length}</span></p>
-            <p class="text-slate-200">Durchschn. Attempts: <span class="font-bold text-emerald-400">${avgAttempts}</span></p>
-            <p class="text-slate-200">Abgeschlossen: <span class="font-bold text-emerald-400">${completed.length}</span></p>
-            <p class="text-slate-200">Durchschn. Projektdauer: <span class="font-bold text-emerald-400">${avgDurationDays} Tage</span></p>
-          </div>
-        `;
-      }
-    }
-
-    function renderChartWidget(wType, container, filtered) {
-      if (filtered.length === 0) {
-        container.innerHTML = `<p class="text-slate-500 py-4">Keine Daten für Diagramme vorhanden.</p>`;
+      if (gymKeys.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-4">Keine Hallen konfiguriert.</p>`;
         return;
       }
 
-      const canvas = document.createElement('canvas');
-      canvas.id = `chart-canvas-${wType}`;
-      canvas.className = 'w-full max-h-48';
-      container.appendChild(canvas);
+      container.innerHTML = gymKeys.map(gymName => {
+        const scale = scales[gymName];
+        const zonesStr = (scale.zones || []).join(', ') || 'Keine Wandbereiche';
 
-      const ctx = canvas.getContext('2d');
-
-      if (wType === 'level') {
-        const counts = {};
-        filtered.forEach(p => {
-          const label = p.level;
-          counts[label] = (counts[label] || 0) + 1;
-        });
-
-        chartInstances['level'] = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: Object.keys(counts),
-            datasets: [{
-              label: 'Anzahl Projekte',
-              data: Object.values(counts),
-              backgroundColor: '#10b981',
-              borderRadius: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-              y: { ticks: { color: '#94a3b8', precision: 0 }, grid: { color: '#334155' } }
-            }
-          }
-        });
-      }
-
-      if (wType === 'style') {
-        const counts = {};
-        filtered.forEach(p => {
-          const key = p.style || 'Balance';
-          counts[key] = (counts[key] || 0) + 1;
-        });
-
-        chartInstances['style'] = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: Object.keys(counts),
-            datasets: [{
-              data: Object.values(counts),
-              backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6', '#f43f5e']
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } }
-            }
-          }
-        });
-      }
-
-      if (wType === 'zone') {
-        const counts = {};
-        filtered.forEach(p => {
-          const key = p.zone || 'Allgemein';
-          counts[key] = (counts[key] || 0) + 1;
-        });
-
-        chartInstances['zone'] = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: Object.keys(counts),
-            datasets: [{
-              label: 'Projekte im Wandbereich',
-              data: Object.values(counts),
-              backgroundColor: '#3b82f6',
-              borderRadius: 4
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { color: '#94a3b8', precision: 0 }, grid: { color: '#334155' } },
-              y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
-            }
-          }
-        });
-      }
-
-      if (wType === 'kpi') {
-        const totalAttempts = filtered.reduce((sum, p) => sum + p.attempts, 0);
-        const avgAttempts = filtered.length > 0 ? (totalAttempts / filtered.length).toFixed(1) : 0;
-        const completed = filtered.filter(p => p.status === 'completed');
-        
-        let avgDurationDays = 0;
-        if (completed.length > 0) {
-          const totalDays = completed.reduce((sum, p) => {
-            const days = Math.max(1, Math.ceil((new Date(p.completedDate) - new Date(p.createdDate)) / (1000 * 60 * 60 * 24)));
-            return sum + days;
-          }, 0);
-          avgDurationDays = (totalDays / completed.length).toFixed(1);
-        }
-
-        container.innerHTML = `
-          <div class="grid grid-cols-2 gap-2 text-center pt-1">
-            <div class="bg-slate-800 p-2 rounded border border-slate-700">
-              <span class="block text-slate-400 text-[10px]">Projekte</span>
-              <span class="text-base font-bold text-emerald-400">${filtered.length}</span>
-            </div>
-            <div class="bg-slate-800 p-2 rounded border border-slate-700">
-              <span class="block text-slate-400 text-[10px]">Abgeschlossen</span>
-              <span class="text-base font-bold text-emerald-400">${completed.length}</span>
-            </div>
-            <div class="bg-slate-800 p-2 rounded border border-slate-700">
-              <span class="block text-slate-400 text-[10px]">Ø Attempts</span>
-              <span class="text-base font-bold text-emerald-400">${avgAttempts}</span>
-            </div>
-            <div class="bg-slate-800 p-2 rounded border border-slate-700">
-              <span class="block text-slate-400 text-[10px]">Ø Dauer</span>
-              <span class="text-base font-bold text-emerald-400">${avgDurationDays}d</span>
-            </div>
+        const levelsHTML = Object.entries(scale.mapping || {}).map(([lvl, fb]) => `
+          <div class="bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-xs flex justify-between items-center">
+            <span class="font-bold text-emerald-400">${lvl}</span>
+            <span class="text-slate-400 font-mono">${scale.hasFB && fb ? `FB ${fb}` : ''}</span>
           </div>
-        `;
-      }
-    }
-
-    // EINSTELLUNGEN: HALLEN & SKALEN
-    function renderGymScalesView() {
-      const container = document.getElementById('gym-scales-container');
-      const gymEntries = Object.entries(scales);
-      document.getElementById('sidebar-gym-count').innerText = gymEntries.length;
-
-      container.innerHTML = gymEntries.map(([gymName, scale]) => {
-        let rows = '';
-        for (const [lvl, fb] of Object.entries(scale.mapping)) {
-          const fbVal = scale.hasFB ? (fb || '—') : 'Keine FB-Skala';
-          rows += `
-            <div class="grid grid-cols-2 p-1.5 border-b border-slate-800/60 text-xs">
-              <span class="text-slate-300">${lvl}</span>
-              <span class="font-mono text-emerald-400">${fbVal}</span>
-            </div>
-          `;
-        }
-
-        const zonesStr = (scale.zones || []).join(', ') || 'Keine Wandbereiche hinterlegt';
-        const planBadge = scale.planUrl ? '<span class="text-emerald-400 font-semibold">• 🗺️ Hallenplan vorhanden</span>' : '<span class="text-slate-500">• Kein Hallenplan</span>';
+        `).join('');
 
         return `
           <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-3">
             <div class="flex justify-between items-start">
               <div>
-                <h3 class="font-bold text-slate-100 text-base">${gymName}</h3>
-                <p class="text-xs text-slate-400">Zyklus: ${scale.cycleWeeks} Wochen | FB-Skala: ${scale.hasFB ? 'Ja' : 'Nein'} ${planBadge}</p>
-                <p class="text-xs text-emerald-400 mt-0.5">Wandbereiche: ${zonesStr}</p>
+                <h3 class="text-base font-bold text-slate-100">${gymName}</h3>
+                <p class="text-xs text-slate-400">Umschraubzyklus: ${scale.cycleWeeks || 4} Wochen • FB-Skala: ${scale.hasFB ? 'Ja' : 'Nein'}</p>
+                <p class="text-xs text-slate-400 mt-1">Sektoren: <span class="text-slate-300 font-semibold">${zonesStr}</span></p>
               </div>
               <div class="flex gap-2">
-                <button onclick="openCustomScaleModal('${gymName}')" class="text-xs bg-slate-700 hover:bg-slate-600 text-emerald-400 px-3 py-1.5 rounded font-semibold transition">✏️ Bearbeiten</button>
-                <button onclick="deleteCustomGym('${gymName}')" class="text-xs text-red-400 hover:text-red-300 px-2 py-1.5">Löschen</button>
+                <button onclick="openCustomScaleModal('${gymName}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded text-xs font-semibold">Bearbeiten</button>
+                <button onclick="deleteCustomScale('${gymName}')" class="bg-slate-700 hover:bg-red-900/50 text-red-400 px-3 py-1.5 rounded text-xs font-semibold">Löschen</button>
               </div>
             </div>
-            <div class="bg-slate-900 rounded-lg border border-slate-700/60 p-2">
-              ${rows}
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1">
+              ${levelsHTML}
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function deleteCustomGym(gymName) {
-      if (confirm(`Möchtest du die Halle "${gymName}" wirklich löschen?`)) {
-        delete scales[gymName];
-        saveScalesToStorage();
-      }
-    }
+    function openCustomScaleModal(gymName = null) {
+      const form = document.getElementById('custom-scale-form');
+      form.reset();
+      const levelsContainer = document.getElementById('cs-levels-container');
+      levelsContainer.innerHTML = '';
 
-    function openCustomScaleModal(editGymName = null) {
-      document.getElementById('custom-scale-form').reset();
-      const container = document.getElementById('cs-levels-container');
-      container.innerHTML = '';
-
-      if (editGymName && scales[editGymName]) {
-        const scale = scales[editGymName];
-        document.getElementById('custom-scale-modal-title').innerText = `Halle bearbeiten: ${editGymName}`;
-        document.getElementById('cs-edit-old-name').value = editGymName;
-        document.getElementById('cs-gym-name').value = editGymName;
+      if (gymName && scales[gymName]) {
+        const scale = scales[gymName];
+        document.getElementById('custom-scale-modal-title').innerText = 'Halle & Skala bearbeiten';
+        document.getElementById('cs-edit-old-name').value = gymName;
+        document.getElementById('cs-gym-name').value = gymName;
         document.getElementById('cs-gym-zones').value = (scale.zones || []).join(', ');
-        document.getElementById('cs-cycle').value = scale.cycleWeeks;
-        document.getElementById('cs-has-fb').checked = scale.hasFB;
+        document.getElementById('cs-cycle').value = scale.cycleWeeks || 4;
+        document.getElementById('cs-has-fb').checked = scale.hasFB !== false;
 
         currentUploadedPlan = scale.planUrl || null;
-        document.getElementById('cs-plan-input').value = '';
         updatePlanPreview();
 
-        Object.entries(scale.mapping).forEach(([lvl, fb]) => {
+        Object.entries(scale.mapping || {}).forEach(([lvl, fb]) => {
           addLevelRowToForm(lvl, fb);
         });
       } else {
-        document.getElementById('custom-scale-modal-title').innerText = 'Neue Halle & Skala anlegen';
+        document.getElementById('custom-scale-modal-title').innerText = 'Neue Halle anlegen';
         document.getElementById('cs-edit-old-name').value = '';
         currentUploadedPlan = null;
-        document.getElementById('cs-plan-input').value = '';
         updatePlanPreview();
 
-        addLevelRowToForm('Level 1', '6a');
-        addLevelRowToForm('Level 2', '6b');
-        addLevelRowToForm('Level 3', '6c');
+        for (let i = 1; i <= 6; i++) {
+          addLevelRowToForm(`Level ${i}`, '');
+        }
       }
 
       openModal('custom-scale-modal');
     }
 
-    function addLevelRowToForm(defaultLvl = '', defaultFB = '') {
+    function addLevelRowToForm(lvlName = '', fbVal = '') {
       const container = document.getElementById('cs-levels-container');
-      const hasFB = document.getElementById('cs-has-fb').checked;
-
       const row = document.createElement('div');
-      row.className = 'flex gap-2 items-center cs-level-row';
+      row.className = 'flex items-center gap-2 cs-level-row';
       row.innerHTML = `
-        <input type="text" placeholder="Level/Grad Name" value="${defaultLvl}" required class="cs-lvl-name bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-100 flex-1">
-        <input type="text" placeholder="FB Skala" value="${defaultFB}" ${!hasFB ? 'disabled' : ''} class="cs-lvl-fb bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-100 flex-1 ${!hasFB ? 'opacity-40' : ''}">
-        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 text-xs px-1">✕</button>
+        <input type="text" value="${lvlName}" placeholder="Level Name" required class="cs-lvl-name bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-100 w-1/2">
+        <input type="text" value="${fbVal}" placeholder="FB (z. B. 6a)" class="cs-lvl-fb bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-100 w-1/2">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 font-bold text-xs px-1">✕</button>
       `;
       container.appendChild(row);
     }
 
     function toggleFBMappingsInForm() {
       const hasFB = document.getElementById('cs-has-fb').checked;
-      const fbInputs = document.querySelectorAll('.cs-lvl-fb');
-      fbInputs.forEach(input => {
-        input.disabled = !hasFB;
-        input.classList.toggle('opacity-40', !hasFB);
+      document.querySelectorAll('.cs-lvl-fb').forEach(inp => {
+        inp.disabled = !hasFB;
+        if (!hasFB) inp.classList.add('opacity-50');
+        else inp.classList.remove('opacity-50');
       });
     }
 
     function saveCustomScale(e) {
       e.preventDefault();
-      const oldGymName = document.getElementById('cs-edit-old-name').value;
-      const newGymName = document.getElementById('cs-gym-name').value.trim();
+      const oldName = document.getElementById('cs-edit-old-name').value;
+      const newName = document.getElementById('cs-gym-name').value.trim();
       const zonesRaw = document.getElementById('cs-gym-zones').value;
+      const zones = zonesRaw.split(',').map(z => z.trim()).filter(z => z.length > 0);
       const cycleWeeks = parseInt(document.getElementById('cs-cycle').value) || 4;
       const hasFB = document.getElementById('cs-has-fb').checked;
 
-      const zones = zonesRaw.split(',').map(z => z.trim()).filter(z => z.length > 0);
-      const rows = document.querySelectorAll('.cs-level-row');
       const mapping = {};
-
-      rows.forEach(row => {
-        const lvlName = row.querySelector('.cs-lvl-name').value.trim();
-        const lvlFB = row.querySelector('.cs-lvl-fb').value.trim();
-        if (lvlName) {
-          mapping[lvlName] = hasFB ? lvlFB : '';
-        }
+      document.querySelectorAll('.cs-level-row').forEach(row => {
+        const name = row.querySelector('.cs-lvl-name').value.trim();
+        const fb = row.querySelector('.cs-lvl-fb').value.trim();
+        if (name) mapping[name] = fb;
       });
 
-      if (Object.keys(mapping).length === 0) {
-        alert('Bitte füge mindestens einen Schwierigkeitsgrad hinzu.');
-        return;
+      if (oldName && oldName !== newName) {
+        delete scales[oldName];
       }
 
-      if (oldGymName && oldGymName !== newGymName) {
-        delete scales[oldGymName];
-        projects.forEach(p => {
-          if (p.gym === oldGymName) p.gym = newGymName;
-        });
-        sessions.forEach(s => {
-          if (s.gym === oldGymName) s.gym = newGymName;
-        });
-        entries.forEach(entry => {
-          if (entry.gym === oldGymName) entry.gym = newGymName;
-        });
-        saveProjectsToStorage();
-        saveSessionsToStorage();
-        saveEntriesToStorage();
-      }
-
-      scales[newGymName] = {
+      scales[newName] = {
         hasFB: hasFB,
         cycleWeeks: cycleWeeks,
-        zones: zones.length > 0 ? zones : ["Hauptraum"],
-        mapping: mapping,
-        planUrl: currentUploadedPlan
+        zones: zones.length > 0 ? zones : ["Hauptbereich"],
+        planUrl: currentUploadedPlan,
+        mapping: mapping
       };
 
       saveScalesToStorage();
       closeModal('custom-scale-modal');
+    }
 
-      renderProjects();
-      renderCompleted();
-      renderSessions();
-      renderEntries();
-      renderVideos();
-      renderStats();
+    function deleteCustomScale(gymName) {
+      if (confirm(`Möchtest du die Halle "${gymName}" wirklich löschen?`)) {
+        delete scales[gymName];
+        saveScalesToStorage();
+      }
     }
 
     // RUHETIMER LOGIK
     let timerInterval = null;
     let timerSeconds = 120;
-    let isTimerRunning = false;
+    let timerRunning = false;
 
-    function updateTimerDisplay() {
-      const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
-      const secs = (timerSeconds % 60).toString().padStart(2, '0');
-      document.getElementById('timer-display').innerText = `${mins}:${secs}`;
-    }
-
-    function setTimerSeconds(s) {
-      clearInterval(timerInterval);
-      isTimerRunning = false;
-      document.getElementById('timer-start-btn').innerText = 'Start';
-      timerSeconds = s;
+    function setTimerSeconds(sec) {
+      timerSeconds = sec;
       updateTimerDisplay();
     }
 
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const s = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timer-display').innerText = `${m}:${s}`;
+    }
+
     function toggleTimer() {
-      if (isTimerRunning) {
+      const btn = document.getElementById('timer-start-btn');
+      if (timerRunning) {
         clearInterval(timerInterval);
-        isTimerRunning = false;
-        document.getElementById('timer-start-btn').innerText = 'Start';
+        timerRunning = false;
+        btn.innerText = 'Start';
+        btn.className = 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-lg text-sm w-28';
       } else {
-        isTimerRunning = true;
-        document.getElementById('timer-start-btn').innerText = 'Pause';
+        timerRunning = true;
+        btn.innerText = 'Pause';
+        btn.className = 'bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 py-2 rounded-lg text-sm w-28';
         timerInterval = setInterval(() => {
           if (timerSeconds > 0) {
             timerSeconds--;
             updateTimerDisplay();
           } else {
             clearInterval(timerInterval);
-            isTimerRunning = false;
-            document.getElementById('timer-start-btn').innerText = 'Start';
-            alert('⏱️ Pause vorbei! Bereit für den nächsten Versuch.');
+            timerRunning = false;
+            btn.innerText = 'Start';
+            btn.className = 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-lg text-sm w-28';
+            alert('⏰ Pausenzeit abgelaufen!');
           }
         }, 1000);
       }
     }
 
     function resetTimer() {
-      setTimerSeconds(120);
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        document.getElementById('timer-start-btn').innerText = 'Start';
+      }
+      timerSeconds = 120;
+      updateTimerDisplay();
     }
   </script>
 </body>
