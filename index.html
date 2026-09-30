@@ -722,8 +722,8 @@
   </div>
 
 
-  <!-- JAVASCRIPT LOGIK -->
-  <script>
+<!-- JAVASCRIPT LOGIK -->
+<script>
     // --- SUPABASE AUTH & POPUP LOGIK ---
     function openAuthModal(tab = 'login') {
       switchAuthTab(tab);
@@ -771,9 +771,16 @@
         return;
       }
 
+      // Übergabe der Profil-Metadaten direkt an die Registrierungsfunktion
       const { data: authData, error: authError } = await supabaseClient.auth.signUp({
         email: email,
-        password: password
+        password: password,
+        options: {
+          data: {
+            username: username,
+            is_adult: isAdult
+          }
+        }
       });
 
       if (authError) {
@@ -781,22 +788,8 @@
         return;
       }
 
-      if (authData.user) {
-        const { error: profileError } = await supabaseClient
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            username: username,
-            is_adult: isAdult
-          });
-
-        if (profileError) {
-          alert("Profil konnte nicht erstellt werden: " + profileError.message);
-        } else {
-          alert("Registrierung erfolgreich!");
-          closeModal('auth-modal');
-        }
-      }
+      alert("Registrierung erfolgreich! Bitte überprüfe gegebenenfalls deine E-Mails zur Bestätigung.");
+      closeModal('auth-modal');
     }
 
     async function loginUser(email, password) {
