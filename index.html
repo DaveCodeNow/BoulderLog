@@ -37,7 +37,10 @@
 
       <!-- Navigation -->
       <nav class="space-y-2">
-        <button onclick="switchView('projects')" id="nav-projects" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+        <button onclick="switchView('map')" id="nav-map" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+          <span>🗺️</span> Hallenkarte
+        </button>
+        <button onclick="switchView('projects')" id="nav-projects" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
           <span>🎯</span> Aktive Projekte
         </button>
         <button onclick="switchView('completed')" id="nav-completed" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
@@ -53,7 +56,7 @@
           <span>🎬</span> Videos
         </button>
         <button onclick="switchView('timer')" id="nav-timer" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>⏱️</span> Ruhetimer
+          <span>⏱️️</span> Ruhetimer
         </button>
         <button onclick="switchView('social')" id="nav-social" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
           <span>👥</span> Social
@@ -82,14 +85,62 @@
   </aside>
 
   <!-- HAUPTINHALTSBEREICH -->
-  <main class="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
+  <main class="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full relative">
+
+    <!-- VIEW 0: HALLENKARTE -->
+    <div id="view-map" class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-100">Interaktive Hallenkarte</h2>
+          <p class="text-xs text-slate-400">Pinch-to-Zoom oder Mausrad nutzen. Erfasse und verwalte Routen direkt per Klick.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div>
+            <label class="block text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Hallenprofil</label>
+            <select id="map-gym-select" onchange="onMapGymChange()" class="bg-slate-900 border border-slate-700 text-xs rounded-lg p-2 text-slate-100 font-semibold focus:outline-none focus:border-emerald-500"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formatfüllende vertikale Hallenkarte mit Zoom-Funktion -->
+      <div class="flex justify-center">
+        <div id="map-container" class="relative max-w-md w-full bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-2xl min-h-[600px] flex items-center justify-center select-none touch-none" onclick="handleMapClick(event)">
+          
+          <!-- Transformed Layer for Smooth Zoom & Pan -->
+          <div id="map-transform-layer" class="relative w-full h-full flex items-center justify-center transition-transform duration-75 origin-center">
+            <img id="map-img-display" src="" alt="Hallenkarte" class="w-full h-auto object-contain select-none block pointer-events-none">
+            <div id="map-pins-layer" class="absolute inset-0 pointer-events-none"></div>
+          </div>
+
+          <div id="map-no-plan-msg" class="hidden text-center p-6 text-slate-400 text-xs space-y-2 pointer-events-auto">
+            <span class="text-3xl block">🗺️</span>
+            <p class="font-semibold text-slate-300">Kein Hallenplan hinterlegt</p>
+            <p>Lade in den Einstellungen unter "Halle & Skala bearbeiten" einen Hallenplan hoch, um die Hallenkarte zu nutzen.</p>
+          </div>
+
+          <!-- Zoom Overlay Controls -->
+          <div class="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-700/80 rounded-lg px-2 py-1 text-[10px] text-slate-300 flex items-center gap-2 pointer-events-auto backdrop-blur shadow-lg z-10">
+            <button onclick="zoomMap(-0.3)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded font-bold text-center">-</button>
+            <span id="map-zoom-level-display" class="font-mono text-emerald-400 font-bold">100%</span>
+            <button onclick="zoomMap(0.3)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded font-bold text-center">+</button>
+            <button onclick="resetMapZoom()" class="text-slate-400 hover:text-slate-200 ml-1 font-bold" title="Zoom zurücksetzen">↺</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schwebender Action-Button (FAB) für den Bearbeitungsmodus -->
+      <button id="map-fab-edit-btn" onclick="toggleMapEditModeFAB()" class="fixed bottom-6 right-6 z-40 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95">
+        <span id="map-fab-icon" class="text-lg">✏️</span>
+        <span id="map-fab-text" class="text-xs font-semibold pr-1">Bearbeiten</span>
+      </button>
+    </div>
 
     <!-- VIEW 1: AKTIVE PROJEKTE & STATISTIK -->
-    <div id="view-projects" class="space-y-8">
+    <div id="view-projects" class="hidden space-y-8">
       <div class="flex justify-between items-center">
         <div>
           <h2 class="text-2xl font-bold text-slate-100">Aktive Projekte</h2>
-          <p class="text-xs text-slate-400">Verfolge deine aktuellen Boulder und verbleibende Zeiten.</p>
+          <p class="text-xs text-slate-400">Verfolge deine aktuellen Boulder und verbleibende Zeiten bis zum Umschrauben.</p>
         </div>
         <button onclick="openProjectModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-lg transition">
           + Projekt anlegen
@@ -100,38 +151,57 @@
 
       <!-- STATISTIKBEREICH -->
       <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-3">
-          <div>
-            <h3 class="text-lg font-bold text-slate-200">Projekt-Statistiken</h3>
-            <p class="text-xs text-slate-400">Anpassbares Dashboard für deine Kletterprojekte</p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="bg-slate-900 p-1 rounded-lg border border-slate-700 flex gap-1 text-xs">
-              <button id="btn-mode-text" onclick="setStatsDisplayMode('text')" class="px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold">📄 Text</button>
-              <button id="btn-mode-chart" onclick="setStatsDisplayMode('chart')" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-semibold">📊 Diagramm</button>
+        <div class="flex flex-col gap-3 border-b border-slate-700 pb-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-bold text-slate-200">Projekt-Statistiken</h3>
+              <p class="text-xs text-slate-400">Anpassbares & verschiebbares Dashboard für deine Kletterprojekte</p>
             </div>
-
-            <select id="stats-gym-filter" onchange="renderStats()" class="bg-slate-900 border border-slate-700 text-xs rounded p-2 text-slate-200"></select>
-
-            <div class="relative inline-block text-left">
-              <button onclick="toggleWidgetDropdown()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs transition">
-                + Modul
-              </button>
-              <div id="widget-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 py-1 text-xs">
-                <button onclick="addWidget('level')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Schwierigkeitsgrad</button>
-                <button onclick="addWidget('style')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Neigung, Grifftyp & Stil</button>
-                <button onclick="addWidget('zone')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Wandbereiche</button>
-                <button onclick="addWidget('kpi')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Kennzahlen & Dauer</button>
-                <button onclick="addWidget('plan')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 text-emerald-400 font-semibold">+ Hallenplan</button>
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="bg-slate-900 p-1 rounded-lg border border-slate-700 flex gap-1 text-xs">
+                <button id="btn-mode-text" onclick="setStatsDisplayMode('text')" class="px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold">📄 Text</button>
+                <button id="btn-mode-chart" onclick="setStatsDisplayMode('chart')" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-semibold">📊 Diagramm</button>
               </div>
+
+              <select id="stats-gym-filter" onchange="renderStats()" class="bg-slate-900 border border-slate-700 text-xs rounded p-2 text-slate-200"></select>
+
+              <div class="relative inline-block text-left">
+                <button onclick="toggleWidgetDropdown()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs transition">
+                  + Modul
+                </button>
+                <div id="widget-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 py-1 text-xs">
+                  <button onclick="addWidget('level')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Schwierigkeitsgrad</button>
+                  <button onclick="addWidget('style')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Neigung, Grifftyp & Stil</button>
+                  <button onclick="addWidget('zone')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Wandbereiche</button>
+                  <button onclick="addWidget('kpi')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Kennzahlen & Dauer</button>
+                  <button onclick="addWidget('plan')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 text-emerald-400 font-semibold">+ Hallenplan</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ZEITRAUM FILTER CONTROL -->
+          <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-700/50 text-xs">
+            <span class="text-slate-400 font-semibold">📅 Zeitraum Filter:</span>
+            <select id="stats-time-filter" onchange="handleStatsTimeFilterChange()" class="bg-slate-900 border border-slate-700 text-xs rounded p-1.5 text-slate-200">
+              <option value="ALL">Gesamter Zeitraum</option>
+              <option value="30">Letzte 30 Tage</option>
+              <option value="90">Letzte 90 Tage</option>
+              <option value="365">Letztes Jahr (365 Tage)</option>
+              <option value="CUSTOM">Benutzerdefiniert</option>
+            </select>
+            <div id="stats-custom-date-container" class="hidden items-center gap-2">
+              <input type="date" id="stats-start-date" onchange="renderStats()" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 text-xs">
+              <span class="text-slate-500">bis</span>
+              <input type="date" id="stats-end-date" onchange="renderStats()" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 text-xs">
             </div>
           </div>
         </div>
 
         <div id="stats-summary" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
 
-        <div class="bg-slate-900/60 p-3 rounded-lg border border-amber-500/30 text-xs text-slate-400 space-y-1 mt-4">
-          <p class="font-semibold text-amber-400">⚠️ Hinweis zur Interpretation</p>
+        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700 text-xs text-slate-400 space-y-1 mt-4">
+          <p class="font-semibold text-slate-300">ℹ️ Hinweis zur Interpretation</p>
           <p>Statistiken berücksichtigen nur Projekte, die nicht ausdrücklich aus der Wertung ausgenommen wurden.</p>
         </div>
       </section>
@@ -257,7 +327,7 @@
           </div>
         </div>
 
-        <div id="social-search-status" class="text-xs text-amber-400 hidden bg-slate-900/80 p-2.5 rounded border border-slate-700"></div>
+        <div id="social-search-status" class="text-xs text-slate-300 hidden bg-slate-900/80 p-2.5 rounded border border-slate-700"></div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 flex items-center justify-between">
@@ -379,6 +449,147 @@
   </main>
 
   <!-- MODALE -->
+
+  <!-- MODAL MAP ROUTE ERFASSUNG -->
+  <div id="map-route-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <h3 class="text-lg font-bold text-slate-100">📍 Route auf Karte anlegen</h3>
+        <button onclick="closeModal('map-route-modal')" class="text-slate-400 hover:text-slate-100 font-bold">✕</button>
+      </div>
+      <form id="map-route-form" onsubmit="saveMapRoute(event)" class="space-y-3 text-sm">
+        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-700/80 text-xs flex justify-between items-center">
+          <span class="text-slate-400">Position relativ auf der Karte:</span>
+          <span id="mr-coords-display" class="font-mono text-emerald-400 font-bold">X: 0%, Y: 0%</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Schwierigkeitsgrad <span class="text-red-400">*</span></label>
+            <select id="mr-level" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100"></select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Grifffarbe <span class="text-red-400">*</span></label>
+            <select id="mr-hold-color" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+              <option value="Gelb">🟡 Gelb</option>
+              <option value="Blau">🔵 Blau</option>
+              <option value="Rot">🔴 Rot</option>
+              <option value="Grün">🟢 Grün</option>
+              <option value="Schwarz">⚫ Schwarz</option>
+              <option value="Weiß">⚪ Weiß</option>
+              <option value="Violett">🟣 Violett</option>
+              <option value="Orange">🟠 Orange</option>
+              <option value="Rosa">🌸 Rosa</option>
+              <option value="Holz">🪵 Holz / Natur</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Routenname (optional)</label>
+          <input type="text" id="mr-name" placeholder="z. B. Überhang Dyno" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Wandbereich (optional)</label>
+            <select id="mr-sector" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100"></select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Grad-Einschätzung</label>
+            <select id="mr-grade-opinion" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+              <option value="fair" selected>Fair / Passend</option>
+              <option value="soft">Soft (Eher leicht)</option>
+              <option value="hard">Hard (Eher schwer)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Kletter-Styles (Mehrfachauswahl)</label>
+          <div class="grid grid-cols-3 gap-2 bg-slate-900 p-2 rounded border border-slate-700 text-xs">
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-styles" value="Dyno" class="rounded bg-slate-800 border-slate-700"> Dyno</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-styles" value="Balance" class="rounded bg-slate-800 border-slate-700"> Balance</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-styles" value="Technik" class="rounded bg-slate-800 border-slate-700"> Technik</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-styles" value="Kraft" class="rounded bg-slate-800 border-slate-700"> Kraft</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-styles" value="Finger" class="rounded bg-slate-800 border-slate-700"> Finger</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-styles" value="Mantle" class="rounded bg-slate-800 border-slate-700"> Mantle</label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Grifftypen (Mehrfachauswahl)</label>
+          <div class="grid grid-cols-3 gap-2 bg-slate-900 p-2 rounded border border-slate-700 text-xs">
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-holds" value="Crimps" class="rounded bg-slate-800 border-slate-700"> Leisten</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-holds" value="Sloper" class="rounded bg-slate-800 border-slate-700"> Sloper</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-holds" value="Jugs" class="rounded bg-slate-800 border-slate-700"> Henkel</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-holds" value="Pinch" class="rounded bg-slate-800 border-slate-700"> Zangen</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-holds" value="Pockets" class="rounded bg-slate-800 border-slate-700"> Taschen</label>
+            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-holds" value="Volumes" class="rounded bg-slate-800 border-slate-700"> Volumen</label>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-700">
+          <button type="button" onclick="closeModal('map-route-modal')" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-slate-300">Abbrechen</button>
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold px-4 py-2 rounded text-white">Speichern</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL MAP ROUTE INTERAKTION -->
+  <div id="map-interaction-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-sm w-full space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <div>
+          <h3 class="text-base font-bold text-slate-100" id="mri-title">Route</h3>
+          <span class="text-xs text-slate-400" id="mri-subtitle"></span>
+        </div>
+        <button onclick="closeModal('map-interaction-modal')" class="text-slate-400 hover:text-slate-100 font-bold">✕</button>
+      </div>
+
+      <div id="mri-details-box" class="bg-slate-900 p-3 rounded-lg border border-slate-700 text-xs space-y-1.5"></div>
+
+      <form id="mri-form" onsubmit="saveMapRouteInteraction(event)" class="space-y-3 text-sm">
+        <input type="hidden" id="mri-route-id">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Mein Status für diese Route</label>
+          <select id="mri-status" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+            <option value="open">Offen</option>
+            <option value="project">🎯 Projekt</option>
+            <option value="topped">🏆 Getoppt</option>
+            <option value="flashed">⚡ Geflasht (1. Versuch)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Sternebewertung (1-5)</label>
+          <select id="mri-rating" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+            <option value="0">Keine Bewertung</option>
+            <option value="1">⭐ 1 Stern</option>
+            <option value="2">⭐⭐ 2 Sterne</option>
+            <option value="3">⭐⭐⭐ 3 Sterne</option>
+            <option value="4">⭐⭐⭐⭐ 4 Sterne</option>
+            <option value="5">⭐⭐⭐⭐⭐ 5 Sterne</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Persönlicher Kommentar / Beta</label>
+          <textarea id="mri-comment" rows="2" placeholder="Notizen zur Route..." class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100 text-xs"></textarea>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 border-t border-slate-700">
+          <button type="button" onclick="deleteMapRoute()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-3 py-1.5 rounded text-xs font-semibold">Löschen</button>
+          <div class="flex gap-2">
+            <button type="button" onclick="closeModal('map-interaction-modal')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs text-slate-300">Abbrechen</button>
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold px-4 py-1.5 rounded text-xs text-white">Übernehmen</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL 1: PROJEKT -->
   <div id="project-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto">
@@ -460,7 +671,7 @@
                 <span id="p-image-timestamp-display" class="text-[10px] text-slate-400 block"></span>
               </div>
             </div>
-            <button type="button" onclick="removeProjectImage()" class="text-xs bg-red-900/40 text-red-300 px-2 py-1 rounded">Löschen</button>
+            <button type="button" onclick="removeProjectImage()" class="text-xs bg-slate-700 text-slate-300 hover:text-red-400 px-2 py-1 rounded">Löschen</button>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -510,7 +721,7 @@
       </div>
       <div class="relative bg-slate-900 rounded-lg p-1 overflow-hidden max-h-[65vh] flex justify-center items-center cursor-crosshair" id="pin-canvas-container" onclick="handlePlanClick(event)">
         <img id="pin-plan-img" src="" alt="Hallenplan" class="max-h-[60vh] w-auto object-contain select-none">
-        <div id="pin-marker" class="hidden absolute w-6 h-6 -ml-3 -mt-3 bg-red-500 text-white font-bold rounded-full border-2 border-white flex items-center justify-center text-xs shadow-lg animate-bounce pointer-events-none">📍</div>
+        <div id="pin-marker" class="hidden absolute w-6 h-6 -ml-3 -mt-3 bg-emerald-500 text-slate-900 font-bold rounded-full border-2 border-white flex items-center justify-center text-xs shadow-lg pointer-events-none">📍</div>
       </div>
       <div class="flex justify-between items-center pt-2 border-t border-slate-700">
         <span id="pin-coords-text" class="text-xs text-slate-400">Keine Position gewählt</span>
@@ -540,9 +751,9 @@
             <input type="date" id="ascend-custom-date" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-slate-100 text-xs">
           </div>
         </div>
-        <div class="bg-slate-900 p-3 rounded-lg border border-blue-500/40 space-y-2">
-          <label class="flex items-center gap-2 text-xs font-semibold text-blue-300 cursor-pointer">
-            <input type="checkbox" id="ascend-learned-check" onchange="toggleAscendLearnedField()" class="rounded bg-slate-800 border-slate-700 text-blue-500">
+        <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 space-y-2">
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+            <input type="checkbox" id="ascend-learned-check" onchange="toggleAscendLearnedField()" class="rounded bg-slate-800 border-slate-700 text-emerald-500">
             Lerneffekt festhalten?
           </label>
           <div id="ascend-learned-container" class="hidden pt-1">
@@ -661,7 +872,7 @@
               <img id="cs-plan-preview" src="" alt="Plan" class="w-16 h-12 object-cover rounded border border-slate-700">
               <span class="text-xs text-emerald-400 font-semibold">Plan verknüpft</span>
             </div>
-            <button type="button" onclick="removeGymPlan()" class="text-xs bg-red-900/40 text-red-300 px-2 py-1 rounded">Löschen</button>
+            <button type="button" onclick="removeGymPlan()" class="text-xs bg-slate-700 text-slate-300 hover:text-red-400 px-2 py-1 rounded">Löschen</button>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -797,7 +1008,7 @@
   </div>
 
 
-<!-- JAVASCRIPT LOGIK MIT SUPABASE DATENPERSISTENZ, THUMBNAILS & PRIVATSPHÄRE-STEUERUNG -->
+<!-- JAVASCRIPT LOGIK -->
 <script>
     let currentAuthUser = null;
 
@@ -826,6 +1037,7 @@
     let projects = loadStorage('boulder_projects', []);
     let sessions = loadStorage('boulder_sessions', []);
     let entries = loadStorage('boulder_entries', []);
+    let mapRoutes = loadStorage('boulder_map_routes', []);
     let privacySettings = loadStorage('boulder_privacy', {
       allOff: false,
       shareProjects: true,
@@ -843,6 +1055,20 @@
     let statsDisplayMode = 'text';
     let currentEntryFilter = 'ALL';
     let chartInstances = {};
+    let fpChartInstances = {};
+    let draggedWidgetIndex = null;
+
+    // HALLENKARTE ZOOM & PAN STATE
+    let mapEditMode = false;
+    let tempMapCoords = { x: 0, y: 0 };
+    let activeInteractionRouteId = null;
+
+    let mapZoomScale = 1.0;
+    let mapPanX = 0;
+    let mapPanY = 0;
+    const MAP_ZOOM_THRESHOLD = 1.6; // Scale >= 1.6 schaltet auf Detailansicht um
+    let isDraggingMap = false;
+    let dragStartX = 0, dragStartY = 0;
 
     let currentUploadedImage = null;
     let currentImageTimestamp = null;
@@ -853,6 +1079,21 @@
     let currentUploadedPlan = null;
 
     let activeFriendData = { privacy: {}, projects: [], sessions: [], logEntries: [] };
+
+    const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#14b8a6', '#f97316', '#a855f7', '#64748b'];
+
+    const HOLD_COLOR_MAP = {
+      'Gelb': '#eab308',
+      'Blau': '#3b82f6',
+      'Rot': '#ef4444',
+      'Grün': '#22c55e',
+      'Schwarz': '#090d16',
+      'Weiß': '#f8fafc',
+      'Violett': '#a855f7',
+      'Orange': '#f97316',
+      'Rosa': '#ec4899',
+      'Holz': '#b45309'
+    };
 
     function loadStorage(key, fallback) {
       try {
@@ -876,6 +1117,7 @@
       projects = loadStorage('boulder_projects', []);
       sessions = loadStorage('boulder_sessions', []);
       entries = loadStorage('boulder_entries', []);
+      mapRoutes = loadStorage('boulder_map_routes', []);
       privacySettings = loadStorage('boulder_privacy', {
         allOff: false,
         shareProjects: true,
@@ -888,6 +1130,40 @@
       localFriendsList = [];
       pendingRequests = loadStorage('boulder_pending_requests', []);
       socialFeed = [];
+    }
+
+    function getDaysUntilReset(setDateStr, gymName) {
+      if (!setDateStr) return null;
+      const gymScale = scales[gymName];
+      const cycleWeeks = (gymScale && gymScale.cycleWeeks) ? parseInt(gymScale.cycleWeeks) : 4;
+      const cycleDays = cycleWeeks * 7;
+
+      const setDate = new Date(setDateStr);
+      if (isNaN(setDate.getTime())) return null;
+
+      const targetDate = new Date(setDate);
+      targetDate.setDate(targetDate.getDate() + cycleDays);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      targetDate.setHours(0, 0, 0, 0);
+
+      const diffTime = targetDate - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function renderTimerBadge(setDateStr, gymName) {
+      const diffDays = getDaysUntilReset(setDateStr, gymName);
+      if (diffDays === null) return '';
+
+      if (diffDays <= 0) {
+        return `<span class="bg-slate-800/90 text-slate-400 border border-slate-700 text-[11px] font-medium px-2 py-0.5 rounded flex items-center gap-1" title="Der reguläre Umschraubzyklus ist abgelaufen">🕒 Voraussichtlich umgeschraubt</span>`;
+      } else if (diffDays <= 7) {
+        return `<span class="bg-slate-800 text-slate-300 border border-slate-600 text-[11px] font-medium px-2 py-0.5 rounded flex items-center gap-1" title="Voraussichtlicher Umschraubtermin rückt näher">⏳ Umschrauben in ${diffDays} ${diffDays === 1 ? 'Tag' : 'Tagen'}</span>`;
+      } else if (diffDays <= 14) {
+        return `<span class="bg-slate-800/60 text-slate-400 border border-slate-700/60 text-[11px] px-2 py-0.5 rounded flex items-center gap-1">⏳ ${diffDays} Tage verbleibend</span>`;
+      }
+      return '';
     }
 
     async function ensureProfileExists(user) {
@@ -911,14 +1187,12 @@
       if (!currentAuthUser) return;
 
       try {
-        // 0. Profil & Privatsphäre-Einstellungen
         const { data: profData } = await supabaseClient.from('profiles').select('privacy_settings').eq('id', currentAuthUser.id).single();
         if (profData && profData.privacy_settings) {
           privacySettings = profData.privacy_settings;
           saveStorage('boulder_privacy', privacySettings);
         }
 
-        // 1. Hallen
         const { data: gymsData } = await supabaseClient.from('gyms').select('*').eq('user_id', currentAuthUser.id);
         if (gymsData && gymsData.length > 0) {
           scales = {};
@@ -934,7 +1208,33 @@
           });
         }
 
-        // 2. Projekte & Videos
+        const { data: mapData } = await supabaseClient.from('gym_map_routes').select('*, map_route_interactions(*)');
+        if (mapData) {
+          mapRoutes = mapData.map(r => {
+            const userInteraction = (r.map_route_interactions || []).find(i => i.user_id === currentAuthUser.id) || {};
+            const gymObj = Object.values(scales).find(s => s.db_id === r.gym_id);
+            return {
+              id: r.id,
+              gymId: r.gym_id,
+              gymName: gymObj ? Object.keys(scales).find(k => scales[k].db_id === r.gym_id) : Object.keys(scales)[0],
+              posX: parseFloat(r.pos_x),
+              posY: parseFloat(r.pos_y),
+              grade: r.grade,
+              holdColor: r.hold_color,
+              name: r.name,
+              sectorName: r.sector_name,
+              gradeOpinion: r.grade_opinion,
+              styles: r.styles || [],
+              holdTypes: r.hold_types || [],
+              interaction: {
+                status: userInteraction.status || 'open',
+                rating: userInteraction.rating || 0,
+                comment: userInteraction.comment || ''
+              }
+            };
+          });
+        }
+
         const { data: projectsData } = await supabaseClient.from('projects').select('*').eq('user_id', currentAuthUser.id);
         const { data: videosData } = await supabaseClient.from('project_videos').select('*').eq('user_id', currentAuthUser.id);
 
@@ -963,7 +1263,6 @@
           }));
         }
 
-        // 3. Sessions
         const { data: sessionsData } = await supabaseClient.from('sessions').select('*').eq('user_id', currentAuthUser.id);
         if (sessionsData) {
           sessions = sessionsData.map(s => ({
@@ -978,7 +1277,6 @@
           }));
         }
 
-        // 4. Logbuch
         const { data: logData } = await supabaseClient.from('log_entries').select('*').eq('user_id', currentAuthUser.id);
         if (logData) {
           entries = logData.map(e => ({
@@ -992,7 +1290,6 @@
           }));
         }
 
-        // 5. Social
         await loadFriendsAndSocialFeed();
 
       } catch (err) {
@@ -1051,7 +1348,6 @@
           socialFeed = feedData
             .filter(sf => {
               const authorPriv = sf.profiles?.privacy_settings || {};
-              // Privatsphäre-Filterung: Projektbenachrichtigungen ausblenden, falls Privatsphäre deaktiviert
               if (sf.type === 'new_project' || sf.type === 'ascend') {
                 if (authorPriv.allOff || authorPriv.shareProjects === false) {
                   return false;
@@ -1077,6 +1373,8 @@
     }
 
     function renderAllViews() {
+      initMapGymDropdown();
+      renderMapView();
       renderPrivacySettingsUI();
       renderGymScalesView();
       renderProjects();
@@ -1088,6 +1386,476 @@
       renderSocial();
       initStatsGymFilter();
       renderStats();
+    }
+
+    // --- VIEW SWITCHING ---
+    function switchView(viewName) {
+      const views = ['map', 'projects', 'completed', 'sessions', 'entries', 'videos', 'timer', 'settings', 'social'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+        const navBtn = document.getElementById(`nav-${v}`);
+        if (navBtn) {
+          navBtn.classList.remove('bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30');
+          navBtn.classList.add('text-slate-400');
+        }
+      });
+
+      const targetView = document.getElementById(`view-${viewName}`);
+      if (targetView) targetView.classList.remove('hidden');
+
+      const activeBtn = document.getElementById(`nav-${viewName}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      // Floating Action Button Sichtbarkeit an Ansicht anpassen
+      const fabBtn = document.getElementById('map-fab-edit-btn');
+      if (fabBtn) {
+        if (viewName === 'map') {
+          fabBtn.classList.remove('hidden');
+        } else {
+          fabBtn.classList.add('hidden');
+        }
+      }
+
+      if (viewName === 'map') renderMapView();
+      if (viewName === 'videos') renderVideos();
+      if (viewName === 'social') renderSocial();
+    }
+
+    // --- HALLENKARTE MODUL & ZOOM LOGIK ---
+    function initMapGymDropdown() {
+      const select = document.getElementById('map-gym-select');
+      if (!select) return;
+      const gymKeys = Object.keys(scales);
+      select.innerHTML = gymKeys.map(g => `<option value="${g}">${g}</option>`).join('');
+    }
+
+    function onMapGymChange() {
+      resetMapZoom();
+      renderMapView();
+    }
+
+    function toggleMapEditModeFAB() {
+      mapEditMode = !mapEditMode;
+      updateMapEditModeUI();
+    }
+
+    function updateMapEditModeUI() {
+      const container = document.getElementById('map-container');
+      const fabBtn = document.getElementById('map-fab-edit-btn');
+      const fabIcon = document.getElementById('map-fab-icon');
+      const fabText = document.getElementById('map-fab-text');
+
+      if (mapEditMode) {
+        container?.classList.add('ring-2', 'ring-emerald-500', 'cursor-crosshair');
+        if (fabBtn) {
+          fabBtn.className = "fixed bottom-6 right-6 z-40 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 ring-4 ring-emerald-500/30 scale-105";
+        }
+        if (fabIcon) fabIcon.innerText = "📍";
+        if (fabText) fabText.innerText = "Modus aktiv";
+      } else {
+        container?.classList.remove('ring-2', 'ring-emerald-500', 'cursor-crosshair');
+        if (fabBtn) {
+          fabBtn.className = "fixed bottom-6 right-6 z-40 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95";
+        }
+        if (fabIcon) fabIcon.innerText = "✏️";
+        if (fabText) fabText.innerText = "Bearbeiten";
+      }
+    }
+
+    function setupMapZoomAndPan() {
+      const container = document.getElementById('map-container');
+      if (!container || container.dataset.zoomInitialized) return;
+      container.dataset.zoomInitialized = "true";
+
+      // Mausrad / Trackpad Zoom
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.2 : -0.2;
+        applyMapZoom(mapZoomScale + delta);
+      }, { passive: false });
+
+      // Touch Pinch & Pan Gesten
+      let initialPinchDist = null;
+
+      container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+          initialPinchDist = getTouchDistance(e.touches);
+        } else if (e.touches.length === 1 && mapZoomScale > 1.0) {
+          isDraggingMap = true;
+          dragStartX = e.touches[0].clientX - mapPanX;
+          dragStartY = e.touches[0].clientY - mapPanY;
+        }
+      }, { passive: true });
+
+      container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && initialPinchDist) {
+          const newDist = getTouchDistance(e.touches);
+          const scaleFactor = newDist / initialPinchDist;
+          initialPinchDist = newDist;
+          applyMapZoom(mapZoomScale * scaleFactor);
+        } else if (e.touches.length === 1 && isDraggingMap && mapZoomScale > 1.0) {
+          mapPanX = e.touches[0].clientX - dragStartX;
+          mapPanY = e.touches[0].clientY - dragStartY;
+          updateMapTransform();
+        }
+      }, { passive: true });
+
+      container.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) initialPinchDist = null;
+        if (e.touches.length === 0) isDraggingMap = false;
+      });
+
+      // Maus-Drag Pan (wenn herangezoomt)
+      container.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && mapZoomScale > 1.0 && !mapEditMode) {
+          isDraggingMap = true;
+          dragStartX = e.clientX - mapPanX;
+          dragStartY = e.clientY - mapPanY;
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isDraggingMap && mapZoomScale > 1.0) {
+          mapPanX = e.clientX - dragStartX;
+          mapPanY = e.clientY - dragStartY;
+          updateMapTransform();
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDraggingMap = false;
+      });
+    }
+
+    function getTouchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // BEGRENZUNG DES ZOOMS UND SCHIEBEBEREICHS (BOUNDS CLAMPING)
+    function clampMapPan() {
+      const container = document.getElementById('map-container');
+      if (!container) return;
+
+      const W = container.clientWidth;
+      const H = container.clientHeight;
+
+      if (mapZoomScale <= 1.0) {
+        mapPanX = 0;
+        mapPanY = 0;
+        return;
+      }
+
+      // Maximale Verschiebung berechnen, um schwarze Ränder zu verhindern
+      const maxPanX = ((mapZoomScale - 1) * W) / 2;
+      const maxPanY = ((mapZoomScale - 1) * H) / 2;
+
+      mapPanX = Math.min(Math.max(mapPanX, -maxPanX), maxPanX);
+      mapPanY = Math.min(Math.max(mapPanY, -maxPanY), maxPanY);
+    }
+
+    function applyMapZoom(newScale) {
+      const oldScale = mapZoomScale;
+      mapZoomScale = Math.min(Math.max(1.0, newScale), 4.0);
+
+      updateMapTransform();
+
+      // Bei Schwellenwert-Überschreitung Pins neu zeichnen
+      const prevDetailed = oldScale >= MAP_ZOOM_THRESHOLD;
+      const nowDetailed = mapZoomScale >= MAP_ZOOM_THRESHOLD;
+      if (prevDetailed !== nowDetailed || Math.abs(oldScale - mapZoomScale) > 0.1) {
+        const select = document.getElementById('map-gym-select');
+        if (select) renderMapPins(select.value);
+      }
+    }
+
+    function zoomMap(delta) {
+      applyMapZoom(mapZoomScale + delta);
+    }
+
+    function resetMapZoom() {
+      mapZoomScale = 1.0;
+      mapPanX = 0;
+      mapPanY = 0;
+      updateMapTransform();
+      const select = document.getElementById('map-gym-select');
+      if (select) renderMapPins(select.value);
+    }
+
+    function updateMapTransform() {
+      clampMapPan();
+      const layer = document.getElementById('map-transform-layer');
+      const display = document.getElementById('map-zoom-level-display');
+
+      if (layer) {
+        layer.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoomScale})`;
+      }
+      if (display) {
+        display.innerText = `${Math.round(mapZoomScale * 100)}%`;
+      }
+    }
+
+    function renderMapView() {
+      setupMapZoomAndPan();
+      updateMapEditModeUI();
+      const select = document.getElementById('map-gym-select');
+      if (!select) return;
+      const selectedGym = select.value || Object.keys(scales)[0];
+      const scale = scales[selectedGym];
+
+      const imgEl = document.getElementById('map-img-display');
+      const noPlanMsg = document.getElementById('map-no-plan-msg');
+
+      if (scale && scale.planUrl) {
+        imgEl.src = scale.planUrl;
+        imgEl.classList.remove('hidden');
+        noPlanMsg.classList.add('hidden');
+      } else {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        noPlanMsg.classList.remove('hidden');
+      }
+
+      renderMapPins(selectedGym);
+    }
+
+    // ZOOM-RESPONSIVES PIN-RENDERING (NUR DIE ZAHL BEI HERANGEZOOMTER ANSICHT)
+    function renderMapPins(gymName) {
+      const layer = document.getElementById('map-pins-layer');
+      if (!layer) return;
+      layer.innerHTML = '';
+
+      const filteredRoutes = mapRoutes.filter(r => r.gymName === gymName);
+      const isDetailed = mapZoomScale >= MAP_ZOOM_THRESHOLD;
+
+      filteredRoutes.forEach(route => {
+        const pin = document.createElement('div');
+        const colorHex = HOLD_COLOR_MAP[route.holdColor] || '#3b82f6';
+        const isLight = route.holdColor === 'Weiß' || route.holdColor === 'Gelb';
+        
+        let statusEmoji = '📍';
+        const status = route.interaction?.status || 'open';
+        if (status === 'project') statusEmoji = '🎯';
+        if (status === 'topped') statusEmoji = '🏆';
+        if (status === 'flashed') statusEmoji = '⚡';
+
+        pin.style.left = `${route.posX}%`;
+        pin.style.top = `${route.posY}%`;
+        pin.style.backgroundColor = colorHex;
+
+        // Gegen-Skalierung, damit Pins unabhängig vom Zoom-Faktor tippbar bleiben
+        const counterScale = 1 / Math.max(1, mapZoomScale * 0.65);
+
+        if (isDetailed) {
+          // HERANGEZOOMT: Detaillierte Ansicht mit reiner Zahl (ohne "L" Präfix)
+          pin.className = 'absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full border-2 flex items-center justify-center font-bold text-[10px] shadow-lg cursor-pointer pointer-events-auto transition-all duration-150';
+          pin.style.borderColor = isLight ? '#0f172a' : '#ffffff';
+          pin.style.color = isLight ? '#0f172a' : '#ffffff';
+          pin.style.transform = `scale(${counterScale})`;
+          
+          // Reine Zahlenanzeige (Entfernt "Level " oder ein führendes "L")
+          const cleanGrade = route.grade ? route.grade.replace(/^Level\s*/i, '').replace(/^L\b/i, '') : statusEmoji;
+          pin.innerText = cleanGrade;
+        } else {
+          // HERAUSGEZOOMT: Dezente farbige Punkte
+          pin.className = 'absolute w-3.5 h-3.5 -ml-1.75 -mt-1.75 rounded-full border shadow-md cursor-pointer pointer-events-auto transition-all duration-150';
+          pin.style.borderColor = isLight ? '#0f172a' : '#ffffff';
+          pin.style.transform = `scale(${counterScale})`;
+          pin.innerText = '';
+        }
+
+        pin.title = `${route.grade} (${route.holdColor}) - Status: ${status}`;
+
+        pin.onclick = (e) => {
+          e.stopPropagation();
+          openMapInteractionModal(route.id);
+        };
+
+        layer.appendChild(pin);
+      });
+    }
+
+    function handleMapClick(e) {
+      if (!mapEditMode) return;
+
+      const img = document.getElementById('map-img-display');
+      if (!img || !img.src) return;
+
+      const rect = img.getBoundingClientRect();
+
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const posX = Math.round((clickX / rect.width) * 1000) / 10;
+      const posY = Math.round((clickY / rect.height) * 1000) / 10;
+
+      if (posX < 0 || posX > 100 || posY < 0 || posY > 100) return;
+
+      tempMapCoords = { x: posX, y: posY };
+      openMapRouteModal();
+    }
+
+    function openMapRouteModal() {
+      const selectedGym = document.getElementById('map-gym-select').value;
+      const scale = scales[selectedGym];
+
+      document.getElementById('mr-coords-display').innerText = `X: ${tempMapCoords.x}%, Y: ${tempMapCoords.y}%`;
+
+      const levelSelect = document.getElementById('mr-level');
+      if (scale && scale.mapping) {
+        levelSelect.innerHTML = Object.entries(scale.mapping).map(([lvl, fb]) => {
+          const label = scale.hasFB && fb ? `${lvl} (FB ${fb})` : lvl;
+          return `<option value="${lvl}">${label}</option>`;
+        }).join('');
+      }
+
+      const sectorSelect = document.getElementById('mr-sector');
+      const zones = (scale && scale.zones) ? scale.zones : ["Kein Bereich"];
+      sectorSelect.innerHTML = `<option value="">Kein Bereich</option>` + zones.map(z => `<option value="${z}">${z}</option>`).join('');
+
+      document.getElementById('map-route-form').reset();
+      openModal('map-route-modal');
+    }
+
+    async function saveMapRoute(e) {
+      e.preventDefault();
+      const selectedGym = document.getElementById('map-gym-select').value;
+      const gymScale = scales[selectedGym];
+
+      const selectedStyles = Array.from(document.querySelectorAll('input[name="mr-styles"]:checked')).map(el => el.value);
+      const selectedHolds = Array.from(document.querySelectorAll('input[name="mr-holds"]:checked')).map(el => el.value);
+
+      const routeData = {
+        gymName: selectedGym,
+        gymId: gymScale?.db_id || null,
+        posX: tempMapCoords.x,
+        posY: tempMapCoords.y,
+        grade: document.getElementById('mr-level').value,
+        holdColor: document.getElementById('mr-hold-color').value,
+        name: document.getElementById('mr-name').value.trim() || null,
+        sectorName: document.getElementById('mr-sector').value || null,
+        gradeOpinion: document.getElementById('mr-grade-opinion').value,
+        styles: selectedStyles,
+        holdTypes: selectedHolds
+      };
+
+      if (currentAuthUser && gymScale?.db_id) {
+        const { data: insertedRoute, error } = await supabaseClient.from('gym_map_routes').insert({
+          gym_id: gymScale.db_id,
+          created_by: currentAuthUser.id,
+          pos_x: routeData.posX,
+          pos_y: routeData.posY,
+          grade: routeData.grade,
+          hold_color: routeData.holdColor,
+          name: routeData.name,
+          sector_name: routeData.sectorName,
+          grade_opinion: routeData.gradeOpinion,
+          styles: routeData.styles,
+          hold_types: routeData.holdTypes
+        }).select().single();
+
+        if (error) {
+          alert("Fehler beim Speichern der Route: " + error.message);
+          return;
+        }
+
+        await fetchAllUserDataFromSupabase();
+      } else {
+        const newRoute = {
+          id: Date.now(),
+          ...routeData,
+          interaction: { status: 'open', rating: 0, comment: '' }
+        };
+        mapRoutes.push(newRoute);
+        saveStorage('boulder_map_routes', mapRoutes);
+        renderMapView();
+      }
+
+      closeModal('map-route-modal');
+    }
+
+    function openMapInteractionModal(routeId) {
+      const route = mapRoutes.find(r => r.id === routeId || r.id === String(routeId) || r.id === Number(routeId));
+      if (!route) return;
+
+      activeInteractionRouteId = route.id;
+      document.getElementById('mri-route-id').value = route.id;
+      document.getElementById('mri-title').innerText = `${route.grade} (${route.holdColor})`;
+      document.getElementById('mri-subtitle').innerText = `${route.gymName} ${route.sectorName ? '• ' + route.sectorName : ''}`;
+
+      const detailsBox = document.getElementById('mri-details-box');
+      detailsBox.innerHTML = `
+        ${route.name ? `<p class="font-semibold text-slate-200">"${route.name}"</p>` : ''}
+        <p class="text-slate-400">Position: X: ${route.posX}%, Y: ${route.posY}%</p>
+        <p class="text-slate-400">Einschätzung: <span class="text-slate-200 font-medium">${route.gradeOpinion || 'fair'}</span></p>
+        ${route.styles && route.styles.length > 0 ? `<p class="text-slate-400">Styles: <span class="text-emerald-400">${route.styles.join(', ')}</span></p>` : ''}
+        ${route.holdTypes && route.holdTypes.length > 0 ? `<p class="text-slate-400">Griffe: <span class="text-emerald-400">${route.holdTypes.join(', ')}</span></p>` : ''}
+      `;
+
+      const interaction = route.interaction || { status: 'open', rating: 0, comment: '' };
+      document.getElementById('mri-status').value = interaction.status || 'open';
+      document.getElementById('mri-rating').value = interaction.rating || 0;
+      document.getElementById('mri-comment').value = interaction.comment || '';
+
+      openModal('map-interaction-modal');
+    }
+
+    async function saveMapRouteInteraction(e) {
+      e.preventDefault();
+      const routeId = activeInteractionRouteId;
+      const status = document.getElementById('mri-status').value;
+      const rating = parseInt(document.getElementById('mri-rating').value) || 0;
+      const comment = document.getElementById('mri-comment').value.trim();
+
+      if (currentAuthUser) {
+        const { error } = await supabaseClient.from('map_route_interactions').upsert({
+          route_id: routeId,
+          user_id: currentAuthUser.id,
+          status: status,
+          rating: rating > 0 ? rating : null,
+          comment: comment || null
+        }, { onConflict: 'route_id, user_id' });
+
+        if (error) {
+          alert("Fehler beim Speichern der Interaktion: " + error.message);
+          return;
+        }
+        await fetchAllUserDataFromSupabase();
+      } else {
+        const route = mapRoutes.find(r => r.id === routeId || r.id === String(routeId) || r.id === Number(routeId));
+        if (route) {
+          route.interaction = { status, rating, comment };
+          saveStorage('boulder_map_routes', mapRoutes);
+          renderMapView();
+        }
+      }
+
+      closeModal('map-interaction-modal');
+    }
+
+    async function deleteMapRoute() {
+      if (!confirm('Möchtest du diese Route von der Karte entfernen?')) return;
+      const routeId = activeInteractionRouteId;
+
+      if (currentAuthUser) {
+        const { error } = await supabaseClient.from('gym_map_routes').delete().eq('id', routeId);
+        if (error) {
+          alert("Fehler beim Löschen der Route: " + error.message);
+          return;
+        }
+        await fetchAllUserDataFromSupabase();
+      } else {
+        mapRoutes = mapRoutes.filter(r => r.id !== routeId && r.id !== String(routeId) && r.id !== Number(routeId));
+        saveStorage('boulder_map_routes', mapRoutes);
+        renderMapView();
+      }
+
+      closeModal('map-interaction-modal');
     }
 
     // --- PRIVATSPHÄRE CONTROL LOGIC ---
@@ -1237,7 +2005,7 @@
         userInfoEl.innerHTML = `<span class="text-slate-500">Angemeldet als:</span> <br><strong class="text-emerald-400">${name}</strong>`;
         mainBtn.innerText = '🚪 Abmelden';
         mainBtn.onclick = logoutUser;
-        mainBtn.className = 'w-full bg-slate-700 hover:bg-red-900/60 text-slate-200 font-bold py-1.5 px-3 rounded text-xs transition';
+        mainBtn.className = 'w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-1.5 px-3 rounded text-xs transition';
         await fetchAllUserDataFromSupabase();
       } else {
         currentAuthUser = null;
@@ -1268,28 +2036,6 @@
       document.getElementById('e-date').valueAsDate = new Date();
       renderAllViews();
     });
-
-    function switchView(viewName) {
-      const views = ['projects', 'completed', 'sessions', 'entries', 'videos', 'timer', 'settings', 'social'];
-      views.forEach(v => {
-        document.getElementById(`view-${v}`).classList.add('hidden');
-        const navBtn = document.getElementById(`nav-${v}`);
-        if (navBtn) {
-          navBtn.classList.remove('bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30');
-          navBtn.classList.add('text-slate-400');
-        }
-      });
-
-      document.getElementById(`view-${viewName}`).classList.remove('hidden');
-      const activeBtn = document.getElementById(`nav-${viewName}`);
-      if (activeBtn) {
-        activeBtn.classList.add('bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30');
-        activeBtn.classList.remove('text-slate-400');
-      }
-
-      if (viewName === 'videos') renderVideos();
-      if (viewName === 'social') renderSocial();
-    }
 
     function openModal(id) {
       document.getElementById(id).classList.remove('hidden');
@@ -1424,7 +2170,23 @@
       }
     }
 
-    // --- FREUNDESPROFIL ANSICHT (READ-ONLY) MIT PRIVATSPHÄREN-CHECK ---
+    async function deleteSocialFeedEntry(feedId) {
+      if (!confirm('Möchtest du diesen Beitrag aus dem Feed entfernen?')) return;
+
+      if (currentAuthUser) {
+        const { error } = await supabaseClient.from('social_feed').delete().eq('id', feedId);
+        if (error) {
+          alert("Fehler beim Entfernen des Feed-Eintrags: " + error.message);
+          return;
+        }
+        await loadFriendsAndSocialFeed();
+      } else {
+        socialFeed = socialFeed.filter(item => item.id !== feedId && item.id !== Number(feedId));
+        renderSocialFeed();
+      }
+    }
+
+    // --- FREUNDESPROFIL ANSICHT (READ-ONLY) ---
     async function viewFriendProfile(friendId, friendUsername) {
       document.getElementById('friend-profile-name').innerText = `Profil von ${friendUsername}`;
       openModal('friend-profile-modal');
@@ -1435,7 +2197,7 @@
       document.getElementById('fp-tab-content-stats').innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Lade Statistiken...</p>`;
 
       if (!currentAuthUser) {
-        document.getElementById('fp-tab-content-projects').innerHTML = `<p class="text-xs text-amber-400 py-4">Bitte melde dich an, um Profildaten einzusehen.</p>`;
+        document.getElementById('fp-tab-content-projects').innerHTML = `<p class="text-xs text-slate-400 py-4">Bitte melde dich an, um Profildaten einzusehen.</p>`;
         return;
       }
 
@@ -1451,7 +2213,14 @@
           (!fPriv.allOff && fPriv.shareEntries) ? supabaseClient.from('log_entries').select('*').eq('user_id', friendId) : Promise.resolve({ data: [] })
         ]);
 
-        activeFriendData.projects = projRes.data || [];
+        activeFriendData.projects = (projRes.data || []).map(p => ({
+          ...p,
+          holdType: p.hold_type,
+          setDate: p.set_date,
+          createdDate: p.created_date,
+          completedDate: p.completed_date,
+          imageUrl: p.image_url
+        }));
         activeFriendData.sessions = sessRes.data || [];
         activeFriendData.logEntries = logRes.data || [];
 
@@ -1476,46 +2245,50 @@
     function renderFriendProfileContent() {
       const fPriv = activeFriendData.privacy;
 
-      // 1. Projekte
       const projContainer = document.getElementById('fp-tab-content-projects');
       if (fPriv.allOff || fPriv.shareProjects === false) {
         projContainer.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center italic">🔒 Dieser Bereich wurde vom Mitglied als privat markiert.</p>`;
       } else if (activeFriendData.projects.length === 0) {
         projContainer.innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">Keine Projekte vorhanden.</p>`;
       } else {
-        projContainer.innerHTML = activeFriendData.projects.map(p => `
-          <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80 flex flex-col justify-between space-y-2">
-            <div class="flex items-start gap-3">
-              ${p.image_url ? `
-                <img src="${p.image_url}" alt="${p.name}" onclick="openImageViewerModalDirect('${p.image_url}')" class="w-14 h-14 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
-              ` : ''}
-              <div class="flex-1">
-                <div class="flex justify-between items-start">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block">${p.gym} • ${p.zone || 'Allgemein'}</span>
-                    <h4 class="font-bold text-slate-100 text-sm">${p.name} (${p.level})</h4>
+        projContainer.innerHTML = activeFriendData.projects.map(p => {
+          const timerBadge = p.status === 'active' ? renderTimerBadge(p.setDate || p.set_date, p.gym) : '';
+          return `
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80 flex flex-col justify-between space-y-2">
+              <div class="flex items-start gap-3">
+                ${p.imageUrl ? `
+                  <img src="${p.imageUrl}" alt="${p.name}" onclick="openImageViewerModalDirect('${p.imageUrl}')" class="w-14 h-14 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
+                ` : ''}
+                <div class="flex-1">
+                  <div class="flex justify-between items-start gap-2">
+                    <div>
+                      <span class="text-[10px] uppercase font-bold text-slate-400 block">${p.gym} • ${p.zone || 'Allgemein'}</span>
+                      <h4 class="font-bold text-slate-100 text-sm">${p.name} (${p.level})</h4>
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                      <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded ${p.status === 'completed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' : 'bg-blue-950 text-blue-400 border border-blue-500/40'}">
+                        ${p.status === 'completed' ? 'Durchstiegen' : 'Aktiv'}
+                      </span>
+                      ${timerBadge}
+                    </div>
                   </div>
-                  <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded ${p.status === 'completed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' : 'bg-blue-950 text-blue-400 border border-blue-500/40'}">
-                    ${p.status === 'completed' ? 'Durchstiegen' : 'Aktiv'}
-                  </span>
-                </div>
-                <div class="flex flex-wrap gap-1 mt-1 text-[10px] text-slate-300">
-                  ${p.style ? `<span class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">🎨 ${p.style}</span>` : ''}
-                  ${p.incline ? `<span class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">📐 ${p.incline}</span>` : ''}
-                  ${p.hold_type ? `<span class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">✊ ${p.hold_type}</span>` : ''}
+                  <div class="flex flex-wrap gap-1 mt-1 text-[10px] text-slate-300">
+                    ${p.style ? `<span class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">🎨 ${p.style}</span>` : ''}
+                    ${p.incline ? `<span class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">📐 ${p.incline}</span>` : ''}
+                    ${p.holdType ? `<span class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">✊ ${p.holdType}</span>` : ''}
+                  </div>
                 </div>
               </div>
+              <div class="text-xs text-slate-300 flex justify-between pt-1 border-t border-slate-800">
+                <span>Attempts: <strong class="text-emerald-400">${p.attempts || 1}</strong></span>
+                <span class="text-slate-400 text-[11px]">${p.setDate ? 'Geschraubt: ' + p.setDate : ''}</span>
+              </div>
+              ${p.note ? `<p class="text-xs text-slate-300 bg-slate-800 p-2 rounded italic">"${p.note}"</p>` : ''}
             </div>
-            <div class="text-xs text-slate-300 flex justify-between pt-1 border-t border-slate-800">
-              <span>Attempts: <strong class="text-emerald-400">${p.attempts || 1}</strong></span>
-              <span class="text-slate-400 text-[11px]">${p.set_date ? 'Geschraubt: ' + p.set_date : ''}</span>
-            </div>
-            ${p.note ? `<p class="text-xs text-slate-300 bg-slate-800 p-2 rounded italic">"${p.note}"</p>` : ''}
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
-      // 2. Sessions
       const sessContainer = document.getElementById('fp-tab-content-sessions');
       if (fPriv.allOff || fPriv.shareSessions === false) {
         sessContainer.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center italic">🔒 Dieser Bereich wurde vom Mitglied als privat markiert.</p>`;
@@ -1536,7 +2309,6 @@
         `).join('');
       }
 
-      // 3. Logbuch
       const entryContainer = document.getElementById('fp-tab-content-entries');
       if (fPriv.allOff || fPriv.shareEntries === false) {
         entryContainer.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center italic">🔒 Dieser Bereich wurde vom Mitglied als privat markiert.</p>`;
@@ -1554,31 +2326,110 @@
         `).join('');
       }
 
-      // 4. Statistiken
       const statsContainer = document.getElementById('fp-tab-content-stats');
+      Object.keys(fpChartInstances).forEach(k => { if (fpChartInstances[k]) fpChartInstances[k].destroy(); });
+
       if (fPriv.allOff || fPriv.shareStats === false) {
         statsContainer.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center italic">🔒 Dieser Bereich wurde vom Mitglied als privat markiert.</p>`;
       } else {
-        const totalProjects = activeFriendData.projects.length;
-        const completedProjects = activeFriendData.projects.filter(p => p.status === 'completed').length;
+        const friendProjects = activeFriendData.projects.filter(p => !p.exclude_from_stats && !p.excludeFromStats);
+        const totalProjects = friendProjects.length;
+        const activeCount = friendProjects.filter(p => p.status === 'active').length;
+        const completedProjects = friendProjects.filter(p => p.status === 'completed').length;
         const totalSessions = activeFriendData.sessions.length;
 
+        const totalAttempts = friendProjects.reduce((sum, p) => sum + (parseInt(p.attempts) || 1), 0);
+        const avgAttempts = totalProjects > 0 ? (totalAttempts / totalProjects).toFixed(1) : 0;
+
+        const completedWithDates = friendProjects.filter(p => p.status === 'completed' && p.createdDate && p.completedDate);
+        let avgDurationDays = null;
+        if (completedWithDates.length > 0) {
+          const sumDays = completedWithDates.reduce((sum, p) => {
+            const start = new Date(p.createdDate);
+            const end = new Date(p.completedDate);
+            return sum + Math.ceil(Math.max(0, end - start) / (1000 * 60 * 60 * 24));
+          }, 0);
+          avgDurationDays = (sumDays / completedWithDates.length).toFixed(1);
+        }
+
+        const levelCounts = countByField(friendProjects, 'level');
+        const zoneCounts = countByField(friendProjects, 'zone');
+        const combinedStyleCounts = countCombinedStyle(friendProjects);
+
         statsContainer.innerHTML = `
-          <div class="grid grid-cols-3 gap-3 text-center">
-            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80">
-              <span class="block text-[10px] text-slate-400 uppercase font-semibold">Projekte Gesamt</span>
-              <span class="text-xl font-bold text-emerald-400">${totalProjects}</span>
+          <div class="space-y-4 text-xs">
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80 space-y-2">
+              <h4 class="font-bold text-slate-200 text-xs border-b border-slate-800 pb-1">Kennzahlen & Dauer</h4>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
+                  <span class="block text-[10px] text-slate-400 uppercase font-semibold">Projekte Gesamt</span>
+                  <span class="text-xl font-bold text-emerald-400">${totalProjects}</span>
+                  <span class="text-[9px] text-slate-500 block">(${activeCount} aktiv / ${completedProjects} done)</span>
+                </div>
+                <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
+                  <span class="block text-[10px] text-slate-400 uppercase font-semibold">Sessions Total</span>
+                  <span class="text-xl font-bold text-emerald-400">${totalSessions}</span>
+                </div>
+                <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
+                  <span class="block text-[10px] text-slate-400 uppercase font-semibold">Ø Versuche</span>
+                  <span class="text-xl font-bold text-emerald-400">${avgAttempts}</span>
+                </div>
+                <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
+                  <span class="block text-[10px] text-slate-400 uppercase font-semibold">Ø Projektdauer</span>
+                  <span class="text-xl font-bold text-emerald-400">${avgDurationDays !== null ? avgDurationDays + 'd' : 'k.A.'}</span>
+                </div>
+              </div>
             </div>
-            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80">
-              <span class="block text-[10px] text-slate-400 uppercase font-semibold">Durchstiege</span>
-              <span class="text-xl font-bold text-emerald-400">${completedProjects}</span>
+
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80 space-y-2">
+              <h4 class="font-bold text-slate-200 text-xs border-b border-slate-800 pb-1">Schwierigkeitsgrad</h4>
+              ${Object.keys(levelCounts).length > 0 ? `
+                <div class="h-40 flex justify-center"><canvas id="fp-chart-level"></canvas></div>
+              ` : `<p class="text-slate-500 italic py-2">Keine Daten vorhanden.</p>`}
             </div>
-            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80">
-              <span class="block text-[10px] text-slate-400 uppercase font-semibold">Sessions Total</span>
-              <span class="text-xl font-bold text-emerald-400">${totalSessions}</span>
+
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80 space-y-2">
+              <h4 class="font-bold text-slate-200 text-xs border-b border-slate-800 pb-1">Neigung, Grifftyp & Stil</h4>
+              ${Object.keys(combinedStyleCounts).length > 0 ? `
+                <div class="h-44 flex justify-center"><canvas id="fp-chart-style"></canvas></div>
+              ` : `<p class="text-slate-500 italic py-2">Keine Daten vorhanden.</p>`}
+            </div>
+
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/80 space-y-2">
+              <h4 class="font-bold text-slate-200 text-xs border-b border-slate-800 pb-1">Wandbereiche</h4>
+              ${Object.keys(zoneCounts).length > 0 ? `
+                <div class="h-40 flex justify-center"><canvas id="fp-chart-zone"></canvas></div>
+              ` : `<p class="text-slate-500 italic py-2">Keine Daten vorhanden.</p>`}
             </div>
           </div>
         `;
+
+        if (Object.keys(levelCounts).length > 0 && document.getElementById('fp-chart-level')) {
+          const ctx = document.getElementById('fp-chart-level').getContext('2d');
+          fpChartInstances['level'] = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: Object.keys(levelCounts), datasets: [{ data: Object.values(levelCounts), backgroundColor: CHART_COLORS }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } } }
+          });
+        }
+
+        if (Object.keys(combinedStyleCounts).length > 0 && document.getElementById('fp-chart-style')) {
+          const ctx = document.getElementById('fp-chart-style').getContext('2d');
+          fpChartInstances['style'] = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: Object.keys(combinedStyleCounts), datasets: [{ data: Object.values(combinedStyleCounts), backgroundColor: CHART_COLORS }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 9 } } } } }
+          });
+        }
+
+        if (Object.keys(zoneCounts).length > 0 && document.getElementById('fp-chart-zone')) {
+          const ctx = document.getElementById('fp-chart-zone').getContext('2d');
+          fpChartInstances['zone'] = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: Object.keys(zoneCounts), datasets: [{ data: Object.values(zoneCounts), backgroundColor: CHART_COLORS }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } } }
+          });
+        }
       }
     }
 
@@ -1630,7 +2481,7 @@
           </div>
           <div class="flex gap-1.5">
             <button onclick="acceptFriendRequest('${req.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1 rounded text-xs transition">Annehmen</button>
-            <button onclick="declineFriendRequest('${req.id}')" class="bg-slate-700 hover:bg-red-900/60 text-slate-300 hover:text-red-300 font-bold px-2.5 py-1 rounded text-xs transition">Ablehnen</button>
+            <button onclick="declineFriendRequest('${req.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-2.5 py-1 rounded text-xs transition">Ablehnen</button>
           </div>
         </div>
       `).join('');
@@ -1647,12 +2498,12 @@
       container.innerHTML = socialFeed.map(item => {
         const isAscend = item.type === 'ascend';
         const isFriendship = item.type === 'friendship';
-        const badgeColor = isAscend ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40' : (isFriendship ? 'bg-amber-950/80 text-amber-400 border-amber-500/40' : 'bg-blue-950/80 text-blue-400 border-blue-500/40');
+        const badgeColor = isAscend ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40' : (isFriendship ? 'bg-slate-800 text-amber-300 border-slate-700' : 'bg-blue-950 text-blue-400 border-blue-500/40');
         const icon = isAscend ? '🏆' : (isFriendship ? '🤝' : '🎯');
 
         return `
-          <div class="bg-slate-900 p-4 rounded-xl border border-slate-700/60 space-y-3">
-            <div class="flex justify-between items-start gap-2">
+          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3 shadow-sm">
+            <div class="flex justify-between items-start gap-2 border-b border-slate-700/60 pb-2">
               <div class="flex items-center gap-2">
                 <span class="text-lg">${icon}</span>
                 <div>
@@ -1660,18 +2511,19 @@
                   <span class="text-[10px] text-slate-400 ml-2">${item.date}</span>
                 </div>
               </div>
-              <span class="text-[10px] uppercase font-bold border px-2 py-0.5 rounded ${badgeColor}">${item.title}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] uppercase font-bold border px-2 py-0.5 rounded ${badgeColor}">${item.title}</span>
+                <button onclick="deleteSocialFeedEntry('${item.id}')" class="text-slate-400 hover:text-red-400 p-1 text-xs transition" title="Beitrag aus dem Feed entfernen">✕</button>
+              </div>
             </div>
 
-            ${item.imageUrl ? `
-              <div class="flex items-center gap-3 bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+            <div class="flex items-start gap-3">
+              ${item.imageUrl ? `
                 <img src="${item.imageUrl}" alt="Routenbild" onclick="openImageViewerModalDirect('${item.imageUrl}')" class="w-16 h-16 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
-                <span class="text-[11px] text-slate-400">Routenbild verknüpft (Klick zum Vergrößern)</span>
+              ` : ''}
+              <div class="flex-1 text-xs text-slate-200 whitespace-pre-line leading-relaxed">
+                ${item.text}
               </div>
-            ` : ''}
-
-            <div class="text-xs text-slate-200 bg-slate-800/60 p-3 rounded-lg border border-slate-700/40 space-y-1 whitespace-pre-line leading-relaxed">
-              ${item.text}
             </div>
           </div>
         `;
@@ -1688,10 +2540,10 @@
       const startContainer = document.getElementById('p-start-date-container');
 
       if (editId) {
-        const proj = projects.find(p => p.id === editId || p.id === String(editId));
+        const proj = projects.find(p => p.id === editId || p.id === String(editId) || p.id === Number(editId));
         if (!proj) return;
 
-        document.getElementById('project-modal-title').innerText = 'Projekt bearbeiten';
+        document.getElementById('project-modal-title').innerText = proj.status === 'completed' ? 'Abgeschlossenes Projekt bearbeiten' : 'Projekt bearbeiten';
         document.getElementById('p-edit-id').value = proj.id;
         document.getElementById('p-gym').value = proj.gym;
         onGymSelectChange();
@@ -1778,6 +2630,8 @@
       const isToday = document.querySelector('input[name="p-today-radio"]:checked').value === 'yes';
       const createdDateVal = isToday ? new Date().toISOString().split('T')[0] : document.getElementById('p-custom-start-date').value;
 
+      const existingProj = editId ? projects.find(p => p.id === editId || p.id === Number(editId) || p.id === String(editId)) : null;
+
       const projectData = {
         gym: document.getElementById('p-gym').value,
         zone: document.getElementById('p-zone').value,
@@ -1793,7 +2647,11 @@
         image_url: currentUploadedImage,
         image_timestamp: currentImageTimestamp,
         pin_x: currentProjectPinX,
-        pin_y: currentProjectPinY
+        pin_y: currentProjectPinY,
+        status: existingProj ? existingProj.status : 'active',
+        completed_date: existingProj && existingProj.status === 'completed' 
+          ? (document.getElementById('p-custom-end-date').value || existingProj.completedDate) 
+          : null
       };
 
       if (currentAuthUser) {
@@ -1807,7 +2665,6 @@
           return;
         }
 
-        // Benachrichtigung im Social Feed nur veröffentlichen, wenn Privatsphäre-Einstellung Projekt-Teilen erlaubt
         if (!editId && !privacySettings.allOff && privacySettings.shareProjects) {
           const author = getActiveUserName();
           const locationDesc = projectData.zone ? `an der ${projectData.zone}` : `in der Halle ${projectData.gym}`;
@@ -1827,10 +2684,36 @@
         await fetchAllUserDataFromSupabase();
       } else {
         if (editId) {
-          const idx = projects.findIndex(p => p.id === editId || p.id === Number(editId));
-          if (idx !== -1) projects[idx] = { ...projects[idx], ...projectData, holdType: projectData.hold_type, setDate: projectData.set_date, createdDate: projectData.created_date, imageUrl: projectData.image_url, imageTimestamp: projectData.image_timestamp, pinX: projectData.pin_x, pinY: projectData.pin_y };
+          const idx = projects.findIndex(p => p.id === editId || p.id === Number(editId) || p.id === String(editId));
+          if (idx !== -1) {
+            projects[idx] = { 
+              ...projects[idx], 
+              ...projectData, 
+              holdType: projectData.hold_type, 
+              setDate: projectData.set_date, 
+              createdDate: projectData.created_date, 
+              completedDate: projectData.completed_date,
+              imageUrl: projectData.image_url, 
+              imageTimestamp: projectData.image_timestamp, 
+              pinX: projectData.pin_x, 
+              pinY: projectData.pin_y 
+            };
+          }
         } else {
-          projects.push({ id: Date.now(), ...projectData, holdType: projectData.hold_type, setDate: projectData.set_date, createdDate: projectData.created_date, imageUrl: projectData.image_url, imageTimestamp: projectData.image_timestamp, pinX: projectData.pin_x, pinY: projectData.pin_y, status: 'active', videos: [] });
+          projects.push({ 
+            id: Date.now(), 
+            ...projectData, 
+            holdType: projectData.hold_type, 
+            setDate: projectData.set_date, 
+            createdDate: projectData.created_date, 
+            completedDate: projectData.completed_date,
+            imageUrl: projectData.image_url, 
+            imageTimestamp: projectData.image_timestamp, 
+            pinX: projectData.pin_x, 
+            pinY: projectData.pin_y, 
+            status: 'active', 
+            videos: [] 
+          });
         }
         saveStorage('boulder_projects', projects);
         renderAllViews();
@@ -1850,14 +2733,14 @@
         }
         await fetchAllUserDataFromSupabase();
       } else {
-        projects = projects.filter(p => p.id !== id);
+        projects = projects.filter(p => p.id !== id && p.id !== Number(id));
         saveStorage('boulder_projects', projects);
         renderAllViews();
       }
     }
 
     async function toggleExcludeStats(id) {
-      const proj = projects.find(p => p.id === id);
+      const proj = projects.find(p => p.id === id || p.id === Number(id));
       if (!proj) return;
 
       const newStatus = !proj.excludeFromStats;
@@ -1931,7 +2814,6 @@
           });
         }
 
-        // Benachrichtigung im Social Feed nur veröffentlichen, wenn Privatsphäre-Einstellung Projekt-Teilen erlaubt
         if (!privacySettings.allOff && privacySettings.shareProjects) {
           const author = getActiveUserName();
           const locationDesc = proj.zone ? `an der ${proj.zone}` : `in der Halle ${proj.gym}`;
@@ -2114,7 +2996,7 @@
               <div class="flex items-center gap-2">
                 <span class="bg-slate-900 border border-slate-700 text-xs px-2.5 py-1 rounded font-semibold text-slate-200">${s.rating}</span>
                 <button onclick="openSessionModal('${s.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs">✏️</button>
-                <button onclick="deleteSession('${s.id}')" class="bg-slate-700 hover:bg-red-900/50 text-red-400 px-2 py-1 rounded text-xs">🗑️</button>
+                <button onclick="deleteSession('${s.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-2 py-1 rounded text-xs">🗑️</button>
               </div>
             </div>
             <div class="flex flex-wrap gap-1.5 items-center pt-1">${countsStr}</div>
@@ -2277,7 +3159,7 @@
         const actionButtons = item.source === 'entry' ? `
           <div class="flex gap-1">
             <button onclick="openEntryModal('${item.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs">✏️</button>
-            <button onclick="deleteEntry('${item.id}')" class="bg-slate-700 hover:bg-red-900/50 text-red-400 px-2 py-1 rounded text-xs">🗑</button>
+            <button onclick="deleteEntry('${item.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-2 py-1 rounded text-xs">🗑</button>
           </div>
         ` : `<span class="text-[10px] text-slate-500 italic">Automatisch aus Session</span>`;
 
@@ -2374,7 +3256,7 @@
             <video src="${v.url}" controls class="max-h-56 w-full rounded object-contain bg-black"></video>
             <div class="flex items-center justify-between w-full px-1 pt-1">
               <span class="text-[10px] text-slate-400">${v.timestamp || 'Kein Datum'}</span>
-              <button onclick="deleteVideoFromFolder('${p.id}', '${v.id}')" class="text-xs text-red-400 font-bold">🗑</button>
+              <button onclick="deleteVideoFromFolder('${p.id}', '${v.id}')" class="text-xs text-slate-400 hover:text-red-400 font-bold">🗑</button>
             </div>
           </div>
         `).join('') : `<p class="text-xs text-slate-500 col-span-full py-4 text-center italic">Keine Videos hinterlegt.</p>`;
@@ -2420,8 +3302,8 @@
                 <p class="text-xs text-slate-400">Zyklus: ${scale.cycleWeeks || 4} Wochen • Sektoren: ${(scale.zones || []).join(', ')}</p>
               </div>
               <div class="flex gap-2">
-                <button onclick="openCustomScaleModal('${gymName}')" class="bg-slate-700 text-slate-300 px-3 py-1.5 rounded text-xs font-semibold">Bearbeiten</button>
-                <button onclick="deleteCustomScale('${gymName}')" class="bg-slate-700 text-red-400 px-3 py-1.5 rounded text-xs font-semibold">Löschen</button>
+                <button onclick="openCustomScaleModal('${gymName}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded text-xs font-semibold">Bearbeiten</button>
+                <button onclick="deleteCustomScale('${gymName}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-3 py-1.5 rounded text-xs font-semibold">Löschen</button>
               </div>
             </div>
           </div>
@@ -2466,7 +3348,7 @@
       row.innerHTML = `
         <input type="text" value="${lvlName}" placeholder="Level Name" required class="cs-lvl-name bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-100 w-1/2">
         <input type="text" value="${fbVal}" placeholder="FB" class="cs-lvl-fb bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-slate-100 w-1/2">
-        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 font-bold text-xs px-1">✕</button>
+        <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-400 font-bold text-xs px-1">✕</button>
       `;
       container.appendChild(row);
     }
@@ -2708,32 +3590,40 @@
         return;
       }
 
-      container.innerHTML = active.map(p => `
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3">
-          <div class="flex items-start gap-3">
-            ${p.imageUrl ? `
-              <img src="${p.imageUrl}" alt="${p.name}" onclick="openImageViewerModal('${p.id}')" class="w-16 h-16 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
-            ` : ''}
-            <div class="flex-1">
-              <span class="text-[10px] uppercase font-bold text-slate-400 block">${p.gym} • ${p.zone || 'Allgemein'}</span>
-              <h4 class="font-bold text-slate-100 text-base mb-1">${p.name} (${p.level})</h4>
-              <div class="flex flex-wrap gap-1 mt-1 text-[11px] text-slate-300">
-                ${p.style ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">🎨 ${p.style}</span>` : ''}
-                ${p.incline ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">📐 ${p.incline}</span>` : ''}
-                ${p.holdType ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">✊ ${p.holdType}</span>` : ''}
+      container.innerHTML = active.map(p => {
+        const timerBadge = renderTimerBadge(p.setDate || p.set_date, p.gym);
+        return `
+          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3">
+            <div class="flex items-start gap-3">
+              ${p.imageUrl ? `
+                <img src="${p.imageUrl}" alt="${p.name}" onclick="openImageViewerModal('${p.id}')" class="w-16 h-16 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
+              ` : ''}
+              <div class="flex-1">
+                <div class="flex justify-between items-start gap-2">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">${p.gym} • ${p.zone || 'Allgemein'}</span>
+                    <h4 class="font-bold text-slate-100 text-base mb-1">${p.name} (${p.level})</h4>
+                  </div>
+                  ${timerBadge}
+                </div>
+                <div class="flex flex-wrap gap-1 mt-1 text-[11px] text-slate-300">
+                  ${p.style ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">🎨 ${p.style}</span>` : ''}
+                  ${p.incline ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">📐 ${p.incline}</span>` : ''}
+                  ${p.holdType ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">✊ ${p.holdType}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="border-t border-slate-700/60 pt-3 flex items-center justify-between">
+              <div class="text-xs text-slate-400">Attempts: <span class="font-bold text-slate-200">${p.attempts}</span> <button onclick="addAttempt('${p.id}')" class="ml-1 bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded text-xs">+1</button></div>
+              <div class="flex gap-1">
+                <button onclick="openProjectModal('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs" title="Bearbeiten">✏</button>
+                <button onclick="deleteProject('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-2 py-1 rounded text-xs" title="Löschen">🗑</button>
+                <button onclick="openAscendModal('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 font-bold px-3 py-1 rounded text-xs text-white">Ascend</button>
               </div>
             </div>
           </div>
-          <div class="border-t border-slate-700/60 pt-3 flex items-center justify-between">
-            <div class="text-xs text-slate-400">Attempts: <span class="font-bold text-slate-200">${p.attempts}</span> <button onclick="addAttempt('${p.id}')" class="ml-1 bg-slate-700 text-slate-200 px-2 py-0.5 rounded text-xs">+1</button></div>
-            <div class="flex gap-1">
-              <button onclick="openProjectModal('${p.id}')" class="bg-slate-700 text-slate-300 px-2 py-1 rounded text-xs">✏️</button>
-              <button onclick="deleteProject('${p.id}')" class="bg-slate-700 text-red-400 px-2 py-1 rounded text-xs">🗑️</button>
-              <button onclick="openAscendModal('${p.id}')" class="bg-emerald-600 font-bold px-3 py-1 rounded text-xs text-white">Ascend</button>
-            </div>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function renderCompleted() {
@@ -2760,11 +3650,12 @@
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-1 self-end sm:self-center">
-            <button onclick="toggleExcludeStats('${p.id}')" class="text-xs px-2 py-1 rounded ${p.excludeFromStats ? 'bg-emerald-900/40 text-emerald-300' : 'bg-slate-700 text-slate-300'}">
+          <div class="flex items-center gap-1.5 self-end sm:self-center">
+            <button onclick="toggleExcludeStats('${p.id}')" class="text-xs px-2 py-1 rounded ${p.excludeFromStats ? 'bg-emerald-900/40 text-emerald-300' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}">
               ${p.excludeFromStats ? '➕ In Statistik' : '➖ Aus Statistik'}
             </button>
-            <button onclick="deleteProject('${p.id}')" class="bg-slate-700 text-red-400 px-2 py-1 rounded text-xs">🗑️</button>
+            <button onclick="openProjectModal('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs" title="Bearbeiten">✏️</button>
+            <button onclick="deleteProject('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-2 py-1 rounded text-xs" title="Löschen">🗑️️</button>
           </div>
         </div>
       `).join('');
@@ -2780,6 +3671,54 @@
       document.getElementById('btn-mode-text').className = mode === 'text' ? 'px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold' : 'px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-semibold';
       document.getElementById('btn-mode-chart').className = mode === 'chart' ? 'px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold' : 'px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-semibold';
       renderStats();
+    }
+
+    function handleStatsTimeFilterChange() {
+      const mode = document.getElementById('stats-time-filter').value;
+      const customContainer = document.getElementById('stats-custom-date-container');
+      if (mode === 'CUSTOM') {
+        customContainer.classList.remove('hidden');
+        customContainer.classList.add('flex');
+      } else {
+        customContainer.classList.add('hidden');
+        customContainer.classList.remove('flex');
+      }
+      renderStats();
+    }
+
+    function filterProjectsByTime(projectsList) {
+      const mode = document.getElementById('stats-time-filter')?.value || 'ALL';
+      if (mode === 'ALL') return projectsList;
+
+      const now = new Date();
+      let startDate = null;
+      let endDate = new Date();
+
+      if (mode === '30') {
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 30);
+      } else if (mode === '90') {
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 90);
+      } else if (mode === '365') {
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 365);
+      } else if (mode === 'CUSTOM') {
+        const startVal = document.getElementById('stats-start-date')?.value;
+        const endVal = document.getElementById('stats-end-date')?.value;
+        if (startVal) startDate = new Date(startVal);
+        if (endVal) endDate = new Date(endVal);
+      }
+
+      return projectsList.filter(p => {
+        const dateStr = p.createdDate || p.created_date || p.setDate || p.set_date;
+        if (!dateStr) return true;
+        const pDate = new Date(dateStr);
+        if (isNaN(pDate.getTime())) return true;
+        if (startDate && pDate < startDate) return false;
+        if (endDate && pDate > endDate) return false;
+        return true;
+      });
     }
 
     function toggleWidgetDropdown() {
@@ -2801,11 +3740,56 @@
       renderStats();
     }
 
+    function onWidgetDragStart(e, index) {
+      draggedWidgetIndex = index;
+      e.dataTransfer.effectAllowed = 'move';
+      e.target.classList.add('opacity-40');
+    }
+
+    function onWidgetDragOver(e, dropIndex) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const container = e.currentTarget;
+      if (draggedWidgetIndex !== null && draggedWidgetIndex !== dropIndex) {
+        container.classList.add('border-2', 'border-dashed', 'border-emerald-400', 'bg-emerald-950/30', 'scale-[1.01]');
+      }
+    }
+
+    function onWidgetDragLeave(e) {
+      const container = e.currentTarget;
+      container.classList.remove('border-2', 'border-dashed', 'border-emerald-400', 'bg-emerald-950/30', 'scale-[1.01]');
+    }
+
+    function onWidgetDrop(e, dropIndex) {
+      e.preventDefault();
+      const container = e.currentTarget;
+      container.classList.remove('border-2', 'border-dashed', 'border-emerald-400', 'bg-emerald-950/30', 'scale-[1.01]');
+
+      if (draggedWidgetIndex === null || draggedWidgetIndex === dropIndex) return;
+      const movedItem = activeWidgets.splice(draggedWidgetIndex, 1)[0];
+      activeWidgets.splice(dropIndex, 0, movedItem);
+      draggedWidgetIndex = null;
+      saveStorage('boulder_widgets', activeWidgets);
+      renderStats();
+    }
+
     function countByField(items, fieldName) {
       const counts = {};
       items.forEach(item => {
         const val = item[fieldName] || 'Keine Angabe';
         counts[val] = (counts[val] || 0) + 1;
+      });
+      return counts;
+    }
+
+    function countCombinedStyle(items) {
+      const counts = {};
+      items.forEach(p => {
+        const incline = p.incline || 'Unbekannt';
+        const hold = p.holdType || p.hold_type || 'Unbekannt';
+        const style = p.style || 'Unbekannt';
+        const combo = `${incline} / ${hold} / ${style}`;
+        counts[combo] = (counts[combo] || 0) + 1;
       });
       return counts;
     }
@@ -2819,12 +3803,14 @@
       let filtered = projects.filter(p => !p.excludeFromStats);
       if (filterGym !== 'ALL') filtered = filtered.filter(p => p.gym === filterGym);
 
+      filtered = filterProjectsByTime(filtered);
+
       if (activeWidgets.length === 0) {
         container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-4">Keine Module gewählt.</p>`;
         return;
       }
 
-      container.innerHTML = activeWidgets.map(wType => {
+      container.innerHTML = activeWidgets.map((wType, idx) => {
         const titleMap = {
           level: 'Schwierigkeitsgrad',
           style: 'Neigung, Grifftyp & Stil',
@@ -2834,10 +3820,18 @@
         };
 
         return `
-          <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 relative ${wType === 'plan' ? 'col-span-1 md:col-span-2' : ''}">
+          <div draggable="true" 
+               ondragstart="onWidgetDragStart(event, ${idx})" 
+               ondragover="onWidgetDragOver(event, ${idx})" 
+               ondragleave="onWidgetDragLeave(event)"
+               ondrop="onWidgetDrop(event, ${idx})"
+               class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 relative cursor-grab active:cursor-grabbing hover:border-slate-500 transition-all ${wType === 'plan' ? 'col-span-1 md:col-span-2' : ''}">
             <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
-              <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">${titleMap[wType] || wType}</h4>
-              <button onclick="removeWidget('${wType}')" class="text-slate-500 hover:text-red-400 font-bold text-xs" title="Modul entfernen">➖</button>
+              <div class="flex items-center gap-2">
+                <span class="text-slate-500 text-xs cursor-move" title="Anfassen und Verschieben">☰</span>
+                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">${titleMap[wType] || wType}</h4>
+              </div>
+              <button onclick="removeWidget('${wType}')" class="text-slate-500 hover:text-red-400 font-bold text-xs" title="Modul entfernen">✕</button>
             </div>
             <div id="widget-content-${wType}" class="text-xs"></div>
           </div>
@@ -2853,11 +3847,9 @@
           const activeCount = filtered.filter(p => p.status === 'active').length;
           const doneCount = filtered.filter(p => p.status === 'completed').length;
           
-          // Versuch-Anzahl berechnen
           const totalAttempts = filtered.reduce((sum, p) => sum + (parseInt(p.attempts) || 1), 0);
           const avgAttempts = totalCount > 0 ? (totalAttempts / totalCount).toFixed(1) : 0;
 
-          // Durchschnittliche Projektdauer in Tagen (nur abgeschlossene mit Start- und Enddatum)
           const completedWithDates = filtered.filter(p => p.status === 'completed' && p.createdDate && p.completedDate);
           let avgDurationDays = null;
           if (completedWithDates.length > 0) {
@@ -2875,7 +3867,7 @@
               <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
                 <span class="text-slate-400 text-[10px] block uppercase">Projekte Gesamt</span>
                 <span class="text-lg font-bold text-emerald-400">${totalCount}</span>
-                <span class="text-[10px] text-slate-500 block">(${activeCount} aktiv / ${doneCount} durchstiegen)</span>
+                <span class="text-[10px] text-slate-500 block">(${activeCount} aktiv / ${doneCount} done)</span>
               </div>
               <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
                 <span class="text-slate-400 text-[10px] block uppercase">Ø Versuche</span>
@@ -2897,21 +3889,21 @@
           const counts = countByField(filtered, 'level');
 
           if (statsDisplayMode === 'chart') {
-            contentDiv.innerHTML = `<div class="h-40"><canvas id="chart-level"></canvas></div>`;
+            contentDiv.innerHTML = `<div class="h-40 flex justify-center"><canvas id="chart-level"></canvas></div>`;
             const ctx = document.getElementById('chart-level').getContext('2d');
             chartInstances['level'] = new Chart(ctx, {
-              type: 'bar',
+              type: 'doughnut',
               data: {
                 labels: Object.keys(counts),
-                datasets: [{ label: 'Anzahl', data: Object.values(counts), backgroundColor: '#10b981' }]
+                datasets: [{ data: Object.values(counts), backgroundColor: CHART_COLORS }]
               },
-              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { stepSize: 1, color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } }
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } } }
             });
           } else {
             contentDiv.innerHTML = `<div class="space-y-1.5">${Object.entries(counts).map(([lvl, cnt]) => `
               <div class="flex justify-between items-center bg-slate-800 p-2 rounded">
                 <span class="text-slate-200 font-medium">${lvl}</span>
-                <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700">${cnt} Projekt(e)</span>
+                <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700">${cnt} Route(n)</span>
               </div>
             `).join('')}</div>`;
           }
@@ -2929,15 +3921,15 @@
               type: 'doughnut',
               data: {
                 labels: Object.keys(counts),
-                datasets: [{ data: Object.values(counts), backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'] }]
+                datasets: [{ data: Object.values(counts), backgroundColor: CHART_COLORS }]
               },
               options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } } }
             });
           } else {
             contentDiv.innerHTML = `<div class="space-y-1.5">${Object.entries(counts).map(([z, cnt]) => `
               <div class="flex justify-between items-center bg-slate-800 p-2 rounded">
-                <span class="text-slate-200 font-medium">${z}</span>
-                <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700">${cnt} Projekt(e)</span>
+                <span class="text-slate-200 font-medium truncate">${z}</span>
+                <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700 ml-2">${cnt} Route(n)</span>
               </div>
             `).join('')}</div>`;
           }
@@ -2946,38 +3938,29 @@
 
         if (wType === 'style') {
           if (filtered.length === 0) { contentDiv.innerHTML = `<p class="text-slate-500 italic py-2">Keine Projekte vorhanden.</p>`; return; }
-          const inclineCounts = countByField(filtered, 'incline');
-          const holdCounts = countByField(filtered, 'holdType');
-          const styleCounts = countByField(filtered, 'style');
+          const combinedCounts = countCombinedStyle(filtered);
 
           if (statsDisplayMode === 'chart') {
-            contentDiv.innerHTML = `<div class="h-44"><canvas id="chart-style"></canvas></div>`;
+            contentDiv.innerHTML = `<div class="h-44 flex justify-center"><canvas id="chart-style"></canvas></div>`;
             const ctx = document.getElementById('chart-style').getContext('2d');
             chartInstances['style'] = new Chart(ctx, {
-              type: 'bar',
+              type: 'doughnut',
               data: {
-                labels: Object.keys(styleCounts),
-                datasets: [{ label: 'Stil', data: Object.values(styleCounts), backgroundColor: '#3b82f6' }]
+                labels: Object.keys(combinedCounts),
+                datasets: [{ data: Object.values(combinedCounts), backgroundColor: CHART_COLORS }]
               },
-              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { stepSize: 1, color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } }
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 9 } } } } }
             });
           } else {
-            const formatSubGroup = (title, data) => `
-              <div class="space-y-1">
-                <span class="text-[10px] font-bold text-slate-400 block uppercase">${title}</span>
-                <div class="grid grid-cols-2 gap-1.5">${Object.entries(data).map(([k, v]) => `
-                  <div class="bg-slate-800 p-1.5 rounded flex justify-between items-center text-[11px]">
-                    <span class="text-slate-300 truncate">${k}</span>
-                    <span class="text-emerald-400 font-bold">${v}</span>
-                  </div>
-                `).join('')}</div>
-              </div>
-            `;
             contentDiv.innerHTML = `
-              <div class="space-y-3">
-                ${formatSubGroup('Wandneigung', inclineCounts)}
-                ${formatSubGroup('Grifftyp', holdCounts)}
-                ${formatSubGroup('Kletterstil', styleCounts)}
+              <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-slate-400 block uppercase mb-1">Drei Komponenten (Wandneigung / Grifftyp / Stil):</span>
+                ${Object.entries(combinedCounts).map(([combo, cnt]) => `
+                  <div class="bg-slate-800 p-2 rounded flex justify-between items-center">
+                    <span class="text-slate-200 font-mono text-[11px] truncate">${combo}</span>
+                    <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700 ml-2">${cnt} Route(n)</span>
+                  </div>
+                `).join('')}
               </div>
             `;
           }
@@ -2999,7 +3982,7 @@
             <div class="relative bg-slate-950 rounded-lg p-1 overflow-hidden flex justify-center items-center">
               <img src="${selectedScale.planUrl}" alt="Hallenplan" class="max-h-64 w-auto object-contain select-none">
               ${planProjects.map(p => `
-                <div class="absolute w-5 h-5 -ml-2.5 -mt-2.5 ${p.status === 'completed' ? 'bg-emerald-500' : 'bg-red-500'} text-white font-bold rounded-full border border-white flex items-center justify-center text-[9px] shadow-lg cursor-pointer transition hover:scale-125" style="left: ${p.pinX}\%; top:${p.pinY}%;" title="${p.name} (${p.level})">
+                <div class="absolute w-5 h-5 -ml-2.5 -mt-2.5 ${p.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'} text-slate-950 font-bold rounded-full border border-white flex items-center justify-center text-[9px] shadow-lg cursor-pointer transition hover:scale-125" style="left: ${p.pinX}%; top: ${p.pinY}%;" title="${p.name} (${p.level})">
                   📍
                 </div>
               `).join('')}
