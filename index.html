@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>BoulderLog - Tracker, Sessions & Analytics</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js für Diagramm-Darstellung -->
@@ -21,74 +21,126 @@
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col md:flex-row">
-
-  <!-- LINKES MENÜBAND (SIDEBAR) -->
-  <aside class="w-full md:w-64 bg-slate-800 border-b md:border-b-0 md:border-r border-slate-700 flex-shrink-0 flex flex-col justify-between p-4">
-    <div>
-      <div class="flex items-center gap-3 mb-8">
-        <span class="text-2xl">🧗</span>
-        <div>
-          <h1 class="font-bold text-emerald-400 leading-tight">BoulderLog</h1>
-          <p class="text-xs text-slate-400">Multi-Gym & Analytics</p>
-        </div>
-      </div>
-
-      <!-- Navigation -->
-      <nav class="space-y-2">
-        <button onclick="switchView('map')" id="nav-map" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
-          <span>🗺️</span> Hallenkarte
-        </button>
-        <button onclick="switchView('projects')" id="nav-projects" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>🎯</span> Aktive Projekte
-        </button>
-        <button onclick="switchView('completed')" id="nav-completed" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>🏆</span> Abgeschlossene Projekte
-        </button>
-        <button onclick="switchView('sessions')" id="nav-sessions" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>📅</span> Session Tracker
-        </button>
-        <button onclick="switchView('entries')" id="nav-entries" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>📝</span> Logbuch
-        </button>
-        <button onclick="switchView('videos')" id="nav-videos" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>🎬</span> Videos
-        </button>
-        <button onclick="switchView('timer')" id="nav-timer" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>⏱️️</span> Ruhetimer
-        </button>
-        <button onclick="switchView('social')" id="nav-social" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>👥</span> Social
-        </button>
-        <button onclick="switchView('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition">
-          <span>⚙</span> Einstellungen
-        </button>
-      </nav>
-    </div>
-
-    <!-- AUTH STATUS & SIDEBAR FOOTER -->
-    <div class="mt-8 pt-4 border-t border-slate-700/50 space-y-3">
-      <div id="auth-status-container" class="bg-slate-900/80 p-3 rounded-lg border border-slate-700/80 text-xs flex flex-col gap-2">
-        <div id="auth-user-info" class="text-slate-300 truncate">
-          <span class="text-slate-500">Status:</span> Nicht angemeldet
-        </div>
-        <button id="auth-main-btn" onclick="openAuthModal('login')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded text-xs transition">
-          🔐 Anmelden / Registrieren
-        </button>
-      </div>
-
-      <div class="text-xs text-slate-500">
-        Hallen registriert: <span class="text-slate-300 font-semibold" id="sidebar-gym-count">1</span>
-      </div>
-    </div>
-  </aside>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden">
 
   <!-- HAUPTINHALTSBEREICH -->
-  <main class="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full relative">
+  <main class="flex-1 p-4 md:p-8 pb-28 md:pb-28 max-w-4xl mx-auto w-full relative">
+
+    <!-- UNTER-NAVIGATION: STATISTIK -->
+    <div id="subnav-stats" class="hidden mb-4 bg-slate-800 border border-slate-700 rounded-xl p-1 gap-1 text-xs font-semibold overflow-x-auto no-scrollbar">
+      <button id="sub-stats-session" onclick="switchSubView('stats-session')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">⏱ Session</button>
+      <button id="sub-stats-routes" onclick="switchSubView('stats-routes')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🧭 Routen</button>
+      <button id="sub-stats-projects" onclick="switchSubView('stats-projects')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🎯 Projekte</button>
+      <button id="sub-stats-hall" onclick="switchSubView('stats-hall')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🏢 Halle</button>
+    </div>
+
+    <!-- FILTERLEISTE STATISTIK (Halle, Zeitraum, Darstellung) -->
+    <div id="stats-filter-bar" class="hidden mb-6 space-y-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="stats-gym-filter" onchange="renderStatsAll()" class="bg-slate-800/60 border border-slate-700/60 text-xs rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"></select>
+        <select id="stats-time-filter" onchange="handleStatsTimeFilterChange()" class="bg-slate-800/60 border border-slate-700/60 text-xs rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+          <option value="ALL">Gesamter Zeitraum</option>
+          <option value="7">Letzte 7 Tage</option>
+          <option value="30">Letzte 30 Tage</option>
+          <option value="90">Letzte 90 Tage</option>
+          <option value="365">Letztes Jahr</option>
+          <option value="CUSTOM">Eigener Zeitraum…</option>
+        </select>
+        <div class="ml-auto bg-slate-800/60 border border-slate-700/60 p-0.5 rounded-xl flex gap-0.5 text-xs">
+          <button id="btn-mode-text" onclick="setStatsDisplayMode('text')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold">Text</button>
+          <button id="btn-mode-chart" onclick="setStatsDisplayMode('chart')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 font-semibold">Diagramm</button>
+        </div>
+      </div>
+      <div id="stats-custom-date-container" class="hidden items-center gap-2 text-xs">
+        <input type="date" id="stats-start-date" onchange="renderStatsAll()" class="bg-slate-800/60 border border-slate-700/60 rounded-xl px-3 py-1.5 text-slate-200 text-xs">
+        <span class="text-slate-500">bis</span>
+        <input type="date" id="stats-end-date" onchange="renderStatsAll()" class="bg-slate-800/60 border border-slate-700/60 rounded-xl px-3 py-1.5 text-slate-200 text-xs">
+      </div>
+    </div>
+
+    <!-- UNTER-NAVIGATION: EINSTELLUNGEN -->
+    <div id="subnav-settings" class="hidden mb-6 bg-slate-800 border border-slate-700 rounded-xl p-1 gap-1 text-xs font-semibold overflow-x-auto no-scrollbar">
+      <button id="sub-settings" onclick="switchSubView('settings')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🏢 Hallenprofil</button>
+      <button id="sub-privacy" onclick="switchSubView('privacy')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🔒 Privatsphäre</button>
+      <button id="sub-design" onclick="switchSubView('design')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🎨 Design</button>
+      <button id="sub-timer" onclick="switchSubView('timer')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">⏱ Ruhetimer</button>
+      <button id="sub-entries" onclick="switchSubView('entries')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">📝 Logbuch</button>
+      <button id="sub-videos" onclick="switchSubView('videos')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🎬 Videos</button>
+    </div>
+
+    <!-- VIEW HOME: Profil + Social, Feed, letzte Aktivität, aktive Projekte -->
+    <div id="view-home" class="space-y-8 mb-6">
+
+      <!-- PROFIL & FREUNDE (nahtlos in einer Karte) -->
+      <section class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center gap-3">
+          <div id="home-avatar" class="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-bold text-lg flex items-center justify-center flex-shrink-0">🧗</div>
+          <div class="flex-1 min-w-0">
+            <h2 id="home-greeting" class="text-xl font-bold text-slate-100 leading-tight truncate">Willkommen bei BoulderLog!</h2>
+            <p id="home-subline" class="text-xs text-slate-400 leading-snug">Melde dich an, um deine Fortschritte zu speichern.</p>
+          </div>
+          <button id="auth-main-btn" onclick="openAuthModal('login')" class="flex-shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-1.5 px-3 rounded-lg text-xs transition">
+            Anmelden
+          </button>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap text-xs pt-3 border-t border-slate-700/50">
+          <span class="text-slate-400">👥 <b id="friends-count-display" class="text-emerald-400">0</b> Freunde</span>
+          <span class="text-slate-400">🏢 <b id="sidebar-gym-count" class="text-slate-200">1</b> Hallen</span>
+          <div class="ml-auto flex items-center gap-2">
+            <button onclick="toggleAddFriendRow()" class="text-slate-300 hover:text-emerald-400 bg-slate-900/70 border border-slate-700 px-2.5 py-1 rounded-lg transition">＋ Freund*in</button>
+            <button onclick="openModal('friend-requests-modal')" class="relative text-slate-300 hover:text-emerald-400 bg-slate-900/70 border border-slate-700 px-2.5 py-1 rounded-lg transition flex items-center gap-1.5" title="Offene Anfragen">
+              <span>📧</span>
+              <span id="requests-badge" class="hidden bg-emerald-500 text-slate-900 font-bold text-[10px] px-1.5 rounded-full">0</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="add-friend-row" class="hidden items-center gap-2">
+          <input type="text" id="add-friend-input" placeholder="Benutzername suchen..." class="flex-1 min-w-0 bg-slate-900 border border-slate-700 text-xs rounded-lg p-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+          <button onclick="searchAndAddFriend()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-2 rounded-lg text-xs transition">Anfrage senden</button>
+        </div>
+        <div id="social-search-status" class="text-xs text-slate-300 hidden bg-slate-900/80 p-2.5 rounded-lg border border-slate-700"></div>
+
+        <div id="confirmed-friends-list" class="flex flex-wrap gap-1.5"></div>
+      </section>
+
+      <!-- FEED: WAS DEINE FREUNDE MACHEN -->
+      <section class="space-y-3">
+        <div>
+          <h3 class="text-lg font-bold text-slate-100">Was deine Crew gerade treibt 👀</h3>
+          <p class="text-xs text-slate-500">Frische Neuigkeiten von dir und deinen Freunden</p>
+        </div>
+        <div id="social-feed-list" class="space-y-2"></div>
+        <button id="social-feed-toggle" onclick="toggleSocialFeedExpanded()" class="hidden w-full text-xs text-slate-400 hover:text-emerald-400 py-2 transition"></button>
+      </section>
+
+      <!-- LETZTE AKTIVITÄT -->
+      <section class="space-y-3">
+        <div>
+          <h3 class="text-lg font-bold text-slate-100">Deine letzten Schritte 🐾</h3>
+          <p class="text-xs text-slate-500">Was du zuletzt an der Wand erlebt hast</p>
+        </div>
+        <div id="home-activity" class="bg-slate-800/40 border border-slate-700/50 rounded-2xl divide-y divide-slate-700/40"></div>
+      </section>
+
+      <!-- AKTIVE PROJEKTE (aus der Hallenkarte) -->
+      <section class="space-y-3">
+        <div>
+          <h3 class="text-lg font-bold text-slate-100">Jump back in! 🚀</h3>
+          <p class="text-xs text-slate-500">Deine offenen Projekte aus der Hallenkarte – Zeit für den nächsten Versuch</p>
+        </div>
+        <div id="home-active-projects" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </section>
+    </div>
 
     <!-- VIEW 0: HALLENKARTE -->
-    <div id="view-map" class="space-y-6">
+    <div id="view-map" class="hidden space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
         <div>
           <h2 class="text-2xl font-bold text-slate-100">Interaktive Hallenkarte</h2>
@@ -128,118 +180,89 @@
         </div>
       </div>
 
-      <!-- Schwebender Action-Button (FAB) für den Bearbeitungsmodus -->
-      <button id="map-fab-edit-btn" onclick="toggleMapEditModeFAB()" class="fixed bottom-6 right-6 z-40 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95">
-        <span id="map-fab-icon" class="text-lg">✏️</span>
-        <span id="map-fab-text" class="text-xs font-semibold pr-1">Bearbeiten</span>
-      </button>
-    </div>
 
-    <!-- VIEW 1: AKTIVE PROJEKTE & STATISTIK -->
-    <div id="view-projects" class="hidden space-y-8">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-100">Aktive Projekte</h2>
-          <p class="text-xs text-slate-400">Verfolge deine aktuellen Boulder und verbleibende Zeiten bis zum Umschrauben.</p>
-        </div>
-        <button onclick="openProjectModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-lg transition">
-          + Projekt anlegen
-        </button>
-      </div>
+      <!-- AUSKLAPPBARE LISTE DER AKTIVEN (SICHTBAREN) ROUTEN -->
+      <div id="map-route-list-panel" class="max-w-md w-full mx-auto bg-slate-800 border border-slate-700 rounded-xl">
+        <div class="flex items-center justify-between gap-2 p-3">
+          <button id="map-route-list-toggle" onclick="toggleMapRouteList()" class="flex items-center gap-2 flex-1 text-left" aria-expanded="false">
+            <span id="map-route-list-chevron" class="text-slate-400 text-xs transition-transform duration-200">▶</span>
+            <span class="text-sm font-bold text-slate-200">📋 Aktive Routen</span>
+            <span id="map-route-list-count" class="bg-slate-900 border border-slate-700 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+          </button>
 
-      <div id="active-projects-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-
-      <!-- STATISTIKBEREICH -->
-      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
-        <div class="flex flex-col gap-3 border-b border-slate-700 pb-3">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 class="text-lg font-bold text-slate-200">Projekt-Statistiken</h3>
-              <p class="text-xs text-slate-400">Anpassbares & verschiebbares Dashboard für deine Kletterprojekte</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <div class="bg-slate-900 p-1 rounded-lg border border-slate-700 flex gap-1 text-xs">
-                <button id="btn-mode-text" onclick="setStatsDisplayMode('text')" class="px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold">📄 Text</button>
-                <button id="btn-mode-chart" onclick="setStatsDisplayMode('chart')" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-semibold">📊 Diagramm</button>
-              </div>
-
-              <select id="stats-gym-filter" onchange="renderStats()" class="bg-slate-900 border border-slate-700 text-xs rounded p-2 text-slate-200"></select>
-
-              <div class="relative inline-block text-left">
-                <button onclick="toggleWidgetDropdown()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs transition">
-                  + Modul
-                </button>
-                <div id="widget-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 py-1 text-xs">
-                  <button onclick="addWidget('level')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Schwierigkeitsgrad</button>
-                  <button onclick="addWidget('style')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Neigung, Grifftyp & Stil</button>
-                  <button onclick="addWidget('zone')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Wandbereiche</button>
-                  <button onclick="addWidget('kpi')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200">+ Kennzahlen & Dauer</button>
-                  <button onclick="addWidget('plan')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 text-emerald-400 font-semibold">+ Hallenplan</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ZEITRAUM FILTER CONTROL -->
-          <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-700/50 text-xs">
-            <span class="text-slate-400 font-semibold">📅 Zeitraum Filter:</span>
-            <select id="stats-time-filter" onchange="handleStatsTimeFilterChange()" class="bg-slate-900 border border-slate-700 text-xs rounded p-1.5 text-slate-200">
-              <option value="ALL">Gesamter Zeitraum</option>
-              <option value="30">Letzte 30 Tage</option>
-              <option value="90">Letzte 90 Tage</option>
-              <option value="365">Letztes Jahr (365 Tage)</option>
-              <option value="CUSTOM">Benutzerdefiniert</option>
-            </select>
-            <div id="stats-custom-date-container" class="hidden items-center gap-2">
-              <input type="date" id="stats-start-date" onchange="renderStats()" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 text-xs">
-              <span class="text-slate-500">bis</span>
-              <input type="date" id="stats-end-date" onchange="renderStats()" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 text-xs">
-            </div>
+          <!-- Sortier-Button mit Auswahlmenü -->
+          <div class="relative">
+            <button id="map-route-sort-btn" onclick="toggleMapRouteSortMenu(event)" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition" title="Routen sortieren">
+              <span>⇅</span><span id="map-route-sort-label">Grad</span>
+            </button>
+            <div id="map-route-sort-menu" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-20 py-1 text-xs"></div>
           </div>
         </div>
 
-        <div id="stats-summary" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
-
-        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700 text-xs text-slate-400 space-y-1 mt-4">
-          <p class="font-semibold text-slate-300">ℹ️ Hinweis zur Interpretation</p>
-          <p>Statistiken berücksichtigen nur Projekte, die nicht ausdrücklich aus der Wertung ausgenommen wurden.</p>
-        </div>
-      </section>
-    </div>
-
-    <!-- VIEW 2: ABGESCHLOSSENE PROJEKTE -->
-    <div id="view-completed" class="hidden space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-100">Abgeschlossene Projekte (Ascends)</h2>
-        <p class="text-xs text-slate-400">Historie aller erfolgreich gekletterten Boulder</p>
+        <div id="map-route-list-body" class="hidden border-t border-slate-700 max-h-[55vh] overflow-y-auto p-3 space-y-4"></div>
       </div>
-      <div id="completed-projects-list" class="space-y-3"></div>
-    </div>
 
-    <!-- VIEW 3: SESSION TRACKER -->
-    <div id="view-sessions" class="hidden space-y-8">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-100">Session Tracker</h2>
-          <p class="text-xs text-slate-400">Protokolliere deine Einheiten, Befinden und absolvierten Boulder.</p>
-        </div>
-        <button onclick="openSessionModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-lg transition">
-          + Session eintragen
+      <!-- FLOATING ACTION BUTTONS (FABs) FÜR FILTER & BEARBEITEN -->
+      <div id="map-fab-group" style="bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));" class="hidden fixed right-6 z-40 items-center gap-2">
+        <!-- Filter Zurücksetzen Button (erscheint nur wenn Filter aktiv) -->
+        <button id="map-fab-reset-filter-btn" onclick="resetMapFilters()" class="hidden bg-slate-800 hover:bg-slate-700 text-red-400 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95" title="Filter zurücksetzen">
+          <span class="text-lg">🧹</span>
+        </button>
+
+        <!-- Filter Menü Button -->
+        <button id="map-fab-filter-btn" onclick="toggleMapFilterDrawer()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl flex items-center transition-all duration-200 hover:scale-105 active:scale-95" title="Filter öffnen">
+          <span class="text-lg">🎛️</span>
+        </button>
+
+        <!-- Bearbeitungsmodus Button -->
+        <button id="map-fab-edit-btn" onclick="toggleMapEditModeFAB()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95">
+          <span id="map-fab-icon" class="text-lg">✏️</span>
+          <span id="map-fab-text" class="text-xs font-semibold pr-1">Bearbeiten</span>
         </button>
       </div>
+    </div>
 
-      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+    <!-- STATISTIK > SESSION -->
+    <div id="view-stats-session" class="hidden space-y-6">
+      <div class="flex items-center justify-between gap-3">
         <div>
-          <h3 class="text-lg font-bold text-slate-200">Session Auswertungen</h3>
-          <p class="text-xs text-slate-400">Frequenz, Durchschnittsdauer und gewohnte Uhrzeiten</p>
+          <h2 class="text-xl font-bold text-slate-100">Deine Sessions</h2>
+          <p class="text-xs text-slate-500">Wie oft und wie lange du an der Wand bist</p>
         </div>
-        <div id="session-stats-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm"></div>
-      </section>
-
-      <div class="space-y-4">
-        <h3 class="text-lg font-bold text-slate-200">Vergangene Sessions</h3>
+        <button onclick="openSessionModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition">+ Session</button>
+      </div>
+      <div id="stats-session-content" class="space-y-4"></div>
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-200">Vergangene Sessions</h3>
         <div id="sessions-list" class="space-y-3"></div>
       </div>
+    </div>
+
+    <!-- STATISTIK > ROUTEN -->
+    <div id="view-stats-routes" class="hidden space-y-6">
+      <div>
+        <h2 class="text-xl font-bold text-slate-100">Was du am liebsten kletterst</h2>
+        <p class="text-xs text-slate-500">Alle Routen der Hallenkarte, die du als Projekt, Top oder Flash markiert hast</p>
+      </div>
+      <div id="stats-routes-content" class="space-y-4"></div>
+    </div>
+
+    <!-- STATISTIK > PROJEKTE -->
+    <div id="view-stats-projects" class="hidden space-y-6">
+      <div>
+        <h2 class="text-xl font-bold text-slate-100">Deine Projekte</h2>
+        <p class="text-xs text-slate-500">Dauer und Versuche – angelegt über die Hallenkarte</p>
+      </div>
+      <div id="stats-projects-content" class="space-y-4"></div>
+    </div>
+
+    <!-- STATISTIK > HALLE -->
+    <div id="view-stats-hall" class="hidden space-y-6">
+      <div>
+        <h2 class="text-xl font-bold text-slate-100">Wie viel der Halle du schon geknackt hast</h2>
+        <p class="text-xs text-slate-500">Durchstiegsquote pro Grad, Stil, Grifftyp, Neigung und Wandbereich</p>
+      </div>
+      <div id="stats-hall-content" class="space-y-4"></div>
     </div>
 
     <!-- VIEW 4: LOGBUCH -->
@@ -301,71 +324,27 @@
       </div>
     </div>
 
-    <!-- VIEW 7: SOCIAL -->
-    <div id="view-social" class="hidden space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-100">Social</h2>
-        <p class="text-xs text-slate-400">Suche nach Nutzer*innen in der Datenbank und verfolge Projektfortschritte.</p>
-      </div>
-
-      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-3">
-          <div>
-            <h3 class="text-lg font-bold text-slate-200">Meine Freunde</h3>
-            <p class="text-xs text-slate-400">Klicke auf eine*n Freund*in, um das Profil im Schreibschutz-Modus einzusehen</p>
-          </div>
-          <div class="flex gap-2 items-center flex-wrap">
-            <input type="text" id="add-friend-input" placeholder="Benutzername suchen..." class="bg-slate-900 border border-slate-700 text-xs rounded p-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-            <button onclick="searchAndAddFriend()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs transition">
-              🔍 Anfrage senden
-            </button>
-            <button onclick="openModal('friend-requests-modal')" class="relative bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs transition flex items-center gap-1.5" title="Offene Anfragen">
-              <span>📧</span>
-              <span>Anfragen</span>
-              <span id="requests-badge" class="hidden bg-emerald-500 text-slate-900 font-bold text-[10px] px-1.5 py-0.5 rounded-full">0</span>
-            </button>
-          </div>
-        </div>
-
-        <div id="social-search-status" class="text-xs text-slate-300 hidden bg-slate-900/80 p-2.5 rounded border border-slate-700"></div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">👥</span>
-              <div>
-                <span class="block text-xs text-slate-400 uppercase font-semibold">Vernetzte Freunde</span>
-                <span id="friends-count-display" class="text-2xl font-bold text-emerald-400">0</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pt-2 space-y-2">
-          <h4 class="text-xs font-semibold text-slate-400">Bestätigte Freunde (Klick zum Öffnen des Profils):</h4>
-          <div id="confirmed-friends-list" class="flex flex-wrap gap-2"></div>
-        </div>
-      </section>
-
-      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
-        <div class="border-b border-slate-700 pb-3">
-          <h3 class="text-lg font-bold text-slate-200">Geteilter Projektfortschritt</h3>
-          <p class="text-xs text-slate-400">Neueste Aktivitäten von dir und deinen Freunden</p>
-        </div>
-        <div id="social-feed-list" class="space-y-3"></div>
-      </section>
-    </div>
-
-    <!-- VIEW 8: EINSTELLUNGEN -->
+    <!-- VIEW 8a: EINSTELLUNGEN > HALLENPROFIL -->
     <div id="view-settings" class="hidden space-y-6">
       <div class="flex justify-between items-center">
         <div>
-          <h2 class="text-2xl font-bold text-slate-100">Einstellungen</h2>
-          <p class="text-xs text-slate-400">Verwalte deine Hallen, Skalen und Privatsphäre-Optionen.</p>
+          <h2 class="text-2xl font-bold text-slate-100">Hallenprofil</h2>
+          <p class="text-xs text-slate-400">Verwalte deine Hallen, Skalen, Wandbereiche und Hallenpläne.</p>
         </div>
         <button onclick="openCustomScaleModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-lg transition">
           + Neue Halle anlegen
         </button>
+      </div>
+
+      <!-- HALLEN & SKALEN VERWALTUNG -->
+      <div id="gym-scales-container" class="space-y-4"></div>
+    </div>
+
+    <!-- VIEW 8b: EINSTELLUNGEN > PRIVATSPHÄRE -->
+    <div id="view-privacy" class="hidden space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-100">Privatsphäre</h2>
+        <p class="text-xs text-slate-400">Lege fest, was Freunde von dir sehen dürfen.</p>
       </div>
 
       <!-- ABSCHNITT PRIVATSPHÄRE-EINSTELLUNGEN -->
@@ -441,14 +420,151 @@
           </div>
         </div>
       </section>
+    </div>
 
-      <!-- HALLEN & SKALEN VERWALTUNG -->
-      <div id="gym-scales-container" class="space-y-4"></div>
+    <!-- VIEW 8c: EINSTELLUNGEN > DESIGN (Platzhalter) -->
+    <div id="view-design" class="hidden space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-100">Design</h2>
+        <p class="text-xs text-slate-400">Anpassungen für das Erscheinungsbild der App.</p>
+      </div>
+      <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 text-center space-y-2">
+        <span class="text-3xl block">🎨</span>
+        <p class="text-sm font-semibold text-slate-300">Noch keine Design-Einstellungen</p>
+        <p class="text-xs text-slate-500">Dieser Bereich wird später mit Optionen gefüllt.</p>
+      </section>
     </div>
 
   </main>
 
-  <!-- MODALE -->
+  <!-- FIXIERTE BOTTOM-NAVIGATION -->
+  <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 bg-slate-800/95 backdrop-blur border-t border-slate-700" style="padding-bottom: env(safe-area-inset-bottom, 0px);">
+    <div class="max-w-4xl mx-auto grid grid-cols-4">
+      <button onclick="switchView('home')" id="nav-home" class="flex flex-col items-center justify-center gap-0.5 py-2.5 text-slate-400 transition">
+        <span class="text-xl leading-none">🏠</span>
+        <span class="text-[10px] font-semibold">Home</span>
+      </button>
+      <button onclick="switchView('map')" id="nav-map" class="flex flex-col items-center justify-center gap-0.5 py-2.5 text-slate-400 transition">
+        <span class="text-xl leading-none">🗺️</span>
+        <span class="text-[10px] font-semibold">Hallenkarte</span>
+      </button>
+      <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center justify-center gap-0.5 py-2.5 text-slate-400 transition">
+        <span class="text-xl leading-none">📊</span>
+        <span class="text-[10px] font-semibold">Statistik</span>
+      </button>
+      <button onclick="switchView('settings')" id="nav-settings" class="flex flex-col items-center justify-center gap-0.5 py-2.5 text-slate-400 transition">
+        <span class="text-xl leading-none">⚙️</span>
+        <span class="text-[10px] font-semibold">Einstellungen</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- AUSKLAPPBARES SEITENMENÜ (OFF-CANVAS FILTER DRAWER) -->
+  <div id="map-filter-drawer-backdrop" onclick="toggleMapFilterDrawer()" class="fixed inset-0 bg-black/60 z-50 hidden transition-opacity"></div>
+  <aside id="map-filter-drawer" class="fixed inset-y-0 right-0 w-80 max-w-full bg-slate-800 border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 overflow-y-auto p-5 space-y-5 shadow-2xl">
+    <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🎛️️</span>
+        <h3 class="font-bold text-slate-100 text-base">Hallenkarten-Filter</h3>
+      </div>
+      <button onclick="toggleMapFilterDrawer()" class="text-slate-400 hover:text-slate-100 font-bold text-lg">✕</button>
+    </div>
+
+    <!-- Filter Formular -->
+    <div class="space-y-4 text-xs">
+      
+      <!-- 1. Schwierigkeitsgrad-Bereich -->
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1.5">Schwierigkeitsgrad-Bereich</label>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <span class="text-[10px] text-slate-400">Von:</span>
+            <select id="flt-min-level" onchange="applyMapFilters()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100"></select>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400">Bis:</span>
+            <select id="flt-max-level" onchange="applyMapFilters()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Status Filter -->
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1.5">Status der Routen</label>
+        <div class="grid grid-cols-2 gap-2 bg-slate-900 p-2.5 rounded border border-slate-700">
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="open" onchange="applyMapFilters()"> 📍 Offen</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="project" onchange="applyMapFilters()"> 🎯 Projekt</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="topped" onchange="applyMapFilters()"> 🏆 Getoppt</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="flashed" onchange="applyMapFilters()"> ⚡ Geflasht</label>
+        </div>
+      </div>
+
+      <!-- 3. Grifffarbe -->
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Grifffarbe</label>
+        <select id="flt-hold-color" onchange="applyMapFilters()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+          <option value="">Alle Farben</option>
+          <option value="Gelb">🟡 Gelb</option>
+          <option value="Blau">🔵 Blau</option>
+          <option value="Rot">🔴 Rot</option>
+          <option value="Grün">🟢 Grün</option>
+          <option value="Schwarz">⚫ Schwarz</option>
+          <option value="Weiß">⚪ Weiß</option>
+          <option value="Violett">🟣 Violett</option>
+          <option value="Orange">🟠 Orange</option>
+          <option value="Rosa">🌸 Rosa</option>
+          <option value="Holz">🪵 Holz / Natur</option>
+        </select>
+      </div>
+
+      <!-- 4. Kletter-Styles (Mehrfachauswahl) -->
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1.5">Kletter-Styles</label>
+        <div class="grid grid-cols-2 gap-2 bg-slate-900 p-2.5 rounded border border-slate-700">
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-style-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Dyno" onchange="applyMapFilters()"> Dyno</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-style-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Balance" onchange="applyMapFilters()"> Balance</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-style-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Technik" onchange="applyMapFilters()"> Technik</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-style-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Kraft" onchange="applyMapFilters()"> Kraft</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-style-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Finger" onchange="applyMapFilters()"> Finger</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-style-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Mantle" onchange="applyMapFilters()"> Mantle</label>
+        </div>
+      </div>
+
+      <!-- 5. Grifftypen (Mehrfachauswahl) -->
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1.5">Grifftypen</label>
+        <div class="grid grid-cols-2 gap-2 bg-slate-900 p-2.5 rounded border border-slate-700">
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-hold-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Crimps" onchange="applyMapFilters()"> Leisten</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-hold-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Sloper" onchange="applyMapFilters()"> Sloper</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-hold-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Jugs" onchange="applyMapFilters()"> Henkel</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-hold-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Pinch" onchange="applyMapFilters()"> Zangen</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-hold-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Pockets" onchange="applyMapFilters()"> Taschen</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-hold-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="Volumes" onchange="applyMapFilters()"> Volumen</label>
+        </div>
+      </div>
+
+      <!-- 6. Sterne-Bewertung -->
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Mindestbewertung</label>
+        <select id="flt-min-rating" onchange="applyMapFilters()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+          <option value="0">Alle Sterne-Bewertungen</option>
+          <option value="1">⭐ Mindestens 1 Stern</option>
+          <option value="2">⭐⭐ Mindestens 2 Sterne</option>
+          <option value="3">⭐⭐⭐ Mindestens 3 Sterne</option>
+          <option value="4">⭐⭐⭐⭐ Mindestens 4 Sterne</option>
+          <option value="5">⭐⭐⭐⭐⭐ 5 Sterne</option>
+        </select>
+      </div>
+
+      <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
+        <button type="button" onclick="resetMapFilters()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 rounded text-xs transition">
+          🧹 Alle Filter zurücksetzen
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MODALE (EXISTIEREND) -->
 
   <!-- MODAL MAP ROUTE ERFASSUNG -->
   <div id="map-route-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center p-4 z-50">
@@ -506,6 +622,18 @@
         </div>
 
         <div>
+          <label class="block text-xs text-slate-400 mb-1">Neigung (optional)</label>
+          <select id="mr-incline" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+            <option value="">Keine Angabe</option>
+            <option value="Slab">Slab</option>
+            <option value="Senkrecht">Senkrecht</option>
+            <option value="Slight Overhang">Slight Overhang</option>
+            <option value="Overhang (~45°)">Overhang (~45°)</option>
+            <option value="Roof">Roof</option>
+          </select>
+        </div>
+
+        <div>
           <label class="block text-xs text-slate-400 mb-1">Kletter-Styles (Mehrfachauswahl)</label>
           <div class="grid grid-cols-3 gap-2 bg-slate-900 p-2 rounded border border-slate-700 text-xs">
             <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="mr-styles" value="Dyno" class="rounded bg-slate-800 border-slate-700"> Dyno</label>
@@ -554,11 +682,28 @@
         <input type="hidden" id="mri-route-id">
         <div>
           <label class="block text-xs text-slate-400 mb-1">Mein Status für diese Route</label>
-          <select id="mri-status" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+          <select id="mri-status" onchange="onMriStatusChange()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
             <option value="open">Offen</option>
             <option value="project">🎯 Projekt</option>
             <option value="topped">🏆 Getoppt</option>
             <option value="flashed">⚡ Geflasht (1. Versuch)</option>
+          </select>
+        </div>
+
+        <div id="mri-attempts-wrap" class="hidden">
+          <label class="block text-xs text-slate-400 mb-1">Versuche <span id="mri-attempts-hint" class="text-slate-500"></span></label>
+          <input type="number" id="mri-attempts" min="1" step="1" placeholder="z. B. 7" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Neigung der Route</label>
+          <select id="mri-incline" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
+            <option value="">Keine Angabe</option>
+            <option value="Slab">Slab</option>
+            <option value="Senkrecht">Senkrecht</option>
+            <option value="Slight Overhang">Slight Overhang</option>
+            <option value="Overhang (~45°)">Overhang (~45°)</option>
+            <option value="Roof">Roof</option>
           </select>
         </div>
 
@@ -1038,6 +1183,22 @@
     let sessions = loadStorage('boulder_sessions', []);
     let entries = loadStorage('boulder_entries', []);
     let mapRoutes = loadStorage('boulder_map_routes', []);
+
+    // Zusatzdaten pro Route (Neigung, Versuche, Projektstart, Durchstieg) – lokal gespeichert, DB-Spalten werden zusätzlich genutzt, falls vorhanden
+    let routeExtras = loadStorage('boulder_route_extras', {});
+    function saveRouteExtras() { saveStorage('boulder_route_extras', routeExtras); }
+    function applyRouteExtras() {
+      mapRoutes.forEach(r => {
+        const x = routeExtras[String(r.id)];
+        if (!x) return;
+        if (x.incline) r.incline = x.incline;
+        r.interaction = r.interaction || { status: 'open', rating: 0, comment: '' };
+        ['attempts', 'projectAt', 'toppedAt'].forEach(k => {
+          if (x[k] != null && r.interaction[k] == null) r.interaction[k] = x[k];
+        });
+      });
+    }
+    applyRouteExtras();
     let privacySettings = loadStorage('boulder_privacy', {
       allOff: false,
       shareProjects: true,
@@ -1051,17 +1212,25 @@
     let localFriendsList = []; 
     let pendingRequests = [];
     let socialFeed = [];
-    let activeWidgets = loadStorage('boulder_widgets', ['level', 'style', 'zone', 'kpi', 'plan']);
     let statsDisplayMode = 'text';
     let currentEntryFilter = 'ALL';
     let chartInstances = {};
     let fpChartInstances = {};
-    let draggedWidgetIndex = null;
 
-    // HALLENKARTE ZOOM & PAN STATE
+    // HALLENKARTE ZOOM, PAN & FILTER STATE
     let mapEditMode = false;
     let tempMapCoords = { x: 0, y: 0 };
     let activeInteractionRouteId = null;
+
+    let mapFilters = {
+      minLevel: '',
+      maxLevel: '',
+      status: [],
+      color: '',
+      styles: [],
+      holdTypes: [],
+      minRating: 0
+    };
 
     let mapZoomScale = 1.0;
     let mapPanX = 0;
@@ -1118,6 +1287,7 @@
       sessions = loadStorage('boulder_sessions', []);
       entries = loadStorage('boulder_entries', []);
       mapRoutes = loadStorage('boulder_map_routes', []);
+      applyRouteExtras();
       privacySettings = loadStorage('boulder_privacy', {
         allOff: false,
         shareProjects: true,
@@ -1226,13 +1396,19 @@
               gradeOpinion: r.grade_opinion,
               styles: r.styles || [],
               holdTypes: r.hold_types || [],
+              incline: r.incline || null,
               interaction: {
                 status: userInteraction.status || 'open',
                 rating: userInteraction.rating || 0,
-                comment: userInteraction.comment || ''
+                comment: userInteraction.comment || '',
+                updatedAt: userInteraction.updated_at || userInteraction.created_at || null,
+                attempts: userInteraction.attempts ?? null,
+                projectAt: userInteraction.project_started_at ?? null,
+                toppedAt: userInteraction.topped_at ?? null
               }
             };
           });
+          applyRouteExtras();
         }
 
         const { data: projectsData } = await supabaseClient.from('projects').select('*').eq('user_id', currentAuthUser.id);
@@ -1370,62 +1546,114 @@
       }
 
       renderSocial();
+      renderHome();
     }
 
     function renderAllViews() {
       initMapGymDropdown();
+      populateFilterLevelDropdowns();
       renderMapView();
       renderPrivacySettingsUI();
       renderGymScalesView();
-      renderProjects();
-      renderCompleted();
-      renderSessions();
-      renderSessionStats();
       renderEntries();
       renderVideos();
       renderSocial();
+      renderHome();
       initStatsGymFilter();
-      renderStats();
+      renderStatsAll();
     }
 
-    // --- VIEW SWITCHING ---
+    // --- VIEW SWITCHING (4 Haupt-Tabs der Bottom-Navigation + Unter-Reiter) ---
+    const ALL_VIEWS = ['home', 'map', 'stats-session', 'stats-routes', 'stats-projects', 'stats-hall', 'entries', 'videos', 'timer', 'settings', 'privacy', 'design'];
+
+    // Welche Views gehören zu welchem Tab?
+    const TAB_GROUPS = {
+      home:     { views: ['home'] },                                             // Profil, Social, letzte Aktivität, aktive Projekte
+      map:      { views: ['map'] },                                              // Hallenkarte
+      stats:    { views: ['stats-session', 'stats-routes', 'stats-projects', 'stats-hall'], sub: true }, // Session, Routen, Projekte, Halle
+      settings: { views: ['settings', 'privacy', 'design', 'timer', 'entries', 'videos'], sub: true } // Hallenprofil, Privatsphäre, Design, Ruhetimer, Logbuch, Videos
+    };
+    const lastSubView = { stats: 'stats-session', settings: 'settings' };
+    const VIEW_ALIASES = { projects: 'stats-projects', completed: 'stats-projects', sessions: 'stats-session' };
+    let currentTab = 'home';
+
+    const NAV_ACTIVE = ['text-emerald-400'];
+    const NAV_INACTIVE = ['text-slate-400'];
+    const SUB_ACTIVE = ['bg-emerald-600', 'text-white'];
+    const SUB_INACTIVE = ['text-slate-400', 'hover:text-slate-200'];
+
     function switchView(viewName) {
-      const views = ['map', 'projects', 'completed', 'sessions', 'entries', 'videos', 'timer', 'settings', 'social'];
-      views.forEach(v => {
+      // Abwärtskompatibilität: alte View-Namen (z.B. 'timer') öffnen den passenden Tab + Unter-Reiter
+      let tab = viewName;
+      if (VIEW_ALIASES[tab]) tab = viewName = VIEW_ALIASES[tab];
+      if (!TAB_GROUPS[tab]) {
+        tab = Object.keys(TAB_GROUPS).find(t => TAB_GROUPS[t].views.includes(viewName)) || 'home';
+        if (TAB_GROUPS[tab].sub) lastSubView[tab] = viewName;
+      }
+      currentTab = tab;
+      const group = TAB_GROUPS[tab];
+
+      // Sichtbare Views bestimmen
+      const visibleViews = group.sub ? [lastSubView[tab]] : group.views;
+
+      ALL_VIEWS.forEach(v => {
         const el = document.getElementById(`view-${v}`);
-        if (el) el.classList.add('hidden');
-        const navBtn = document.getElementById(`nav-${v}`);
-        if (navBtn) {
-          navBtn.classList.remove('bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30');
-          navBtn.classList.add('text-slate-400');
-        }
+        if (el) el.classList.toggle('hidden', !visibleViews.includes(v));
       });
 
-      const targetView = document.getElementById(`view-${viewName}`);
-      if (targetView) targetView.classList.remove('hidden');
+      // Bottom-Navigation hervorheben
+      Object.keys(TAB_GROUPS).forEach(t => {
+        const btn = document.getElementById(`nav-${t}`);
+        if (!btn) return;
+        btn.classList.remove(...NAV_ACTIVE, ...NAV_INACTIVE);
+        btn.classList.add(...(t === tab ? NAV_ACTIVE : NAV_INACTIVE));
+      });
 
-      const activeBtn = document.getElementById(`nav-${viewName}`);
-      if (activeBtn) {
-        activeBtn.classList.add('bg-emerald-600/20', 'text-emerald-400', 'border', 'border-emerald-500/30');
-        activeBtn.classList.remove('text-slate-400');
+      // Unter-Navigationen ein-/ausblenden und Aktivzustand setzen
+      ['stats', 'settings'].forEach(t => {
+        const bar = document.getElementById(`subnav-${t}`);
+        if (!bar) return;
+        const show = (t === tab);
+        bar.classList.toggle('hidden', !show);
+        bar.classList.toggle('flex', show);
+        TAB_GROUPS[t].views.forEach(v => {
+          const b = document.getElementById(`sub-${v}`);
+          if (!b) return;
+          const active = show && v === lastSubView[t];
+          b.classList.remove(...SUB_ACTIVE, ...SUB_INACTIVE);
+          b.classList.add(...(active ? SUB_ACTIVE : SUB_INACTIVE));
+        });
+      });
+
+      // Filterleiste nur im Statistik-Tab
+      const statsBar = document.getElementById('stats-filter-bar');
+      if (statsBar) statsBar.classList.toggle('hidden', tab !== 'stats');
+
+      // Floating Action Buttons der Hallenkarte nur auf der Karte zeigen
+      const fabGroup = document.getElementById('map-fab-group');
+      if (fabGroup) {
+        fabGroup.classList.toggle('hidden', tab !== 'map');
+        fabGroup.classList.toggle('flex', tab === 'map');
       }
 
-      // Floating Action Button Sichtbarkeit an Ansicht anpassen
-      const fabBtn = document.getElementById('map-fab-edit-btn');
-      if (fabBtn) {
-        if (viewName === 'map') {
-          fabBtn.classList.remove('hidden');
-        } else {
-          fabBtn.classList.add('hidden');
-        }
-      }
+      // View-spezifisches Rendering
+      if (visibleViews.includes('map')) renderMapView();
+      if (visibleViews.includes('videos')) renderVideos();
+      if (visibleViews.includes('home')) { renderSocial(); renderHome(); }
+      if (tab === 'stats') renderStatsAll();
 
-      if (viewName === 'map') renderMapView();
-      if (viewName === 'videos') renderVideos();
-      if (viewName === 'social') renderSocial();
+      window.scrollTo({ top: 0 });
     }
 
-    // --- HALLENKARTE MODUL & ZOOM LOGIK ---
+    // Wechsel zwischen den Unter-Reitern innerhalb von Statistik bzw. Einstellungen
+    function switchSubView(viewName) {
+      const tab = Object.keys(TAB_GROUPS).find(t => TAB_GROUPS[t].sub && TAB_GROUPS[t].views.includes(viewName));
+      if (!tab) return;
+      lastSubView[tab] = viewName;
+      switchView(tab);
+    }
+
+    // --- HALLENKARTE MODUL, FILTER & ZOOM LOGIK ---
     function initMapGymDropdown() {
       const select = document.getElementById('map-gym-select');
       if (!select) return;
@@ -1433,8 +1661,130 @@
       select.innerHTML = gymKeys.map(g => `<option value="${g}">${g}</option>`).join('');
     }
 
+    function populateFilterLevelDropdowns() {
+      const selectGym = document.getElementById('map-gym-select');
+      const minSel = document.getElementById('flt-min-level');
+      const maxSel = document.getElementById('flt-max-level');
+
+      if (!selectGym || !minSel || !maxSel) return;
+
+      const selectedGym = selectGym.value || Object.keys(scales)[0];
+      const scale = scales[selectedGym];
+
+      let levelOptions = '<option value="">Alle Levels</option>';
+      if (scale && scale.mapping) {
+        levelOptions += Object.keys(scale.mapping).map(lvl => `<option value="${lvl}">${lvl}</option>`).join('');
+      }
+
+      minSel.innerHTML = levelOptions;
+      maxSel.innerHTML = levelOptions;
+
+      minSel.value = mapFilters.minLevel;
+      maxSel.value = mapFilters.maxLevel;
+    }
+
+    function toggleMapFilterDrawer() {
+      const drawer = document.getElementById('map-filter-drawer');
+      const backdrop = document.getElementById('map-filter-drawer-backdrop');
+
+      if (!drawer || !backdrop) return;
+
+      const isClosed = drawer.classList.contains('translate-x-full');
+      if (isClosed) {
+        drawer.classList.remove('translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function applyMapFilters() {
+      const minLevel = document.getElementById('flt-min-level').value;
+      const maxLevel = document.getElementById('flt-max-level').value;
+      const holdColor = document.getElementById('flt-hold-color').value;
+      const minRating = parseInt(document.getElementById('flt-min-rating').value) || 0;
+
+      const selectedStatus = Array.from(document.querySelectorAll('.flt-status-check:checked')).map(el => el.value);
+      const selectedStyles = Array.from(document.querySelectorAll('.flt-style-check:checked')).map(el => el.value);
+      const selectedHolds = Array.from(document.querySelectorAll('.flt-hold-check:checked')).map(el => el.value);
+
+      mapFilters = {
+        minLevel: minLevel,
+        maxLevel: maxLevel,
+        status: selectedStatus,
+        color: holdColor,
+        styles: selectedStyles,
+        holdTypes: selectedHolds,
+        minRating: minRating
+      };
+
+      updateFilterResetFabUI();
+
+      const selectedGym = document.getElementById('map-gym-select')?.value;
+      if (selectedGym) {
+        renderMapPins(selectedGym);
+      }
+    }
+
+    function resetMapFilters() {
+      mapFilters = {
+        minLevel: '',
+        maxLevel: '',
+        status: [],
+        color: '',
+        styles: [],
+        holdTypes: [],
+        minRating: 0
+      };
+
+      document.getElementById('flt-min-level').value = '';
+      document.getElementById('flt-max-level').value = '';
+      document.getElementById('flt-hold-color').value = '';
+      document.getElementById('flt-min-rating').value = '0';
+
+      document.querySelectorAll('.flt-status-check').forEach(el => el.checked = false);
+      document.querySelectorAll('.flt-style-check').forEach(el => el.checked = false);
+      document.querySelectorAll('.flt-hold-check').forEach(el => el.checked = false);
+
+      updateFilterResetFabUI();
+
+      const selectedGym = document.getElementById('map-gym-select')?.value;
+      if (selectedGym) {
+        renderMapPins(selectedGym);
+      }
+    }
+
+    function hasActiveMapFilters() {
+      return !!(
+        mapFilters.minLevel ||
+        mapFilters.maxLevel ||
+        mapFilters.color ||
+        mapFilters.minRating > 0 ||
+        (mapFilters.status && mapFilters.status.length > 0) ||
+        (mapFilters.styles && mapFilters.styles.length > 0) ||
+        (mapFilters.holdTypes && mapFilters.holdTypes.length > 0)
+      );
+    }
+
+    function updateFilterResetFabUI() {
+      const resetBtn = document.getElementById('map-fab-reset-filter-btn');
+      const filterBtn = document.getElementById('map-fab-filter-btn');
+
+      if (!resetBtn || !filterBtn) return;
+
+      if (hasActiveMapFilters()) {
+        resetBtn.classList.remove('hidden');
+        filterBtn.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-950/80');
+      } else {
+        resetBtn.classList.add('hidden');
+        filterBtn.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-950/80');
+      }
+    }
+
     function onMapGymChange() {
       resetMapZoom();
+      populateFilterLevelDropdowns();
       renderMapView();
     }
 
@@ -1452,14 +1802,14 @@
       if (mapEditMode) {
         container?.classList.add('ring-2', 'ring-emerald-500', 'cursor-crosshair');
         if (fabBtn) {
-          fabBtn.className = "fixed bottom-6 right-6 z-40 bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 ring-4 ring-emerald-500/30 scale-105";
+          fabBtn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 ring-4 ring-emerald-500/30 scale-105";
         }
         if (fabIcon) fabIcon.innerText = "📍";
         if (fabText) fabText.innerText = "Modus aktiv";
       } else {
         container?.classList.remove('ring-2', 'ring-emerald-500', 'cursor-crosshair');
         if (fabBtn) {
-          fabBtn.className = "fixed bottom-6 right-6 z-40 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95";
+          fabBtn.className = "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold p-3.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95";
         }
         if (fabIcon) fabIcon.innerText = "✏️";
         if (fabText) fabText.innerText = "Bearbeiten";
@@ -1603,6 +1953,8 @@
     function renderMapView() {
       setupMapZoomAndPan();
       updateMapEditModeUI();
+      updateFilterResetFabUI();
+
       const select = document.getElementById('map-gym-select');
       if (!select) return;
       const selectedGym = select.value || Object.keys(scales)[0];
@@ -1624,13 +1976,69 @@
       renderMapPins(selectedGym);
     }
 
-    // ZOOM-RESPONSIVES PIN-RENDERING (NUR DIE ZAHL BEI HERANGEZOOMTER ANSICHT)
+    function parseLevelNumber(lvlStr) {
+      if (!lvlStr) return 0;
+      const match = lvlStr.match(/\d+/);
+      return match ? parseInt(match[0], 10) : 0;
+    }
+
+    // MAP PINS RENDERING MIT FILTER-UNTERSTÜTZUNG
     function renderMapPins(gymName) {
       const layer = document.getElementById('map-pins-layer');
       if (!layer) return;
       layer.innerHTML = '';
 
-      const filteredRoutes = mapRoutes.filter(r => r.gymName === gymName);
+      let filteredRoutes = mapRoutes.filter(r => r.gymName === gymName);
+
+      // FILTERING ANWENDEN
+      if (hasActiveMapFilters()) {
+        filteredRoutes = filteredRoutes.filter(route => {
+          // 1. Min / Max Level Filter
+          const routeLvlNum = parseLevelNumber(route.grade);
+          if (mapFilters.minLevel) {
+            const minNum = parseLevelNumber(mapFilters.minLevel);
+            if (routeLvlNum < minNum) return false;
+          }
+          if (mapFilters.maxLevel) {
+            const maxNum = parseLevelNumber(mapFilters.maxLevel);
+            if (routeLvlNum > maxNum) return false;
+          }
+
+          // 2. Grifffarbe
+          if (mapFilters.color && route.holdColor !== mapFilters.color) {
+            return false;
+          }
+
+          // 3. Status
+          const routeStatus = route.interaction?.status || 'open';
+          if (mapFilters.status && mapFilters.status.length > 0) {
+            if (!mapFilters.status.includes(routeStatus)) return false;
+          }
+
+          // 4. Styles (mindestens ein ausgewählter Style muss übereinstimmen)
+          if (mapFilters.styles && mapFilters.styles.length > 0) {
+            const routeStyles = route.styles || [];
+            const hasMatchingStyle = mapFilters.styles.some(s => routeStyles.includes(s));
+            if (!hasMatchingStyle) return false;
+          }
+
+          // 5. Grifftypen (mindestens ein ausgewählter Typ muss übereinstimmen)
+          if (mapFilters.holdTypes && mapFilters.holdTypes.length > 0) {
+            const routeHolds = route.holdTypes || [];
+            const hasMatchingHold = mapFilters.holdTypes.some(h => routeHolds.includes(h));
+            if (!hasMatchingHold) return false;
+          }
+
+          // 6. Sterne Bewertung
+          const routeRating = route.interaction?.rating || 0;
+          if (mapFilters.minRating > 0 && routeRating < mapFilters.minRating) {
+            return false;
+          }
+
+          return true;
+        });
+      }
+
       const isDetailed = mapZoomScale >= MAP_ZOOM_THRESHOLD;
 
       filteredRoutes.forEach(route => {
@@ -1663,8 +2071,14 @@
           pin.innerText = cleanGrade;
         } else {
           // HERAUSGEZOOMT: Dezente farbige Punkte
-          pin.className = 'absolute w-3.5 h-3.5 -ml-1.75 -mt-1.75 rounded-full border shadow-md cursor-pointer pointer-events-auto transition-all duration-150';
-          pin.style.borderColor = isLight ? '#0f172a' : '#ffffff';
+          // Kleine Dots: ca. 1/3 der früheren Größe (vorher 14px -> jetzt 5px), exakt zentriert per Inline-Style
+          pin.className = 'absolute rounded-full cursor-pointer pointer-events-auto transition-all duration-150';
+          pin.style.width = '5px';
+          pin.style.height = '5px';
+          pin.style.marginLeft = '-2.5px';
+          pin.style.marginTop = '-2.5px';
+          pin.style.border = '0.5px solid ' + (isLight ? '#0f172a' : '#ffffff');
+          pin.style.boxShadow = '0 0 2px rgba(0,0,0,0.5)';
           pin.style.transform = `scale(${counterScale})`;
           pin.innerText = '';
         }
@@ -1678,6 +2092,169 @@
 
         layer.appendChild(pin);
       });
+
+      // Liste der sichtbaren Routen aktualisieren
+      updateMapRouteList(filteredRoutes);
+    }
+
+    // --- AUSKLAPPBARE ROUTENLISTE (sortierbar) ---
+    const MAP_ROUTE_SORT_OPTIONS = [
+      { key: 'grade',  label: 'Schwierigkeitsgrad' },
+      { key: 'zone',   label: 'Wandbereich' },
+      { key: 'style',  label: 'Stil' },
+      { key: 'hold',   label: 'Grifftyp' },
+      { key: 'color',  label: 'Grifffarbe' },
+      { key: 'status', label: 'Status' }
+    ];
+    const MAP_ROUTE_SORT_SHORT = { grade: 'Grad', zone: 'Bereich', style: 'Stil', hold: 'Grifftyp', color: 'Farbe', status: 'Status' };
+    const STATUS_LABELS = { open: '📍 Offen', project: '🎯 Projekt', topped: '🏆 Getoppt', flashed: '⚡ Flash' };
+
+    let mapRouteListOpen = false;
+    let mapRouteSortKey = 'grade';
+    let mapRouteSortDesc = false;
+    let mapRouteListData = [];
+    let mapRouteListSignature = '';
+
+    function escapeHtmlText(str) {
+      return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // Wird bei jedem Pin-Rendering aufgerufen; rendert die Liste nur neu, wenn sich Inhalt/Sortierung geändert hat
+    function updateMapRouteList(routes) {
+      mapRouteListData = routes;
+      const signature = routes.map(r => `${r.id}:${r.grade}:${r.interaction?.status || 'open'}:${r.name || ''}`).join('|') + `#${mapRouteSortKey}#${mapRouteSortDesc}#${mapRouteListOpen}`;
+      if (signature === mapRouteListSignature) return;
+      mapRouteListSignature = signature;
+      renderMapRouteList();
+    }
+
+    function toggleMapRouteList() {
+      mapRouteListOpen = !mapRouteListOpen;
+      mapRouteListSignature = '';
+      renderMapRouteList();
+    }
+
+    function toggleMapRouteSortMenu(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('map-route-sort-menu');
+      if (!menu) return;
+      menu.classList.toggle('hidden');
+    }
+
+    function setMapRouteSort(key) {
+      // Erneuter Klick auf aktive Sortierung kehrt die Reihenfolge um
+      if (mapRouteSortKey === key) {
+        mapRouteSortDesc = !mapRouteSortDesc;
+      } else {
+        mapRouteSortKey = key;
+        mapRouteSortDesc = false;
+      }
+      // Beim Sortieren automatisch aufklappen, damit das Ergebnis sichtbar ist
+      mapRouteListOpen = true;
+      mapRouteListSignature = '';
+      renderMapRouteList();
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('map-route-sort-menu');
+      if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    // Gruppenschlüssel einer Route je nach Sortierung (Stil/Grifftyp können mehrfach vorkommen)
+    function getRouteGroupKeys(route) {
+      switch (mapRouteSortKey) {
+        case 'zone':   return [route.sectorName || 'Kein Bereich'];
+        case 'style':  return (route.styles && route.styles.length) ? route.styles : ['Ohne Stil'];
+        case 'hold':   return (route.holdTypes && route.holdTypes.length) ? route.holdTypes : ['Ohne Grifftyp'];
+        case 'color':  return [route.holdColor || 'Ohne Farbe'];
+        case 'status': return [route.interaction?.status || 'open'];
+        default:       return [route.grade || 'Ohne Grad'];
+      }
+    }
+
+    function renderMapRouteList() {
+      const body = document.getElementById('map-route-list-body');
+      if (!body) return;
+      const routes = mapRouteListData || [];
+
+      // Kopfzeile: Anzahl, Pfeil, Sortier-Label
+      document.getElementById('map-route-list-count').innerText = routes.length;
+      document.getElementById('map-route-list-chevron').style.transform = mapRouteListOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+      document.getElementById('map-route-list-toggle').setAttribute('aria-expanded', mapRouteListOpen ? 'true' : 'false');
+      document.getElementById('map-route-sort-label').innerText = MAP_ROUTE_SORT_SHORT[mapRouteSortKey] + (mapRouteSortDesc ? ' ↓' : ' ↑');
+
+      // Sortier-Menü
+      const menu = document.getElementById('map-route-sort-menu');
+      if (menu) {
+        menu.innerHTML = `<div class="px-3 py-1.5 text-[10px] uppercase font-semibold text-slate-500">Sortieren nach</div>` +
+          MAP_ROUTE_SORT_OPTIONS.map(o => {
+            const active = o.key === mapRouteSortKey;
+            return `<button onclick="setMapRouteSort('${o.key}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center justify-between ${active ? 'text-emerald-400 font-semibold' : 'text-slate-200'}">
+              <span>${o.label}</span><span>${active ? (mapRouteSortDesc ? '↓' : '↑') : ''}</span>
+            </button>`;
+          }).join('') +
+          `<div class="px-3 pt-1 pb-1.5 text-[10px] text-slate-500 border-t border-slate-800">Erneut tippen = Reihenfolge umkehren</div>`;
+      }
+
+      body.classList.toggle('hidden', !mapRouteListOpen);
+      if (!mapRouteListOpen) return;
+
+      if (routes.length === 0) {
+        body.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">Keine Routen sichtbar. Passe die Filter an oder lege im Bearbeitungsmodus neue Routen an.</p>`;
+        return;
+      }
+
+      // Gruppieren
+      const groups = new Map();
+      routes.forEach(r => {
+        getRouteGroupKeys(r).forEach(k => {
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(r);
+        });
+      });
+
+      const isFallback = k => /^(Kein|Ohne)/.test(k);
+      let keys = Array.from(groups.keys());
+      keys.sort((a, b) => {
+        if (isFallback(a) !== isFallback(b)) return isFallback(a) ? 1 : -1; // "Kein/Ohne ..." immer ans Ende
+        let cmp;
+        if (mapRouteSortKey === 'grade') cmp = parseLevelNumber(a) - parseLevelNumber(b) || a.localeCompare(b, 'de', { numeric: true });
+        else if (mapRouteSortKey === 'status') cmp = ['project', 'open', 'flashed', 'topped'].indexOf(a) - ['project', 'open', 'flashed', 'topped'].indexOf(b);
+        else cmp = a.localeCompare(b, 'de');
+        return mapRouteSortDesc && !isFallback(a) && !isFallback(b) ? -cmp : cmp;
+      });
+
+      body.innerHTML = keys.map(k => {
+        const items = groups.get(k).slice().sort((x, y) =>
+          parseLevelNumber(x.grade) - parseLevelNumber(y.grade) || String(x.name || '').localeCompare(String(y.name || ''), 'de')
+        );
+        const headLabel = mapRouteSortKey === 'status' ? (STATUS_LABELS[k] || k) : k;
+        const rows = items.map(r => {
+          const colorHex = HOLD_COLOR_MAP[r.holdColor] || '#3b82f6';
+          const isLight = r.holdColor === 'Weiß' || r.holdColor === 'Gelb';
+          const status = r.interaction?.status || 'open';
+          const statusEmoji = status === 'project' ? '🎯' : status === 'topped' ? '🏆' : status === 'flashed' ? '⚡' : '';
+          const cleanGrade = r.grade ? String(r.grade).replace(/^Level\s*/i, '').replace(/^L\b/i, '') : '?';
+          const meta = [r.sectorName, (r.styles || []).join(', '), (r.holdTypes || []).join(', ')].filter(Boolean).join(' • ');
+          return `<button onclick="openMapInteractionModal('${r.id}')" class="w-full flex items-center gap-3 bg-slate-900 hover:bg-slate-700/70 border border-slate-700/70 rounded-lg px-3 py-2 text-left transition">
+            <span class="w-7 h-7 flex-shrink-0 rounded-full border-2 flex items-center justify-center font-bold text-[10px]" style="background:${colorHex};border-color:${isLight ? '#0f172a' : '#ffffff'};color:${isLight ? '#0f172a' : '#ffffff'}">${escapeHtmlText(cleanGrade)}</span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-xs font-semibold text-slate-200 truncate">${escapeHtmlText(r.name || (r.grade + ' ' + r.holdColor))}</span>
+              <span class="block text-[10px] text-slate-500 truncate">${escapeHtmlText(meta || r.holdColor || '')}</span>
+            </span>
+            <span class="text-sm flex-shrink-0">${statusEmoji}</span>
+          </button>`;
+        }).join('');
+        return `<div class="space-y-1.5">
+          <div class="flex items-center justify-between px-1">
+            <h4 class="text-[11px] font-bold uppercase tracking-wide text-emerald-400">${escapeHtmlText(headLabel)}</h4>
+            <span class="text-[10px] text-slate-500">${items.length}</span>
+          </div>
+          ${rows}
+        </div>`;
+      }).join('');
     }
 
     function handleMapClick(e) {
@@ -1741,11 +2318,12 @@
         sectorName: document.getElementById('mr-sector').value || null,
         gradeOpinion: document.getElementById('mr-grade-opinion').value,
         styles: selectedStyles,
-        holdTypes: selectedHolds
+        holdTypes: selectedHolds,
+        incline: document.getElementById('mr-incline').value || null
       };
 
       if (currentAuthUser && gymScale?.db_id) {
-        const { data: insertedRoute, error } = await supabaseClient.from('gym_map_routes').insert({
+        const baseRow = {
           gym_id: gymScale.db_id,
           created_by: currentAuthUser.id,
           pos_x: routeData.posX,
@@ -1757,11 +2335,20 @@
           grade_opinion: routeData.gradeOpinion,
           styles: routeData.styles,
           hold_types: routeData.holdTypes
-        }).select().single();
+        };
+        // Neigung als eigene Spalte versuchen; fehlt sie in der Datenbank, wird die Route ohne Spalte gespeichert (Neigung bleibt lokal)
+        let { data: insertedRoute, error } = await supabaseClient.from('gym_map_routes').insert({ ...baseRow, incline: routeData.incline }).select().single();
+        if (error && /column|schema cache/i.test(error.message || '')) {
+          ({ data: insertedRoute, error } = await supabaseClient.from('gym_map_routes').insert(baseRow).select().single());
+        }
 
         if (error) {
           alert("Fehler beim Speichern der Route: " + error.message);
           return;
+        }
+        if (insertedRoute?.id && routeData.incline) {
+          routeExtras[String(insertedRoute.id)] = { ...(routeExtras[String(insertedRoute.id)] || {}), incline: routeData.incline };
+          saveRouteExtras();
         }
 
         await fetchAllUserDataFromSupabase();
@@ -1801,8 +2388,29 @@
       document.getElementById('mri-status').value = interaction.status || 'open';
       document.getElementById('mri-rating').value = interaction.rating || 0;
       document.getElementById('mri-comment').value = interaction.comment || '';
+      document.getElementById('mri-attempts').value = interaction.attempts || '';
+      document.getElementById('mri-incline').value = route.incline || '';
+      onMriStatusChange();
 
       openModal('map-interaction-modal');
+    }
+
+    function onMriStatusChange() {
+      const status = document.getElementById('mri-status').value;
+      const wrap = document.getElementById('mri-attempts-wrap');
+      const input = document.getElementById('mri-attempts');
+      const hint = document.getElementById('mri-attempts-hint');
+      wrap.classList.toggle('hidden', status === 'open');
+      if (status === 'flashed') {
+        input.value = 1;
+        input.readOnly = true;
+        input.classList.add('opacity-60');
+        hint.innerText = '(Flash = 1. Versuch)';
+      } else {
+        input.readOnly = false;
+        input.classList.remove('opacity-60');
+        hint.innerText = status === 'project' ? '(bisherige Versuche)' : '(bis zum Durchstieg)';
+      }
     }
 
     async function saveMapRouteInteraction(e) {
@@ -1811,15 +2419,42 @@
       const status = document.getElementById('mri-status').value;
       const rating = parseInt(document.getElementById('mri-rating').value) || 0;
       const comment = document.getElementById('mri-comment').value.trim();
+      const attempts = parseInt(document.getElementById('mri-attempts').value) || null;
+      const incline = document.getElementById('mri-incline').value || null;
+
+      const route = mapRoutes.find(r => String(r.id) === String(routeId));
+      const prevStatus = route?.interaction?.status || 'open';
+      const progress = recordRouteProgress(routeId, prevStatus, status, attempts);
+
+      // Neigung der Route ändern (lokal, DB nur wenn Spalte vorhanden)
+      if (route && (route.incline || null) !== incline) {
+        routeExtras[String(routeId)] = { ...(routeExtras[String(routeId)] || {}), incline };
+        saveRouteExtras();
+        if (currentAuthUser) {
+          try { await supabaseClient.from('gym_map_routes').update({ incline }).eq('id', routeId); } catch (err) { /* Spalte evtl. nicht vorhanden */ }
+        }
+        route.incline = incline;
+      }
 
       if (currentAuthUser) {
-        const { error } = await supabaseClient.from('map_route_interactions').upsert({
+        const baseRow = {
           route_id: routeId,
           user_id: currentAuthUser.id,
           status: status,
           rating: rating > 0 ? rating : null,
           comment: comment || null
+        };
+        // Erst mit den neuen Spalten versuchen, bei fehlenden Spalten ohne sie speichern (Daten bleiben dann lokal)
+        let { error } = await supabaseClient.from('map_route_interactions').upsert({
+          ...baseRow,
+          attempts: progress.attempts ?? null,
+          project_started_at: progress.projectAt || null,
+          topped_at: progress.toppedAt || null
         }, { onConflict: 'route_id, user_id' });
+
+        if (error && /column|schema cache/i.test(error.message || '')) {
+          ({ error } = await supabaseClient.from('map_route_interactions').upsert(baseRow, { onConflict: 'route_id, user_id' }));
+        }
 
         if (error) {
           alert("Fehler beim Speichern der Interaktion: " + error.message);
@@ -1827,11 +2462,13 @@
         }
         await fetchAllUserDataFromSupabase();
       } else {
-        const route = mapRoutes.find(r => r.id === routeId || r.id === String(routeId) || r.id === Number(routeId));
         if (route) {
-          route.interaction = { status, rating, comment };
+          route.interaction = { ...route.interaction, status, rating, comment };
+          applyRouteExtras();
           saveStorage('boulder_map_routes', mapRoutes);
           renderMapView();
+          renderHome();
+          renderStatsAll();
         }
       }
 
@@ -1995,27 +2632,24 @@
     }
 
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      const userInfoEl = document.getElementById('auth-user-info');
       const mainBtn = document.getElementById('auth-main-btn');
 
       if (session && session.user) {
         currentAuthUser = session.user;
         await ensureProfileExists(currentAuthUser);
-        const name = getActiveUserName();
-        userInfoEl.innerHTML = `<span class="text-slate-500">Angemeldet als:</span> <br><strong class="text-emerald-400">${name}</strong>`;
-        mainBtn.innerText = '🚪 Abmelden';
+        mainBtn.innerText = 'Abmelden';
         mainBtn.onclick = logoutUser;
-        mainBtn.className = 'w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-1.5 px-3 rounded text-xs transition';
+        mainBtn.className = 'flex-shrink-0 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-1.5 px-3 rounded-lg text-xs transition';
         await fetchAllUserDataFromSupabase();
       } else {
         currentAuthUser = null;
         resetToGuestData();
-        userInfoEl.innerHTML = `<span class="text-slate-500">Status:</span> Nicht angemeldet`;
-        mainBtn.innerText = '🔐 Anmelden / Registrieren';
+        mainBtn.innerText = 'Anmelden';
         mainBtn.onclick = () => openAuthModal('login');
-        mainBtn.className = 'w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded text-xs transition';
+        mainBtn.className = 'flex-shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-1.5 px-3 rounded-lg text-xs transition';
         renderAllViews();
       }
+      renderHome();
     });
 
     function getActiveUserName() {
@@ -2035,6 +2669,7 @@
       document.getElementById('s-date').valueAsDate = new Date();
       document.getElementById('e-date').valueAsDate = new Date();
       renderAllViews();
+      switchView('home');
     });
 
     function openModal(id) {
@@ -2113,7 +2748,7 @@
         return;
       }
 
-      statusEl.innerText = `✉️ Freundschaftsanfrage an "${targetUser.username}" gesendet!`;
+      statusEl.innerText = `✉️️ Freundschaftsanfrage an "${targetUser.username}" gesendet!`;
       input.value = '';
       await loadFriendsAndSocialFeed();
     }
@@ -2450,11 +3085,12 @@
       const confirmedContainer = document.getElementById('confirmed-friends-list');
       if (confirmedContainer) {
         if (localFriendsList.length === 0) {
-          confirmedContainer.innerHTML = `<span class="text-xs text-slate-500 italic">Noch keine bestätigten Freunde.</span>`;
+          confirmedContainer.innerHTML = `<span class="text-xs text-slate-500 italic">Noch keine Freunde – lade jemanden zum Bouldern ein! 🤝</span>`;
         } else {
           confirmedContainer.innerHTML = localFriendsList.map(f => `
-            <button onclick="viewFriendProfile('${f.id}', '${f.username}')" class="bg-slate-900 border border-slate-700/80 hover:border-emerald-500 text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
-              👤 ${f.username} <span class="text-[10px] text-slate-400">🔍 Profil ansehen</span>
+            <button onclick="viewFriendProfile('${f.id}', '${f.username}')" class="bg-slate-900/70 border border-slate-700/70 hover:border-emerald-500 text-slate-200 pl-1 pr-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 transition cursor-pointer" title="Profil ansehen">
+              <span class="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold flex items-center justify-center">${escapeHtmlText((f.username || '?').charAt(0).toUpperCase())}</span>
+              ${escapeHtmlText(f.username)}
             </button>
           `).join('');
         }
@@ -2487,47 +3123,253 @@
       `).join('');
     }
 
+    // Feed: standardmäßig nur die letzten 3 Meldungen, Rest per Button
+    const SOCIAL_FEED_PREVIEW_COUNT = 3;
+    let socialFeedExpanded = false;
+
+    function toggleSocialFeedExpanded() {
+      socialFeedExpanded = !socialFeedExpanded;
+      renderSocialFeed();
+    }
+
+    function toggleAddFriendRow() {
+      const row = document.getElementById('add-friend-row');
+      if (!row) return;
+      const show = row.classList.contains('hidden');
+      row.classList.toggle('hidden', !show);
+      row.classList.toggle('flex', show);
+      if (show) document.getElementById('add-friend-input')?.focus();
+    }
+
     function renderSocialFeed() {
       const container = document.getElementById('social-feed-list');
+      const toggleBtn = document.getElementById('social-feed-toggle');
       if (!container) return;
+
       if (socialFeed.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 py-4 text-center">Bisher noch keine Aktivitätsbeiträge vorhanden.</p>`;
+        container.innerHTML = `<p class="text-xs text-slate-500 py-4 text-center bg-slate-800/30 border border-slate-700/40 rounded-xl">Noch ruhig hier – sobald du oder deine Freunde etwas erleben, siehst du es hier. 🌱</p>`;
+        if (toggleBtn) toggleBtn.classList.add('hidden');
         return;
       }
 
-      container.innerHTML = socialFeed.map(item => {
-        const isAscend = item.type === 'ascend';
-        const isFriendship = item.type === 'friendship';
-        const badgeColor = isAscend ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40' : (isFriendship ? 'bg-slate-800 text-amber-300 border-slate-700' : 'bg-blue-950 text-blue-400 border-blue-500/40');
-        const icon = isAscend ? '🏆' : (isFriendship ? '🤝' : '🎯');
+      const visibleItems = socialFeedExpanded ? socialFeed : socialFeed.slice(0, SOCIAL_FEED_PREVIEW_COUNT);
+
+      container.innerHTML = visibleItems.map(item => {
+        const icon = item.type === 'ascend' ? '🏆' : (item.type === 'friendship' ? '🤝' : '🎯');
+
+        // Kompakte Darstellung: erste Zeile als Überschrift, zweite (Projektname) als Detail
+        const lines = String(item.text || '').split('\n').map(l => l.trim()).filter(Boolean);
+        const headline = lines[0] || item.title || '';
+        const detail = (lines[1] || '').replace(/\*\*/g, '');
 
         return `
-          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3 shadow-sm">
-            <div class="flex justify-between items-start gap-2 border-b border-slate-700/60 pb-2">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">${icon}</span>
-                <div>
-                  <span class="font-bold text-slate-100 text-xs">${item.user}</span>
-                  <span class="text-[10px] text-slate-400 ml-2">${item.date}</span>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] uppercase font-bold border px-2 py-0.5 rounded ${badgeColor}">${item.title}</span>
-                <button onclick="deleteSocialFeedEntry('${item.id}')" class="text-slate-400 hover:text-red-400 p-1 text-xs transition" title="Beitrag aus dem Feed entfernen">✕</button>
-              </div>
+          <div class="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl px-3 py-2.5">
+            <span class="text-lg flex-shrink-0">${icon}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs text-slate-200 leading-snug line-clamp-2">${escapeHtmlText(headline)}</p>
+              ${detail ? `<p class="text-[11px] text-slate-400 truncate">${escapeHtmlText(detail)}</p>` : ''}
+              <p class="text-[10px] text-slate-500 mt-0.5">${escapeHtmlText(item.user)} · ${escapeHtmlText(item.date)}</p>
             </div>
-
-            <div class="flex items-start gap-3">
-              ${item.imageUrl ? `
-                <img src="${item.imageUrl}" alt="Routenbild" onclick="openImageViewerModalDirect('${item.imageUrl}')" class="w-16 h-16 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
-              ` : ''}
-              <div class="flex-1 text-xs text-slate-200 whitespace-pre-line leading-relaxed">
-                ${item.text}
-              </div>
-            </div>
+            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="Routenbild" onclick="openImageViewerModalDirect('${item.imageUrl}')" class="w-10 h-10 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition">` : ''}
+            <button onclick="deleteSocialFeedEntry('${item.id}')" class="text-slate-500 hover:text-red-400 p-1 text-xs transition flex-shrink-0" title="Beitrag entfernen">✕</button>
           </div>
         `;
       }).join('');
+
+      if (toggleBtn) {
+        const hiddenCount = socialFeed.length - SOCIAL_FEED_PREVIEW_COUNT;
+        if (hiddenCount > 0) {
+          toggleBtn.classList.remove('hidden');
+          toggleBtn.innerText = socialFeedExpanded ? 'Weniger anzeigen ↑' : `Mehr anzeigen (${hiddenCount} weitere) ↓`;
+        } else {
+          toggleBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    // --- HOME: BEGRÜSSUNG, LETZTE AKTIVITÄT, AKTIVE PROJEKTE (nur Routen der Hallenkarte) ---
+    // Zeitpunkte, wann der Status einer Karten-Route zuletzt geändert wurde (Fallback, falls die Datenbank keinen Zeitstempel liefert)
+    let routeStatusTimes = loadStorage('boulder_route_status_times', {});
+
+    // Hält Projektstart, Durchstieg und Versuche fest, sobald sich der Status einer Route ändert
+    function recordRouteProgress(routeId, prevStatus, status, attempts) {
+      const id = String(routeId);
+      const x = routeExtras[id] || {};
+      const nowIso = new Date().toISOString();
+      const isTop = st => st === 'topped' || st === 'flashed';
+
+      if (status === 'project') {
+        if (!x.projectAt) x.projectAt = nowIso;
+        x.toppedAt = null;
+      } else if (isTop(status)) {
+        if (!isTop(prevStatus) || !x.toppedAt) x.toppedAt = nowIso;
+      } else {
+        x.projectAt = null;
+        x.toppedAt = null;
+      }
+
+      if (status === 'flashed') x.attempts = 1;
+      else if (attempts && attempts > 0) x.attempts = attempts;
+      else if (status === 'open') x.attempts = null;
+
+      routeExtras[id] = x;
+      saveRouteExtras();
+      return x;
+    }
+
+    function getRouteStatusTimestamp(route) {
+      const i = route.interaction || {};
+      const st = i.status || 'open';
+      let ts = 0;
+      if (st === 'project' && i.projectAt) ts = Date.parse(i.projectAt);
+      else if ((st === 'topped' || st === 'flashed') && i.toppedAt) ts = Date.parse(i.toppedAt);
+      if (ts && Number.isFinite(ts)) return ts;
+
+      // Fallback: ältere lokale Zeitstempel bzw. DB-Zeitstempel
+      const local = routeStatusTimes[String(route.id)];
+      const localTs = (local && local.status === st) ? new Date(local.ts).getTime() : 0;
+      const dbTs = i.updatedAt ? new Date(i.updatedAt).getTime() : 0;
+      const best = Math.max(localTs || 0, dbTs || 0);
+      return Number.isFinite(best) ? best : 0;
+    }
+
+    function formatRelativeTime(ts) {
+      if (!ts) return '';
+      const days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(ts).setHours(0, 0, 0, 0)) / 86400000);
+      if (days <= 0) return 'heute';
+      if (days === 1) return 'gestern';
+      if (days < 7) return `vor ${days} Tagen`;
+      if (days < 14) return 'vor 1 Woche';
+      if (days < 60) return `vor ${Math.floor(days / 7)} Wochen`;
+      return `vor ${Math.floor(days / 30)} Monaten`;
+    }
+
+    const HOME_SUBLINES = [
+      'Bereit für den nächsten Boulder?',
+      'Heute ist ein guter Tag zum Topspielen.',
+      'Deine Projekte warten schon auf dich.',
+      'Griffe sammeln, Grenzen verschieben.',
+      'Noch ein Versuch geht immer.',
+      'Die Wand ruft – was ist dein Plan?'
+    ];
+
+    function renderHomeGreeting() {
+      const greetingEl = document.getElementById('home-greeting');
+      if (!greetingEl) return;
+      const sublineEl = document.getElementById('home-subline');
+      const avatarEl = document.getElementById('home-avatar');
+
+      if (!currentAuthUser) {
+        greetingEl.innerText = 'Willkommen bei BoulderLog!';
+        sublineEl.innerText = 'Melde dich an, um deine Fortschritte zu speichern und Freunde zu finden.';
+        avatarEl.innerText = '🧗';
+        return;
+      }
+
+      const name = getActiveUserName();
+      const hour = new Date().getHours();
+      const daytime = hour < 11 ? 'Guten Morgen' : (hour < 18 ? 'Schön, dich zu sehen' : 'Guten Abend');
+      greetingEl.innerText = `${daytime}, ${name}!`;
+      const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+      sublineEl.innerText = HOME_SUBLINES[dayOfYear % HOME_SUBLINES.length];
+      avatarEl.innerText = (name || '?').charAt(0).toUpperCase();
+    }
+
+    function homeRouteChip(r, ts) {
+      const colorHex = HOLD_COLOR_MAP[r.holdColor] || '#3b82f6';
+      const isLight = r.holdColor === 'Weiß' || r.holdColor === 'Gelb';
+      const cleanGrade = r.grade ? String(r.grade).replace(/^Level\s*/i, '').replace(/^L\b/i, '') : '?';
+      const label = r.name || `${r.grade} ${r.holdColor}`;
+      return `<button onclick="openMapInteractionModal('${r.id}')" class="flex items-center gap-2 bg-slate-900/70 hover:bg-slate-700/70 border border-slate-700/60 rounded-full pl-1 pr-3 py-1 text-xs transition max-w-full" title="${escapeHtmlText(label)}">
+        <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center font-bold text-[10px] flex-shrink-0" style="background:${colorHex};border-color:${isLight ? '#0f172a' : '#ffffff'};color:${isLight ? '#0f172a' : '#ffffff'}">${escapeHtmlText(cleanGrade)}</span>
+        <span class="text-slate-200 truncate">${escapeHtmlText(label)}</span>
+        ${ts ? `<span class="text-[10px] text-slate-500 flex-shrink-0">${formatRelativeTime(ts)}</span>` : ''}
+      </button>`;
+    }
+
+    function renderHomeActivity() {
+      const container = document.getElementById('home-activity');
+      if (!container) return;
+
+      const withTime = (status) => mapRoutes
+        .filter(r => (Array.isArray(status) ? status.includes(r.interaction?.status) : r.interaction?.status === status))
+        .map(r => ({ r, ts: getRouteStatusTimestamp(r) }))
+        .sort((a, b) => b.ts - a.ts)
+        .slice(0, 3);
+
+      const topped = withTime(['topped', 'flashed']);
+      const newProjects = withTime('project');
+
+      // Letzte Session
+      let sessionHtml = `<span class="text-xs text-slate-500 italic">Noch keine Session eingetragen.</span>`;
+      if (sessions.length > 0) {
+        const last = sessions.slice().sort((a, b) => new Date(`${b.date}T${b.time || '00:00'}`) - new Date(`${a.date}T${a.time || '00:00'}`))[0];
+        const parts = [formatRelativeTime(new Date(last.date).getTime())];
+        if (last.gym) parts.push(escapeHtmlText(last.gym));
+        if (last.durationMinutes) parts.push(`${parseInt(last.durationMinutes)} Min`);
+        sessionHtml = `<span class="text-xs text-slate-200">${parts.join(' · ')}</span>`;
+      }
+
+      const row = (icon, title, body) => `
+        <div class="flex items-start gap-3 px-4 py-3">
+          <span class="text-lg leading-none mt-1">${icon}</span>
+          <div class="flex-1 min-w-0 space-y-1.5">
+            <p class="text-[11px] uppercase tracking-wide font-semibold text-slate-500">${title}</p>
+            ${body}
+          </div>
+        </div>`;
+
+      container.innerHTML =
+        row('🏆', 'Zuletzt getoppt',
+          topped.length ? `<div class="flex flex-wrap gap-1.5">${topped.map(x => homeRouteChip(x.r, x.ts)).join('')}</div>`
+                        : `<span class="text-xs text-slate-500 italic">Noch kein Top – der erste kommt bestimmt! 💪</span>`) +
+        row('🎯', 'Neu als Projekt angelegt',
+          newProjects.length ? `<div class="flex flex-wrap gap-1.5">${newProjects.map(x => homeRouteChip(x.r, x.ts)).join('')}</div>`
+                             : `<span class="text-xs text-slate-500 italic">Markiere auf der Hallenkarte eine Route als Projekt.</span>`) +
+        row('📅', 'Letzte Session', sessionHtml);
+    }
+
+    function renderHomeActiveProjects() {
+      const container = document.getElementById('home-active-projects');
+      if (!container) return;
+
+      const active = mapRoutes
+        .filter(r => r.interaction?.status === 'project')
+        .map(r => ({ r, ts: getRouteStatusTimestamp(r) }))
+        .sort((a, b) => b.ts - a.ts);
+
+      if (active.length === 0) {
+        container.innerHTML = `<p class="sm:col-span-2 text-xs text-slate-500 text-center py-5 bg-slate-800/30 border border-slate-700/40 rounded-2xl">Gerade keine offenen Projekte. Tippe auf der Hallenkarte eine Route an und setze sie auf „🎯 Projekt“.</p>`;
+        return;
+      }
+
+      container.innerHTML = active.map(({ r, ts }) => {
+        const colorHex = HOLD_COLOR_MAP[r.holdColor] || '#3b82f6';
+        const isLight = r.holdColor === 'Weiß' || r.holdColor === 'Gelb';
+        const cleanGrade = r.grade ? String(r.grade).replace(/^Level\s*/i, '').replace(/^L\b/i, '') : '?';
+        const where = [r.gymName, r.sectorName].filter(Boolean).join(' • ');
+        const tags = [...(r.styles || []), ...(r.holdTypes || [])].slice(0, 3);
+        const rating = r.interaction?.rating || 0;
+        return `
+          <button onclick="openMapInteractionModal('${r.id}')" class="text-left flex items-center gap-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-emerald-500/40 rounded-2xl p-3.5 transition">
+            <span class="w-11 h-11 rounded-full border-2 flex items-center justify-center font-bold text-sm flex-shrink-0 shadow" style="background:${colorHex};border-color:${isLight ? '#0f172a' : '#ffffff'};color:${isLight ? '#0f172a' : '#ffffff'}">${escapeHtmlText(cleanGrade)}</span>
+            <span class="flex-1 min-w-0 space-y-0.5">
+              <span class="block text-sm font-semibold text-slate-100 truncate">${escapeHtmlText(r.name || `${r.grade} ${r.holdColor}`)}</span>
+              <span class="block text-[11px] text-slate-400 truncate">${escapeHtmlText(where)}</span>
+              ${tags.length ? `<span class="block text-[10px] text-emerald-400/80 truncate">${escapeHtmlText(tags.join(' · '))}</span>` : ''}
+            </span>
+            <span class="text-right flex-shrink-0 space-y-0.5">
+              ${rating > 0 ? `<span class="block text-[11px] text-amber-400">${'★'.repeat(rating)}</span>` : ''}
+              ${ts ? `<span class="block text-[10px] text-slate-500">${formatRelativeTime(ts)}</span>` : ''}
+            </span>
+          </button>`;
+      }).join('');
+    }
+
+    function renderHome() {
+      renderHomeGreeting();
+      renderHomeActivity();
+      renderHomeActiveProjects();
     }
 
     // --- PROJEKTE ---
@@ -2972,14 +3814,16 @@
       }
     }
 
-    function renderSessions() {
+    function renderSessions(list) {
       const container = document.getElementById('sessions-list');
-      if (sessions.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 py-4">Bisher keine Sessions eingetragen.</p>`;
+      if (!container) return;
+      const source = Array.isArray(list) ? list : sessions;
+      if (source.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-4">${sessions.length === 0 ? 'Bisher keine Sessions eingetragen.' : 'Keine Sessions im gewählten Zeitraum.'}</p>`;
         return;
       }
 
-      const sorted = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const sorted = [...source].sort((a, b) => new Date(b.date) - new Date(a.date));
 
       container.innerHTML = sorted.map(s => {
         const countsStr = Object.entries(s.boulderCounts || {})
@@ -3004,42 +3848,6 @@
           </div>
         `;
       }).join('');
-    }
-
-    function renderSessionStats() {
-      const container = document.getElementById('session-stats-summary');
-      if (sessions.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 col-span-3 py-2">Keine Session-Daten vorhanden.</p>`;
-        return;
-      }
-
-      const timestamps = sessions.map(s => new Date(s.date).getTime()).sort((a, b) => a - b);
-      const minDate = new Date(timestamps[0]);
-      const maxDate = new Date(timestamps[timestamps.length - 1]);
-      const diffDays = Math.max(1, Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)));
-      const diffWeeks = Math.max(1, diffDays / 7);
-      const freqPerWeek = (sessions.length / diffWeeks).toFixed(1);
-
-      const totalMin = sessions.reduce((sum, s) => sum + (parseInt(s.durationMinutes) || 0), 0);
-      const avgMin = Math.round(totalMin / sessions.length);
-
-      container.innerHTML = `
-        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 text-center space-y-1">
-          <span class="block text-slate-400 text-xs uppercase font-semibold">Frequenz</span>
-          <span class="text-2xl font-bold text-emerald-400">${freqPerWeek}x</span>
-          <span class="block text-[11px] text-slate-500">Einheiten pro Woche</span>
-        </div>
-        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 text-center space-y-1">
-          <span class="block text-slate-400 text-xs uppercase font-semibold">Ø Dauer</span>
-          <span class="text-2xl font-bold text-emerald-400">${avgMin} Min</span>
-          <span class="block text-[11px] text-slate-500">pro Klettersession</span>
-        </div>
-        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 text-center space-y-1">
-          <span class="block text-slate-400 text-xs uppercase font-semibold">Sessions Total</span>
-          <span class="text-2xl font-bold text-emerald-400">${sessions.length}</span>
-          <span class="block text-[11px] text-slate-500">Absolvierte Einheiten</span>
-        </div>
-      `;
     }
 
     // --- LOGBUCH ---
@@ -3582,195 +4390,589 @@
     }
 
     // --- RENDERING PROJEKTE & STATISTIK ---
-    function renderProjects() {
-      const container = document.getElementById('active-projects-list');
-      const active = projects.filter(p => p.status === 'active');
-      if (active.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-4">Derzeit keine aktiven Projekte.</p>`;
-        return;
-      }
+    // =====================================================================
+    // STATISTIK (basiert auf den über die Hallenkarte angelegten Routen)
+    // =====================================================================
+    let statCharts = {};
 
-      container.innerHTML = active.map(p => {
-        const timerBadge = renderTimerBadge(p.setDate || p.set_date, p.gym);
-        return `
-          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col justify-between space-y-3">
-            <div class="flex items-start gap-3">
-              ${p.imageUrl ? `
-                <img src="${p.imageUrl}" alt="${p.name}" onclick="openImageViewerModal('${p.id}')" class="w-16 h-16 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
-              ` : ''}
-              <div class="flex-1">
-                <div class="flex justify-between items-start gap-2">
-                  <div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block">${p.gym} • ${p.zone || 'Allgemein'}</span>
-                    <h4 class="font-bold text-slate-100 text-base mb-1">${p.name} (${p.level})</h4>
-                  </div>
-                  ${timerBadge}
-                </div>
-                <div class="flex flex-wrap gap-1 mt-1 text-[11px] text-slate-300">
-                  ${p.style ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">🎨 ${p.style}</span>` : ''}
-                  ${p.incline ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">📐 ${p.incline}</span>` : ''}
-                  ${p.holdType ? `<span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">✊ ${p.holdType}</span>` : ''}
-                </div>
-              </div>
-            </div>
-            <div class="border-t border-slate-700/60 pt-3 flex items-center justify-between">
-              <div class="text-xs text-slate-400">Attempts: <span class="font-bold text-slate-200">${p.attempts}</span> <button onclick="addAttempt('${p.id}')" class="ml-1 bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded text-xs">+1</button></div>
-              <div class="flex gap-1">
-                <button onclick="openProjectModal('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs" title="Bearbeiten">✏</button>
-                <button onclick="deleteProject('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-2 py-1 rounded text-xs" title="Löschen">🗑</button>
-                <button onclick="openAscendModal('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 font-bold px-3 py-1 rounded text-xs text-white">Ascend</button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+    const HOLD_LABELS = { Crimps: 'Leisten', Sloper: 'Sloper', Jugs: 'Henkel', Pinch: 'Zangen', Pockets: 'Taschen', Volumes: 'Volumen' };
+    const INCLINE_ORDER = ['Slab', 'Senkrecht', 'Slight Overhang', 'Overhang (~45°)', 'Roof'];
+    const STAT_EMERALD = '#34d399';
+    const STAT_EMERALD_SOFT = 'rgba(52,211,153,0.35)';
+    const STAT_AMBER = '#fbbf24';
+    const STAT_SKY = '#38bdf8';
+    const STAT_OPEN = 'rgba(100,116,139,0.28)';
 
-    function renderCompleted() {
-      const container = document.getElementById('completed-projects-list');
-      const completed = projects.filter(p => p.status === 'completed');
-      if (completed.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 py-4">Noch keine abgeschlossenen Projekte.</p>`;
-        return;
-      }
+    const STAT_DIMENSIONS = [
+      { key: 'grade',   title: 'Schwierigkeitsgrad', order: 'grade',   get: r => [r.grade || 'Ohne Grad'] },
+      { key: 'style',   title: 'Stil',               order: 'count',   get: r => (r.styles && r.styles.length) ? r.styles : ['Keine Angabe'] },
+      { key: 'hold',    title: 'Grifftyp',           order: 'count',   get: r => (r.holdTypes && r.holdTypes.length) ? r.holdTypes.map(h => HOLD_LABELS[h] || h) : ['Keine Angabe'] },
+      { key: 'incline', title: 'Neigung',            order: 'incline', get: r => [r.incline || 'Keine Angabe'] },
+      { key: 'zone',    title: 'Wandbereich',        order: 'count',   get: r => [r.sectorName || 'Kein Bereich'] }
+    ];
 
-      container.innerHTML = completed.map(p => `
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center text-sm">
-          <div class="flex items-center gap-3">
-            ${p.imageUrl ? `
-              <img src="${p.imageUrl}" alt="${p.name}" onclick="openImageViewerModal('${p.id}')" class="w-14 h-14 object-cover rounded-lg border border-slate-700 cursor-pointer flex-shrink-0 hover:opacity-80 transition" title="Klicken zum Vergrößern">
-            ` : ''}
-            <div>
-              <h4 class="font-semibold text-slate-100">${p.name} (${p.level})</h4>
-              <p class="text-xs text-slate-400">${p.gym} | Durchstieg: ${p.completedDate || 'k.A.'}</p>
-              <div class="flex flex-wrap gap-1 mt-1 text-[10px] text-slate-400">
-                ${p.style ? `<span class="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700/60">${p.style}</span>` : ''}
-                ${p.incline ? `<span class="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700/60">${p.incline}</span>` : ''}
-                ${p.holdType ? `<span class="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700/60">${p.holdType}</span>` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5 self-end sm:self-center">
-            <button onclick="toggleExcludeStats('${p.id}')" class="text-xs px-2 py-1 rounded ${p.excludeFromStats ? 'bg-emerald-900/40 text-emerald-300' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}">
-              ${p.excludeFromStats ? '➕ In Statistik' : '➖ Aus Statistik'}
-            </button>
-            <button onclick="openProjectModal('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs" title="Bearbeiten">✏️</button>
-            <button onclick="deleteProject('${p.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-2 py-1 rounded text-xs" title="Löschen">🗑️️</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function initStatsGymFilter() {
-      const select = document.getElementById('stats-gym-filter');
-      select.innerHTML = `<option value="ALL">Alle Hallen</option>` + Object.keys(scales).map(g => `<option value="${g}">${g}</option>`).join('');
-    }
-
+    // ---------- Filter ----------
     function setStatsDisplayMode(mode) {
       statsDisplayMode = mode;
-      document.getElementById('btn-mode-text').className = mode === 'text' ? 'px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold' : 'px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-semibold';
-      document.getElementById('btn-mode-chart').className = mode === 'chart' ? 'px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold' : 'px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-semibold';
-      renderStats();
+      const on = 'px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold';
+      const off = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 font-semibold';
+      document.getElementById('btn-mode-text').className = mode === 'text' ? on : off;
+      document.getElementById('btn-mode-chart').className = mode === 'chart' ? on : off;
+      renderStatsAll();
     }
 
     function handleStatsTimeFilterChange() {
       const mode = document.getElementById('stats-time-filter').value;
-      const customContainer = document.getElementById('stats-custom-date-container');
-      if (mode === 'CUSTOM') {
-        customContainer.classList.remove('hidden');
-        customContainer.classList.add('flex');
-      } else {
-        customContainer.classList.add('hidden');
-        customContainer.classList.remove('flex');
-      }
-      renderStats();
+      const box = document.getElementById('stats-custom-date-container');
+      box.classList.toggle('hidden', mode !== 'CUSTOM');
+      box.classList.toggle('flex', mode === 'CUSTOM');
+      renderStatsAll();
     }
 
-    function filterProjectsByTime(projectsList) {
+    function initStatsGymFilter() {
+      const select = document.getElementById('stats-gym-filter');
+      if (!select) return;
+      const prev = select.value || 'ALL';
+      select.innerHTML = `<option value="ALL">Alle Hallen</option>` + Object.keys(scales).map(g => `<option value="${escapeHtmlText(g)}">${escapeHtmlText(g)}</option>`).join('');
+      select.value = (prev === 'ALL' || scales[prev]) ? prev : 'ALL';
+    }
+
+    function getStatsRange() {
       const mode = document.getElementById('stats-time-filter')?.value || 'ALL';
-      if (mode === 'ALL') return projectsList;
-
-      const now = new Date();
-      let startDate = null;
-      let endDate = new Date();
-
-      if (mode === '30') {
-        startDate = new Date();
-        startDate.setDate(now.getDate() - 30);
-      } else if (mode === '90') {
-        startDate = new Date();
-        startDate.setDate(now.getDate() - 90);
-      } else if (mode === '365') {
-        startDate = new Date();
-        startDate.setDate(now.getDate() - 365);
-      } else if (mode === 'CUSTOM') {
-        const startVal = document.getElementById('stats-start-date')?.value;
-        const endVal = document.getElementById('stats-end-date')?.value;
-        if (startVal) startDate = new Date(startVal);
-        if (endVal) endDate = new Date(endVal);
+      const range = { mode, start: null, end: null };
+      if (mode === 'ALL') return range;
+      if (mode === 'CUSTOM') {
+        const sv = document.getElementById('stats-start-date')?.value;
+        const ev = document.getElementById('stats-end-date')?.value;
+        if (sv) range.start = new Date(sv + 'T00:00:00').getTime();
+        if (ev) range.end = new Date(ev + 'T23:59:59').getTime();
+        if (!range.start && !range.end) range.mode = 'ALL';
+        return range;
       }
+      range.end = Date.now();
+      range.start = range.end - parseInt(mode, 10) * 86400000;
+      return range;
+    }
 
-      return projectsList.filter(p => {
-        const dateStr = p.createdDate || p.created_date || p.setDate || p.set_date;
-        if (!dateStr) return true;
-        const pDate = new Date(dateStr);
-        if (isNaN(pDate.getTime())) return true;
-        if (startDate && pDate < startDate) return false;
-        if (endDate && pDate > endDate) return false;
-        return true;
+    // Ohne Zeitstempel (ältere Einträge) zählt ein Datensatz nur im Zeitraum "Gesamt"
+    function tsInRange(ts, range) {
+      if (range.mode === 'ALL') return true;
+      if (!ts || !Number.isFinite(ts)) return false;
+      if (range.start && ts < range.start) return false;
+      if (range.end && ts > range.end) return false;
+      return true;
+    }
+
+    function getStatsGym() {
+      return document.getElementById('stats-gym-filter')?.value || 'ALL';
+    }
+
+    function statsGymRoutes() {
+      const gym = getStatsGym();
+      return mapRoutes.filter(r => gym === 'ALL' || r.gymName === gym);
+    }
+
+    function getStatsSessions() {
+      const gym = getStatsGym();
+      const range = getStatsRange();
+      return sessions.filter(s => (gym === 'ALL' || s.gym === gym) && tsInRange(Date.parse(`${s.date}T12:00:00`), range));
+    }
+
+    const routeStatusOf = r => r.interaction?.status || 'open';
+    const isTopStatus = st => st === 'topped' || st === 'flashed';
+    const routeLabel = r => r.name || `${r.grade || ''} ${r.holdColor || ''}`.trim() || 'Route';
+
+    // ---------- Bausteine ----------
+    function statSection(title, subtitle, body) {
+      return `<section class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+        <div>
+          <h4 class="text-sm font-bold text-slate-100">${title}</h4>
+          ${subtitle ? `<p class="text-[11px] text-slate-400 mt-0.5">${subtitle}</p>` : ''}
+        </div>
+        ${body}
+      </section>`;
+    }
+
+    function statKpiTile(label, value, sub) {
+      return `<div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-3.5">
+        <span class="block text-[10px] uppercase tracking-wide font-semibold text-slate-500">${label}</span>
+        <span class="block text-2xl font-bold text-emerald-400 leading-tight mt-1">${value}</span>
+        ${sub ? `<span class="block text-[11px] text-slate-500 mt-0.5">${sub}</span>` : ''}
+      </div>`;
+    }
+
+    function statKpiGrid(tiles) {
+      return `<div class="grid grid-cols-2 ${tiles.length > 3 ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-3">${tiles.join('')}</div>`;
+    }
+
+    function statEmpty(msg) {
+      return `<p class="text-xs text-slate-500 text-center py-8 bg-slate-800/30 border border-slate-700/40 rounded-2xl">${msg}</p>`;
+    }
+
+    function statChartBox(id, height) {
+      return `<div class="relative" style="height:${height}px"><canvas id="${id}"></canvas></div>`;
+    }
+
+    function statRankRows(entries, base) {
+      const max = Math.max(...entries.map(e => e.value), 1);
+      return `<div class="space-y-2.5">${entries.map((e, i) => `
+        <div>
+          <div class="flex justify-between items-baseline text-xs mb-1">
+            <span class="text-slate-200 font-medium truncate pr-2">${escapeHtmlText(e.label)}</span>
+            <span class="text-slate-400 flex-shrink-0"><b class="text-slate-100">${e.value}</b> · ${Math.round(e.value / base * 100)}%</span>
+          </div>
+          <div class="h-1.5 rounded-full bg-slate-700/40 overflow-hidden">
+            <div class="h-full rounded-full" style="width:${(e.value / max * 100).toFixed(1)}%;background:${i === e.highlight ? STAT_EMERALD : 'rgba(45,212,191,0.55)'}"></div>
+          </div>
+        </div>`).join('')}</div>`;
+    }
+
+    function statGradeSort(a, b) {
+      return parseLevelNumber(a) - parseLevelNumber(b) || a.localeCompare(b, 'de', { numeric: true });
+    }
+
+    // Sortiert Kategorien: Grad nach Level, Neigung nach Steilheit, sonst nach Häufigkeit; "Keine Angabe" immer zuletzt
+    function sortStatLabels(dim, labels, countOf) {
+      const isFallback = l => /^(Keine|Kein|Ohne)/.test(l);
+      return labels.slice().sort((a, b) => {
+        if (isFallback(a) !== isFallback(b)) return isFallback(a) ? 1 : -1;
+        if (dim.order === 'grade') return statGradeSort(a, b);
+        if (dim.order === 'incline') {
+          const ia = INCLINE_ORDER.indexOf(a), ib = INCLINE_ORDER.indexOf(b);
+          return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        }
+        return countOf(b) - countOf(a) || a.localeCompare(b, 'de');
       });
     }
 
-    function toggleWidgetDropdown() {
-      document.getElementById('widget-dropdown').classList.toggle('hidden');
+    function groupRoutesByDim(routes, dim) {
+      const map = new Map();
+      routes.forEach(r => dim.get(r).forEach(l => {
+        if (!map.has(l)) map.set(l, []);
+        map.get(l).push(r);
+      }));
+      return map;
     }
 
-    function addWidget(type) {
-      if (!activeWidgets.includes(type)) {
-        activeWidgets.push(type);
-        saveStorage('boulder_widgets', activeWidgets);
-        renderStats();
+    // ---------- Chart.js: Stil & Konfigurationen ----------
+    function destroyStatCharts() {
+      Object.values(statCharts).forEach(c => { try { c.destroy(); } catch (e) { /* ignore */ } });
+      statCharts = {};
+    }
+
+    function applyStatChartDefaults() {
+      if (typeof Chart === 'undefined' || Chart.__boulderStyled) return;
+      Chart.__boulderStyled = true;
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.font.family = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+      Chart.defaults.font.size = 11;
+      Chart.defaults.plugins.legend.labels.usePointStyle = true;
+      Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+      Chart.defaults.plugins.legend.labels.boxWidth = 8;
+      Chart.defaults.plugins.legend.labels.padding = 14;
+      Object.assign(Chart.defaults.plugins.tooltip, {
+        backgroundColor: 'rgba(15,23,42,0.96)', borderColor: 'rgba(71,85,105,0.7)', borderWidth: 1,
+        titleColor: '#f1f5f9', bodyColor: '#cbd5e1', padding: 10, cornerRadius: 10, boxPadding: 4, displayColors: true
+      });
+    }
+
+    const statCenterTextPlugin = {
+      id: 'centerText',
+      afterDraw(chart, args, opts) {
+        if (!opts || !opts.text) return;
+        const { ctx, chartArea: { left, right, top, bottom } } = chart;
+        const cx = (left + right) / 2, cy = (top + bottom) / 2;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#f1f5f9';
+        ctx.font = '700 28px ui-sans-serif, system-ui, sans-serif';
+        ctx.fillText(opts.text, cx, cy - 6);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 11px ui-sans-serif, system-ui, sans-serif';
+        ctx.fillText(opts.sub || '', cx, cy + 16);
+        ctx.restore();
       }
-      document.getElementById('widget-dropdown').classList.add('hidden');
+    };
+
+    function makeStatChart(id, config) {
+      const el = document.getElementById(id);
+      if (!el || typeof Chart === 'undefined') return;
+      applyStatChartDefaults();
+      statCharts[id] = new Chart(el.getContext('2d'), config);
     }
 
-    function removeWidget(type) {
-      activeWidgets = activeWidgets.filter(w => w !== type);
-      saveStorage('boulder_widgets', activeWidgets);
-      renderStats();
+    const STAT_GRID = 'rgba(148,163,184,0.08)';
+
+    function statBarConfig(labels, values, opts = {}) {
+      const horizontal = opts.horizontal !== false;
+      const colors = opts.colors || values.map((_, i) => i === (opts.highlight ?? 0) ? STAT_EMERALD : STAT_EMERALD_SOFT);
+      const valueAxis = { beginAtZero: true, grace: '6%', border: { display: false }, grid: { color: STAT_GRID }, ticks: { precision: 0, color: '#64748b' } };
+      const catAxis = { border: { display: false }, grid: { display: false }, ticks: { color: '#cbd5e1' } };
+      return {
+        type: 'bar',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 8, borderSkipped: false, maxBarThickness: horizontal ? 20 : 34 }] },
+        options: {
+          indexAxis: horizontal ? 'y' : 'x', responsive: true, maintainAspectRatio: false,
+          animation: { duration: 600, easing: 'easeOutQuart' },
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed[horizontal ? 'x' : 'y']}${opts.suffix || ''}` } } },
+          scales: horizontal ? { x: valueAxis, y: catAxis } : { x: catAxis, y: valueAxis }
+        }
+      };
     }
 
-    function onWidgetDragStart(e, index) {
-      draggedWidgetIndex = index;
-      e.dataTransfer.effectAllowed = 'move';
-      e.target.classList.add('opacity-40');
+    function statStackedConfig(labels, counts) {
+      const pct = (n, t) => t ? Math.round(n / t * 1000) / 10 : 0;
+      const flash = counts.map(c => pct(c.flash, c.total));
+      const top = counts.map(c => pct(c.top - c.flash, c.total));
+      const open = counts.map(c => pct(c.total - c.top, c.total));
+      const raw = [counts.map(c => c.flash), counts.map(c => c.top - c.flash), counts.map(c => c.total - c.top)];
+      const ds = (label, data, color) => ({ label, data, backgroundColor: color, borderRadius: 5, borderSkipped: false, maxBarThickness: 16 });
+      return {
+        type: 'bar',
+        data: { labels, datasets: [ds('Flash', flash, STAT_AMBER), ds('Getoppt', top, STAT_EMERALD), ds('Offen', open, STAT_OPEN)] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          animation: { duration: 600, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${raw[c.datasetIndex][c.dataIndex]} (${c.parsed.x}%)` } }
+          },
+          scales: {
+            x: { stacked: true, min: 0, max: 100, border: { display: false }, grid: { color: STAT_GRID }, ticks: { color: '#64748b', callback: v => v + '%' } },
+            y: { stacked: true, border: { display: false }, grid: { display: false }, ticks: { color: '#cbd5e1' } }
+          }
+        }
+      };
     }
 
-    function onWidgetDragOver(e, dropIndex) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      const container = e.currentTarget;
-      if (draggedWidgetIndex !== null && draggedWidgetIndex !== dropIndex) {
-        container.classList.add('border-2', 'border-dashed', 'border-emerald-400', 'bg-emerald-950/30', 'scale-[1.01]');
+    function statLineConfig(labels, values) {
+      return {
+        type: 'line',
+        data: { labels, datasets: [{
+          data: values, borderColor: STAT_EMERALD, borderWidth: 2.5, tension: 0.4, fill: true,
+          backgroundColor: (c) => {
+            const { chart } = c;
+            if (!chart.chartArea) return 'rgba(52,211,153,0.15)';
+            const g = chart.ctx.createLinearGradient(0, chart.chartArea.top, 0, chart.chartArea.bottom);
+            g.addColorStop(0, 'rgba(52,211,153,0.35)');
+            g.addColorStop(1, 'rgba(52,211,153,0)');
+            return g;
+          },
+          pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: '#0f172a', pointBorderColor: STAT_EMERALD, pointBorderWidth: 2
+        }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 700, easing: 'easeOutQuart' },
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.y} Min` } } },
+          scales: {
+            x: { border: { display: false }, grid: { display: false }, ticks: { color: '#64748b', maxRotation: 0, autoSkip: true } },
+            y: { beginAtZero: true, border: { display: false }, grid: { color: STAT_GRID }, ticks: { color: '#64748b', callback: v => v + ' min' } }
+          }
+        }
+      };
+    }
+
+    // ---------- Einstieg ----------
+    function renderStatsAll() {
+      if (typeof currentTab === 'undefined' || currentTab !== 'stats') return;
+      initStatsGymFilter();
+      destroyStatCharts();
+      const sub = lastSubView.stats;
+      if (sub === 'stats-session') renderStatsSession();
+      else if (sub === 'stats-routes') renderStatsRoutes();
+      else if (sub === 'stats-projects') renderStatsProjects();
+      else if (sub === 'stats-hall') renderStatsHall();
+    }
+
+    function useStatCharts() {
+      return statsDisplayMode === 'chart' && typeof Chart !== 'undefined';
+    }
+
+    function statChartFallbackNote() {
+      return (statsDisplayMode === 'chart' && typeof Chart === 'undefined')
+        ? `<p class="text-[11px] text-amber-400/80 bg-amber-950/20 border border-amber-500/20 rounded-xl px-3 py-2">Diagramme konnten nicht geladen werden (keine Verbindung zu Chart.js) – es wird die Textansicht gezeigt.</p>` : '';
+    }
+
+    // ---------- SESSION ----------
+    function weekStartOf(d) {
+      const x = new Date(d);
+      x.setHours(0, 0, 0, 0);
+      x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+      return x;
+    }
+
+    function renderStatsSession() {
+      const container = document.getElementById('stats-session-content');
+      const list = getStatsSessions();
+      const range = getStatsRange();
+
+      renderSessions(list);
+
+      if (list.length === 0) {
+        container.innerHTML = statEmpty(sessions.length === 0 ? 'Noch keine Sessions eingetragen – starte mit „+ Session“. 🧗' : 'Keine Sessions im gewählten Zeitraum bzw. in dieser Halle.');
+        return;
+      }
+
+      const times = list.map(s => Date.parse(`${s.date}T12:00:00`)).filter(Number.isFinite).sort((a, b) => a - b);
+      const spanStart = range.start || times[0];
+      const spanEnd = range.end || Date.now();
+      const weeksSpan = Math.max(1, (spanEnd - spanStart) / (7 * 86400000));
+      const perWeek = (list.length / weeksSpan).toFixed(1);
+      const totalMin = list.reduce((sum, s) => sum + (parseInt(s.durationMinutes) || 0), 0);
+      const avgMin = Math.round(totalMin / list.length);
+
+      const kpis = statKpiGrid([
+        statKpiTile('Ø Dauer', `${avgMin} Min`, 'pro Session'),
+        statKpiTile('Häufigkeit', `${perWeek}×`, 'pro Woche'),
+        statKpiTile('Sessions', list.length, 'im Zeitraum'),
+        statKpiTile('Gesamtzeit', `${(totalMin / 60).toFixed(1)} h`, 'an der Wand')
+      ]);
+
+      // Wochen-Buckets (max. letzte 12 Wochen)
+      const weeks = [];
+      for (let w = weekStartOf(spanStart); w <= spanEnd; w = new Date(w.getFullYear(), w.getMonth(), w.getDate() + 7)) weeks.push(new Date(w));
+      const shownWeeks = weeks.slice(-12);
+      const weekCounts = shownWeeks.map(w => list.filter(s => {
+        const t = Date.parse(`${s.date}T12:00:00`);
+        return t >= w.getTime() && t < w.getTime() + 7 * 86400000;
+      }).length);
+      const weekLabels = shownWeeks.map(w => `${String(w.getDate()).padStart(2, '0')}.${String(w.getMonth() + 1).padStart(2, '0')}.`);
+
+      const byDuration = list.slice().sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(-15);
+      const durLabels = byDuration.map(s => { const d = new Date(`${s.date}T12:00:00`); return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`; });
+      const durValues = byDuration.map(s => parseInt(s.durationMinutes) || 0);
+
+      let body;
+      if (useStatCharts()) {
+        body = statSection('Sessions pro Woche', weeks.length > 12 ? 'Die letzten 12 Wochen (Wochenbeginn Montag)' : 'Wochenbeginn Montag', statChartBox('chart-session-weeks', 190)) +
+               statSection('Dauer pro Session', `Letzte ${byDuration.length} Sessions`, statChartBox('chart-session-duration', 190));
+      } else {
+        const dayNames = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+        const dayCounts = dayNames.map(() => 0);
+        list.forEach(s => { const t = new Date(`${s.date}T12:00:00`); if (!isNaN(t)) dayCounts[(t.getDay() + 6) % 7]++; });
+        const entries = dayNames.map((n, i) => ({ label: n, value: dayCounts[i] })).filter(e => e.value > 0).sort((a, b) => b.value - a.value);
+        entries.forEach((e, i) => { e.highlight = 0; });
+        body = statSection('Deine liebsten Kletter-Tage', `Meist bist du ${entries[0].label}s dabei`, statRankRows(entries, list.length));
+      }
+
+      container.innerHTML = statChartFallbackNote() + kpis + body;
+
+      if (useStatCharts()) {
+        makeStatChart('chart-session-weeks', statBarConfig(weekLabels, weekCounts, { horizontal: false, colors: weekCounts.map(v => v ? STAT_EMERALD : STAT_EMERALD_SOFT), suffix: ' Session(s)' }));
+        makeStatChart('chart-session-duration', statLineConfig(durLabels, durValues));
       }
     }
 
-    function onWidgetDragLeave(e) {
-      const container = e.currentTarget;
-      container.classList.remove('border-2', 'border-dashed', 'border-emerald-400', 'bg-emerald-950/30', 'scale-[1.01]');
+    // ---------- ROUTEN ----------
+    function renderStatsRoutes() {
+      const container = document.getElementById('stats-routes-content');
+      const range = getStatsRange();
+      const engaged = statsGymRoutes().filter(r => !!routeStatusOf(r) && routeStatusOf(r) !== 'open' && tsInRange(getRouteStatusTimestamp(r), range));
+
+      if (engaged.length === 0) {
+        container.innerHTML = statEmpty('Noch keine bearbeiteten Routen in diesem Zeitraum. Markiere auf der Hallenkarte Routen als Projekt, Top oder Flash. 🎯');
+        return;
+      }
+
+      const cards = STAT_DIMENSIONS.map(dim => {
+        const groups = groupRoutesByDim(engaged, dim);
+        const labels = sortStatLabels(dim, Array.from(groups.keys()), l => groups.get(l).length);
+        const values = labels.map(l => groups.get(l).length);
+        const maxVal = Math.max(...values);
+        const topIdx = values.indexOf(maxVal);
+        const topLabel = labels[topIdx];
+        const hasOnlyUnknown = labels.length === 1 && /^(Keine|Kein|Ohne)/.test(labels[0]);
+        const subtitle = hasOnlyUnknown
+          ? (dim.key === 'incline' ? 'Noch keine Neigung hinterlegt – im Routen-Dialog der Karte ergänzbar' : 'Noch keine Angaben hinterlegt')
+          : `Am häufigsten: <b class="text-emerald-400">${escapeHtmlText(topLabel)}</b> (${maxVal}×)`;
+        const multi = (dim.key === 'style' || dim.key === 'hold') ? ' · Mehrfachnennung möglich' : '';
+
+        let body;
+        if (useStatCharts()) {
+          const horizontal = dim.key !== 'grade';
+          const height = horizontal ? Math.max(130, labels.length * 34 + 24) : 200;
+          body = statChartBox(`chart-routes-${dim.key}`, height);
+        } else {
+          const entries = labels.map((l, i) => ({ label: l, value: values[i], highlight: topIdx }));
+          // Index der Hervorhebung relativ zur sortierten Liste
+          entries.forEach(e => { e.highlight = topIdx; });
+          body = statRankRows(entries, engaged.length);
+        }
+        return { dim, labels, values, topIdx, html: statSection(dim.title, subtitle + multi, body) };
+      });
+
+      container.innerHTML = statChartFallbackNote() +
+        statKpiGrid([statKpiTile('Bearbeitete Routen', engaged.length, 'Projekt · Top · Flash')]).replace('sm:grid-cols-3', 'sm:grid-cols-1') +
+        cards.map(c => c.html).join('');
+
+      if (useStatCharts()) {
+        cards.forEach(c => makeStatChart(`chart-routes-${c.dim.key}`, statBarConfig(c.labels, c.values, { horizontal: c.dim.key !== 'grade', highlight: c.topIdx, suffix: ' Route(n)' })));
+      }
     }
 
-    function onWidgetDrop(e, dropIndex) {
-      e.preventDefault();
-      const container = e.currentTarget;
-      container.classList.remove('border-2', 'border-dashed', 'border-emerald-400', 'bg-emerald-950/30', 'scale-[1.01]');
+    // ---------- PROJEKTE ----------
+    function getProjectRecords(range) {
+      const out = [];
+      statsGymRoutes().forEach(r => {
+        const i = r.interaction || {};
+        const st = routeStatusOf(r);
+        const pAt = i.projectAt ? Date.parse(i.projectAt) : 0;
+        const tAt = i.toppedAt ? Date.parse(i.toppedAt) : 0;
+        const attempts = i.attempts > 0 ? i.attempts : null;
+        if (st === 'project') {
+          const ts = pAt || getRouteStatusTimestamp(r);
+          if (tsInRange(ts, range)) out.push({ r, kind: 'active', start: pAt, end: 0, attempts, days: pAt ? Math.max(1, Math.ceil((Date.now() - pAt) / 86400000)) : null });
+        } else if (st === 'topped' && pAt) {
+          if (tsInRange(tAt || pAt, range)) out.push({ r, kind: 'done', start: pAt, end: tAt, attempts, days: tAt ? Math.max(1, Math.ceil((tAt - pAt) / 86400000)) : null });
+        }
+      });
+      return out;
+    }
 
-      if (draggedWidgetIndex === null || draggedWidgetIndex === dropIndex) return;
-      const movedItem = activeWidgets.splice(draggedWidgetIndex, 1)[0];
-      activeWidgets.splice(dropIndex, 0, movedItem);
-      draggedWidgetIndex = null;
-      saveStorage('boulder_widgets', activeWidgets);
-      renderStats();
+    function renderStatsProjects() {
+      const container = document.getElementById('stats-projects-content');
+      const range = getStatsRange();
+      const records = getProjectRecords(range);
+
+      if (records.length === 0) {
+        container.innerHTML = statEmpty('Noch keine Projekte in diesem Zeitraum. Setze auf der Hallenkarte eine Route auf „🎯 Projekt“ – sobald du sie toppst, erscheinen hier Dauer und Versuche.');
+        return;
+      }
+
+      const done = records.filter(x => x.kind === 'done');
+      const active = records.filter(x => x.kind === 'active');
+      const withDays = done.filter(x => x.days != null);
+      const avgDays = withDays.length ? (withDays.reduce((s, x) => s + x.days, 0) / withDays.length).toFixed(1) : null;
+      const withAttempts = records.filter(x => x.attempts != null);
+      const avgAttempts = withAttempts.length ? (withAttempts.reduce((s, x) => s + x.attempts, 0) / withAttempts.length).toFixed(1) : null;
+
+      const kpis = statKpiGrid([
+        statKpiTile('Aktiv', active.length, 'laufende Projekte'),
+        statKpiTile('Abgeschlossen', done.length, 'getoppte Projekte'),
+        statKpiTile('Ø Dauer', avgDays !== null ? `${avgDays} Tage` : '–', withDays.length ? `bis zum Durchstieg · ${withDays.length} Projekt(e)` : 'noch keine Daten'),
+        statKpiTile('Ø Versuche', avgAttempts !== null ? avgAttempts : '–', withAttempts.length ? `pro Projekt · ${withAttempts.length} Projekt(e)` : 'Versuche im Routen-Dialog eintragen')
+      ]);
+
+      const recentDone = withDays.slice().sort((a, b) => (a.end || 0) - (b.end || 0)).slice(-10);
+      const attemptRows = withAttempts.slice().sort((a, b) => (a.start || 0) - (b.start || 0)).slice(-10);
+
+      let body;
+      if (useStatCharts()) {
+        body = statSection('Tage bis zum Durchstieg', recentDone.length ? `Deine letzten ${recentDone.length} abgeschlossenen Projekte` : 'Noch kein Projekt mit Start- und Enddatum',
+                 recentDone.length ? statChartBox('chart-proj-days', Math.max(130, recentDone.length * 34 + 24)) : '') +
+               statSection('Versuche pro Projekt', attemptRows.length ? 'Grün = abgeschlossen · Blau = aktiv' : 'Noch keine Versuche eingetragen',
+                 attemptRows.length ? statChartBox('chart-proj-attempts', Math.max(130, attemptRows.length * 34 + 24)) : '');
+      } else {
+        const sorted = records.slice().sort((a, b) => (a.kind === b.kind ? (b.start || 0) - (a.start || 0) : (a.kind === 'active' ? -1 : 1)));
+        body = statSection('Alle Projekte', 'Aktive zuerst, dann abgeschlossene', `<div class="space-y-2">${sorted.map(x => {
+          const colorHex = HOLD_COLOR_MAP[x.r.holdColor] || '#3b82f6';
+          const isLight = x.r.holdColor === 'Weiß' || x.r.holdColor === 'Gelb';
+          const cleanGrade = x.r.grade ? String(x.r.grade).replace(/^Level\s*/i, '').replace(/^L\b/i, '') : '?';
+          const where = [x.r.gymName, x.r.sectorName].filter(Boolean).join(' • ');
+          const daysTxt = x.days != null ? (x.kind === 'active' ? `seit ${x.days} Tag(en)` : `${x.days} Tag(e)`) : '';
+          return `<button onclick="openMapInteractionModal('${x.r.id}')" class="w-full flex items-center gap-3 bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-xl px-3 py-2 text-left transition">
+            <span class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-[11px] flex-shrink-0" style="background:${colorHex};border-color:${isLight ? '#0f172a' : '#ffffff'};color:${isLight ? '#0f172a' : '#ffffff'}">${escapeHtmlText(cleanGrade)}</span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-xs font-semibold text-slate-200 truncate">${escapeHtmlText(routeLabel(x.r))}</span>
+              <span class="block text-[10px] text-slate-500 truncate">${escapeHtmlText(where)}</span>
+            </span>
+            <span class="text-right flex-shrink-0">
+              <span class="block text-[11px] ${x.kind === 'done' ? 'text-emerald-400' : 'text-sky-400'} font-semibold">${x.kind === 'done' ? '🏆 Getoppt' : '🎯 Aktiv'}</span>
+              <span class="block text-[10px] text-slate-500">${[daysTxt, x.attempts != null ? `${x.attempts} Versuch(e)` : ''].filter(Boolean).join(' · ')}</span>
+            </span>
+          </button>`;
+        }).join('')}</div>`);
+      }
+
+      container.innerHTML = statChartFallbackNote() + kpis + body;
+
+      if (useStatCharts()) {
+        if (recentDone.length) {
+          makeStatChart('chart-proj-days', statBarConfig(recentDone.map(x => routeLabel(x.r)), recentDone.map(x => x.days), { horizontal: true, colors: recentDone.map(() => STAT_EMERALD), suffix: ' Tag(e)' }));
+        }
+        if (attemptRows.length) {
+          makeStatChart('chart-proj-attempts', statBarConfig(attemptRows.map(x => routeLabel(x.r)), attemptRows.map(x => x.attempts), { horizontal: true, colors: attemptRows.map(x => x.kind === 'done' ? STAT_EMERALD : STAT_SKY), suffix: ' Versuch(e)' }));
+        }
+      }
+    }
+
+    // ---------- HALLE ----------
+    function renderStatsHall() {
+      const container = document.getElementById('stats-hall-content');
+      const range = getStatsRange();
+      const all = statsGymRoutes();
+
+      if (all.length === 0) {
+        container.innerHTML = statEmpty('Für diese Auswahl sind noch keine Routen auf der Hallenkarte angelegt.');
+        return;
+      }
+
+      const isTopInRange = r => isTopStatus(routeStatusOf(r)) && tsInRange(getRouteStatusTimestamp(r), range);
+      const isFlashInRange = r => routeStatusOf(r) === 'flashed' && tsInRange(getRouteStatusTimestamp(r), range);
+
+      const total = all.length;
+      const tops = all.filter(isTopInRange).length;
+      const flashes = all.filter(isFlashInRange).length;
+      const pct = (n, t) => t ? Math.round(n / t * 100) : 0;
+
+      const kpis = statKpiGrid([
+        statKpiTile('Routen gesamt', total, 'auf der Hallenkarte'),
+        statKpiTile('Durchstiegen', `${pct(tops, total)}%`, `${tops} von ${total}`),
+        statKpiTile('Geflasht', flashes, tops ? `${pct(flashes, tops)}% deiner Tops` : 'noch kein Flash')
+      ]);
+
+      const overall = useStatCharts()
+        ? statSection('Gesamtübersicht', 'Anteil der Routen, die du im Zeitraum durchstiegen hast', statChartBox('chart-hall-overall', 220))
+        : statSection('Gesamtübersicht', 'Anteil der Routen, die du im Zeitraum durchstiegen hast', `
+            <div class="h-2.5 rounded-full bg-slate-700/40 overflow-hidden flex">
+              <div style="width:${pct(flashes, total)}%;background:${STAT_AMBER}"></div>
+              <div style="width:${pct(tops - flashes, total)}%;background:${STAT_EMERALD}"></div>
+            </div>
+            <p class="text-[11px] text-slate-400"><span class="text-amber-400">⚡ ${flashes} Flash</span> · <span class="text-emerald-400">🏆 ${tops - flashes} Top</span> · ${total - tops} offen</p>`);
+
+      const dimCards = STAT_DIMENSIONS.map(dim => {
+        const groups = groupRoutesByDim(all, dim);
+        const labels = sortStatLabels(dim, Array.from(groups.keys()), l => groups.get(l).length);
+        const counts = labels.map(l => {
+          const rs = groups.get(l);
+          return { total: rs.length, top: rs.filter(isTopInRange).length, flash: rs.filter(isFlashInRange).length };
+        });
+        let body;
+        if (useStatCharts()) {
+          body = statChartBox(`chart-hall-${dim.key}`, Math.max(150, labels.length * 36 + 60));
+        } else {
+          body = `<div class="space-y-3">${labels.map((l, i) => {
+            const c = counts[i];
+            return `<div>
+              <div class="flex justify-between items-baseline text-xs mb-1">
+                <span class="text-slate-200 font-medium truncate pr-2">${escapeHtmlText(l)}</span>
+                <span class="flex-shrink-0"><b class="text-slate-100">${pct(c.top, c.total)}%</b> <span class="text-slate-500">${c.top}/${c.total}${c.flash ? ` · <span class="text-amber-400">⚡${c.flash}</span>` : ''}</span></span>
+              </div>
+              <div class="h-1.5 rounded-full bg-slate-700/40 overflow-hidden flex">
+                <div style="width:${pct(c.flash, c.total)}%;background:${STAT_AMBER}"></div>
+                <div style="width:${pct(c.top - c.flash, c.total)}%;background:${STAT_EMERALD}"></div>
+              </div>
+            </div>`;
+          }).join('')}</div>`;
+        }
+        const multi = (dim.key === 'style' || dim.key === 'hold') ? 'Mehrfachnennung möglich' : '';
+        return { dim, labels, counts, html: statSection(`Nach ${dim.title}`, multi || 'Durchstiegsquote (⚡ = Flash)', body) };
+      });
+
+      container.innerHTML = statChartFallbackNote() + kpis + overall + dimCards.map(c => c.html).join('');
+
+      if (useStatCharts()) {
+        makeStatChart('chart-hall-overall', {
+          type: 'doughnut',
+          data: { labels: ['Flash', 'Getoppt', 'Offen'], datasets: [{ data: [flashes, tops - flashes, total - tops], backgroundColor: [STAT_AMBER, STAT_EMERALD, STAT_OPEN], borderWidth: 0, borderRadius: 6, spacing: 3 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '74%', animation: { duration: 700 },
+            plugins: { legend: { position: 'bottom' }, centerText: { text: `${pct(tops, total)}%`, sub: 'durchstiegen' } }
+          },
+          plugins: [statCenterTextPlugin]
+        });
+        dimCards.forEach(c => makeStatChart(`chart-hall-${c.dim.key}`, statStackedConfig(c.labels, c.counts)));
+      }
     }
 
     function countByField(items, fieldName) {
@@ -3792,206 +4994,6 @@
         counts[combo] = (counts[combo] || 0) + 1;
       });
       return counts;
-    }
-
-    function renderStats() {
-      const container = document.getElementById('stats-summary');
-      const filterGym = document.getElementById('stats-gym-filter').value;
-
-      Object.keys(chartInstances).forEach(k => { if (chartInstances[k]) chartInstances[k].destroy(); });
-
-      let filtered = projects.filter(p => !p.excludeFromStats);
-      if (filterGym !== 'ALL') filtered = filtered.filter(p => p.gym === filterGym);
-
-      filtered = filterProjectsByTime(filtered);
-
-      if (activeWidgets.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 col-span-2 py-4">Keine Module gewählt.</p>`;
-        return;
-      }
-
-      container.innerHTML = activeWidgets.map((wType, idx) => {
-        const titleMap = {
-          level: 'Schwierigkeitsgrad',
-          style: 'Neigung, Grifftyp & Stil',
-          zone: 'Wandbereiche',
-          kpi: 'Kennzahlen & Dauer',
-          plan: 'Hallenplan'
-        };
-
-        return `
-          <div draggable="true" 
-               ondragstart="onWidgetDragStart(event, ${idx})" 
-               ondragover="onWidgetDragOver(event, ${idx})" 
-               ondragleave="onWidgetDragLeave(event)"
-               ondrop="onWidgetDrop(event, ${idx})"
-               class="bg-slate-900 p-4 rounded-lg border border-slate-700/60 relative cursor-grab active:cursor-grabbing hover:border-slate-500 transition-all ${wType === 'plan' ? 'col-span-1 md:col-span-2' : ''}">
-            <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
-              <div class="flex items-center gap-2">
-                <span class="text-slate-500 text-xs cursor-move" title="Anfassen und Verschieben">☰</span>
-                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">${titleMap[wType] || wType}</h4>
-              </div>
-              <button onclick="removeWidget('${wType}')" class="text-slate-500 hover:text-red-400 font-bold text-xs" title="Modul entfernen">✕</button>
-            </div>
-            <div id="widget-content-${wType}" class="text-xs"></div>
-          </div>
-        `;
-      }).join('');
-
-      activeWidgets.forEach(wType => {
-        const contentDiv = document.getElementById(`widget-content-${wType}`);
-        if (!contentDiv) return;
-
-        if (wType === 'kpi') {
-          const totalCount = filtered.length;
-          const activeCount = filtered.filter(p => p.status === 'active').length;
-          const doneCount = filtered.filter(p => p.status === 'completed').length;
-          
-          const totalAttempts = filtered.reduce((sum, p) => sum + (parseInt(p.attempts) || 1), 0);
-          const avgAttempts = totalCount > 0 ? (totalAttempts / totalCount).toFixed(1) : 0;
-
-          const completedWithDates = filtered.filter(p => p.status === 'completed' && p.createdDate && p.completedDate);
-          let avgDurationDays = null;
-          if (completedWithDates.length > 0) {
-            const sumDays = completedWithDates.reduce((sum, p) => {
-              const start = new Date(p.createdDate);
-              const end = new Date(p.completedDate);
-              const diffTime = Math.max(0, end - start);
-              return sum + Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            }, 0);
-            avgDurationDays = (sumDays / completedWithDates.length).toFixed(1);
-          }
-
-          contentDiv.innerHTML = `
-            <div class="grid grid-cols-2 gap-2">
-              <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
-                <span class="text-slate-400 text-[10px] block uppercase">Projekte Gesamt</span>
-                <span class="text-lg font-bold text-emerald-400">${totalCount}</span>
-                <span class="text-[10px] text-slate-500 block">(${activeCount} aktiv / ${doneCount} done)</span>
-              </div>
-              <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50">
-                <span class="text-slate-400 text-[10px] block uppercase">Ø Versuche</span>
-                <span class="text-lg font-bold text-emerald-400">${avgAttempts}</span>
-                <span class="text-[10px] text-slate-500 block">Projekte & Durchstiege</span>
-              </div>
-              <div class="bg-slate-800 p-2.5 rounded border border-slate-700/50 col-span-2">
-                <span class="text-slate-400 text-[10px] block uppercase">Ø Projektdauer bis Durchstieg</span>
-                <span class="text-lg font-bold text-emerald-400">${avgDurationDays !== null ? avgDurationDays + ' Tage' : 'Keine Daten'}</span>
-                <span class="text-[10px] text-slate-500 block">Basierend auf ${completedWithDates.length} durchstiegenen Projekten</span>
-              </div>
-            </div>
-          `;
-          return;
-        }
-
-        if (wType === 'level') {
-          if (filtered.length === 0) { contentDiv.innerHTML = `<p class="text-slate-500 italic py-2">Keine Projekte vorhanden.</p>`; return; }
-          const counts = countByField(filtered, 'level');
-
-          if (statsDisplayMode === 'chart') {
-            contentDiv.innerHTML = `<div class="h-40 flex justify-center"><canvas id="chart-level"></canvas></div>`;
-            const ctx = document.getElementById('chart-level').getContext('2d');
-            chartInstances['level'] = new Chart(ctx, {
-              type: 'doughnut',
-              data: {
-                labels: Object.keys(counts),
-                datasets: [{ data: Object.values(counts), backgroundColor: CHART_COLORS }]
-              },
-              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } } }
-            });
-          } else {
-            contentDiv.innerHTML = `<div class="space-y-1.5">${Object.entries(counts).map(([lvl, cnt]) => `
-              <div class="flex justify-between items-center bg-slate-800 p-2 rounded">
-                <span class="text-slate-200 font-medium">${lvl}</span>
-                <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700">${cnt} Route(n)</span>
-              </div>
-            `).join('')}</div>`;
-          }
-          return;
-        }
-
-        if (wType === 'zone') {
-          if (filtered.length === 0) { contentDiv.innerHTML = `<p class="text-slate-500 italic py-2">Keine Projekte vorhanden.</p>`; return; }
-          const counts = countByField(filtered, 'zone');
-
-          if (statsDisplayMode === 'chart') {
-            contentDiv.innerHTML = `<div class="h-40 flex justify-center"><canvas id="chart-zone"></canvas></div>`;
-            const ctx = document.getElementById('chart-zone').getContext('2d');
-            chartInstances['zone'] = new Chart(ctx, {
-              type: 'doughnut',
-              data: {
-                labels: Object.keys(counts),
-                datasets: [{ data: Object.values(counts), backgroundColor: CHART_COLORS }]
-              },
-              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } } } }
-            });
-          } else {
-            contentDiv.innerHTML = `<div class="space-y-1.5">${Object.entries(counts).map(([z, cnt]) => `
-              <div class="flex justify-between items-center bg-slate-800 p-2 rounded">
-                <span class="text-slate-200 font-medium truncate">${z}</span>
-                <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700 ml-2">${cnt} Route(n)</span>
-              </div>
-            `).join('')}</div>`;
-          }
-          return;
-        }
-
-        if (wType === 'style') {
-          if (filtered.length === 0) { contentDiv.innerHTML = `<p class="text-slate-500 italic py-2">Keine Projekte vorhanden.</p>`; return; }
-          const combinedCounts = countCombinedStyle(filtered);
-
-          if (statsDisplayMode === 'chart') {
-            contentDiv.innerHTML = `<div class="h-44 flex justify-center"><canvas id="chart-style"></canvas></div>`;
-            const ctx = document.getElementById('chart-style').getContext('2d');
-            chartInstances['style'] = new Chart(ctx, {
-              type: 'doughnut',
-              data: {
-                labels: Object.keys(combinedCounts),
-                datasets: [{ data: Object.values(combinedCounts), backgroundColor: CHART_COLORS }]
-              },
-              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 9 } } } } }
-            });
-          } else {
-            contentDiv.innerHTML = `
-              <div class="space-y-1.5">
-                <span class="text-[10px] font-bold text-slate-400 block uppercase mb-1">Drei Komponenten (Wandneigung / Grifftyp / Stil):</span>
-                ${Object.entries(combinedCounts).map(([combo, cnt]) => `
-                  <div class="bg-slate-800 p-2 rounded flex justify-between items-center">
-                    <span class="text-slate-200 font-mono text-[11px] truncate">${combo}</span>
-                    <span class="text-emerald-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-700 ml-2">${cnt} Route(n)</span>
-                  </div>
-                `).join('')}
-              </div>
-            `;
-          }
-          return;
-        }
-
-        if (wType === 'plan') {
-          const selectedGymName = filterGym === 'ALL' ? Object.keys(scales)[0] : filterGym;
-          const selectedScale = scales[selectedGymName];
-
-          if (!selectedScale || !selectedScale.planUrl) {
-            contentDiv.innerHTML = `<p class="text-slate-500 italic py-4 text-center">Kein Hallenplan für ${selectedGymName || 'ausgewählte Halle'} hinterlegt.</p>`;
-            return;
-          }
-
-          const planProjects = filtered.filter(p => (filterGym === 'ALL' || p.gym === filterGym) && p.pinX !== null && p.pinY !== null);
-
-          contentDiv.innerHTML = `
-            <div class="relative bg-slate-950 rounded-lg p-1 overflow-hidden flex justify-center items-center">
-              <img src="${selectedScale.planUrl}" alt="Hallenplan" class="max-h-64 w-auto object-contain select-none">
-              ${planProjects.map(p => `
-                <div class="absolute w-5 h-5 -ml-2.5 -mt-2.5 ${p.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'} text-slate-950 font-bold rounded-full border border-white flex items-center justify-center text-[9px] shadow-lg cursor-pointer transition hover:scale-125" style="left: ${p.pinX}%; top: ${p.pinY}%;" title="${p.name} (${p.level})">
-                  📍
-                </div>
-              `).join('')}
-            </div>
-            <p class="text-[10px] text-slate-400 text-center mt-2">${planProjects.length} verortete(s) Projekt(e) auf dem Plan angezeigt.</p>
-          `;
-          return;
-        }
-      });
     }
 
     // --- RUHETIMER ---
