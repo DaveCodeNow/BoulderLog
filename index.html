@@ -178,6 +178,17 @@
     }
     label.inc-chip:has(> input:focus-visible), .inc-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+    /* Status-Badges im Hallenkarten-Filter: Icon groß, Text darunter, je Status eigene Farbe */
+    label.inc-chip.st-chip { --stc: var(--accent); position: relative; }
+    label.inc-chip.st-chip > input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+    label.inc-chip.st-chip .st-ico { display: flex; align-items: center; justify-content: center; height: 2.1rem; font-size: 1.55rem; line-height: 1; filter: grayscale(.55) opacity(.8); transition: filter .15s, transform .15s; }
+    label.inc-chip.st-chip:has(> input:checked) {
+      border-color: var(--stc); color: var(--stc);
+      background: color-mix(in srgb, var(--stc) 14%, rgb(var(--s-900)));
+      box-shadow: 0 0 0 1px var(--stc), 0 0 14px color-mix(in srgb, var(--stc) 45%, transparent);
+    }
+    label.inc-chip.st-chip:has(> input:checked) .st-ico { filter: none; transform: scale(1.08); }
+
     /* Grifffarben: echte Farbfelder */
     .col-grid { display: flex; flex-wrap: wrap; gap: .7rem; padding: .2rem .15rem; }
     .col-btn {
@@ -270,16 +281,18 @@
       <button id="sub-settings" onclick="switchSubView('settings')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🏢 Hallenprofil</button>
       <button id="sub-privacy" onclick="switchSubView('privacy')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🔒 Privatsphäre</button>
       <button id="sub-design" onclick="switchSubView('design')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🎨 Design</button>
-      <button id="sub-timer" onclick="switchSubView('timer')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">⏱ Ruhetimer</button>
-      <button id="sub-entries" onclick="switchSubView('entries')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">📝 Logbuch</button>
-      <button id="sub-videos" onclick="switchSubView('videos')" class="flex-1 whitespace-nowrap px-3 py-2 rounded-lg transition">🎬 Videos</button>
     </div>
 
     <!-- VIEW HOME: Profil + Social, Feed, letzte Aktivität, aktive Projekte -->
     <div id="view-home" class="space-y-8 mb-6">
 
+      <!-- FAB OBEN RECHTS: Logbuch (fährt als Seitenleiste von rechts aus) -->
+      <button id="logbook-fab" onclick="openLogbook()" style="top: calc(0.75rem + env(safe-area-inset-top, 0px));" class="fixed right-3 z-40 w-9 h-9 rounded-full bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-600/50 backdrop-blur flex items-center justify-center opacity-70 hover:opacity-100 transition active:scale-95" title="Logbuch öffnen" aria-label="Logbuch öffnen">
+        <span class="text-sm">📝</span>
+      </button>
+
       <!-- SPRACH-TOGGLE (DE/EN) -->
-      <div class="flex justify-end -mb-4" data-i18n-skip>
+      <div class="flex justify-end pr-11 -mb-4" data-i18n-skip>
         <div class="text-[11px] text-slate-500 flex items-center gap-1 select-none" role="group" aria-label="Language">
           <button type="button" data-lang-btn="de" onclick="setLang('de')" class="hover:text-slate-200 transition px-1">DE</button>
           <span class="text-slate-600">|</span>
@@ -377,6 +390,30 @@
           <span class="text-base">📋</span>
           <span id="map-fab-routes-count" class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center">0</span>
         </button>
+        <button id="map-fab-timer-btn" onclick="toggleMapPopover('map-timer-popover')" class="relative w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-600/70 shadow-lg backdrop-blur flex items-center justify-center transition active:scale-95" title="Ruhetimer" aria-label="Ruhetimer">
+          <span class="text-base">⏱</span>
+          <span id="map-fab-timer-badge" data-i18n-skip class="hidden absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-bold items-center justify-center whitespace-nowrap">02:00</span>
+        </button>
+      </div>
+
+      <!-- Popover: Ruhetimer -->
+      <div id="map-timer-popover" style="top: calc(0.75rem + env(safe-area-inset-top, 0px));" class="hidden fixed left-16 right-4 sm:right-auto sm:w-72 z-40 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="block text-[10px] text-slate-400 uppercase font-semibold">⏱ Ruhetimer</label>
+          <span class="text-[10px] text-slate-500">Pause zwischen Versuchen</span>
+        </div>
+        <div id="timer-display" data-i18n-skip class="text-5xl font-mono font-bold text-emerald-400 text-center py-1">02:00</div>
+        <div class="flex justify-center gap-2">
+          <button data-timer-preset="120" onclick="setTimerSeconds(120)" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs">2 min</button>
+          <button data-timer-preset="180" onclick="setTimerSeconds(180)" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs">3 min</button>
+          <button data-timer-preset="300" onclick="setTimerSeconds(300)" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs">5 min</button>
+        </div>
+        <div class="flex justify-center gap-3">
+          <button id="timer-start-btn" onclick="toggleTimer()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-lg text-sm w-28">Start</button>
+          <button onclick="resetTimer()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-4 py-2 rounded-lg text-sm">Reset</button>
+        </div>
+        <button id="timer-clock-btn" onclick="openClockTimer()" class="hidden w-full bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-semibold py-2 rounded-lg transition">📱 Zusätzlich in der Uhr-App starten</button>
+        <p class="text-[10px] text-slate-500 leading-snug">Der Alarm klingt mit Ton und Vibration. Während der Timer läuft, bleibt der Bildschirm an, damit der Ton zuverlässig kommt.</p>
       </div>
 
       <!-- Popover: Hallenprofil -->
@@ -515,6 +552,15 @@
         </button>
       </div>
 
+      <!-- FAB: Auswahl löschen (nur im Baumodus, sobald Routen markiert sind) -->
+      <div id="map-select-fab" style="bottom: calc(9.25rem + env(safe-area-inset-bottom, 0px));" class="hidden fixed right-6 z-40 items-center gap-2">
+        <button type="button" onclick="clearRouteSelection()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 font-semibold px-3 py-2.5 rounded-full shadow-2xl text-xs transition active:scale-95">✕ Auswahl aufheben</button>
+        <button type="button" onclick="deleteSelectedRoutes()" title="Ausgewählte Routen löschen" aria-label="Ausgewählte Routen löschen" class="relative bg-red-600 hover:bg-red-500 text-white font-bold p-3.5 rounded-full shadow-2xl flex items-center transition-all duration-200 hover:scale-105 active:scale-95">
+          <span class="text-lg">🗑️</span>
+          <span id="map-select-count" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-white text-red-600 text-[10px] font-bold flex items-center justify-center">0</span>
+        </button>
+      </div>
+
       <!-- FAB: Baumenü (nur im Baumodus) – liegt über der Karte und kann nicht verdeckt werden -->
       <!-- Minimierte Bauleiste: aktives Werkzeug, Info, Entwurfs-Aktionen (Zeichenfläche bleibt frei) -->
       <div id="map-builder-mini" data-map-ui style="bottom: calc(9.25rem + env(safe-area-inset-bottom, 0px));" class="hidden fixed left-3 right-3 sm:left-auto sm:right-6 z-40 flex-col items-end gap-1.5 pointer-events-none">
@@ -589,65 +635,6 @@
         <p class="text-xs text-slate-500">Durchstiegsquote pro Grad, Stil, Grifftyp, Neigung und Wandbereich</p>
       </div>
       <div id="stats-hall-content" class="space-y-4"></div>
-    </div>
-
-    <!-- VIEW 4: LOGBUCH -->
-    <div id="view-entries" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-100">Logbuch</h2>
-          <p class="text-xs text-slate-400">Reflektionen, Projekt-Betas und Lerneffekte im Überblick</p>
-        </div>
-        <button onclick="openEntryModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-lg transition">
-          + Allgemeiner Eintrag
-        </button>
-      </div>
-
-      <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-wrap items-center gap-2 text-xs">
-        <span class="text-slate-400 font-semibold mr-1">Anzeigen:</span>
-        <button id="ef-btn-ALL" onclick="setEntryFilter('ALL')" class="px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white">Alle Einträge</button>
-        <button id="ef-btn-general" onclick="setEntryFilter('general')" class="px-3 py-1.5 rounded-lg font-semibold bg-slate-700 text-emerald-400 hover:bg-slate-600">🟢 Allgemein</button>
-        <button id="ef-btn-project" onclick="setEntryFilter('project')" class="px-3 py-1.5 rounded-lg font-semibold bg-slate-700 text-blue-400 hover:bg-slate-600">🔵 Projekte</button>
-        <button id="ef-btn-session" onclick="setEntryFilter('session')" class="px-3 py-1.5 rounded-lg font-semibold bg-slate-700 text-amber-400 hover:bg-slate-600">🟠 Sessions</button>
-      </div>
-
-      <div id="entries-list" class="space-y-3"></div>
-    </div>
-
-    <!-- VIEW 5: VIDEOS -->
-    <div id="view-videos" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-100">Projekt-Videos</h2>
-          <p class="text-xs text-slate-400">Video-Ordner nach Projekten strukturiert</p>
-        </div>
-        <select id="video-folder-filter" onchange="renderVideos()" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-slate-200">
-          <option value="ALL">Alle Projekte anzeigen</option>
-          <option value="WITH_VIDEOS_ONLY" selected>Nur Projekte mit Videos</option>
-        </select>
-      </div>
-      <div id="videos-list" class="space-y-4"></div>
-    </div>
-
-    <!-- VIEW 6: RUHETIMER -->
-    <div id="view-timer" class="hidden space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-100">Ruhetimer auf der Matte</h2>
-        <p class="text-xs text-slate-400">Pausenzeiten zwischen Versuchen stoppen.</p>
-      </div>
-
-      <div class="bg-slate-800 p-8 rounded-xl border border-slate-700 text-center max-w-sm mx-auto space-y-6">
-        <div id="timer-display" class="text-6xl font-mono font-bold text-emerald-400">02:00</div>
-        <div class="flex justify-center gap-2">
-          <button onclick="setTimerSeconds(120)" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs">2 min</button>
-          <button onclick="setTimerSeconds(180)" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs">3 min</button>
-          <button onclick="setTimerSeconds(300)" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs">5 min</button>
-        </div>
-        <div class="flex justify-center gap-3">
-          <button id="timer-start-btn" onclick="toggleTimer()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-lg text-sm w-28">Start</button>
-          <button onclick="resetTimer()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-4 py-2 rounded-lg text-sm">Reset</button>
-        </div>
-      </div>
     </div>
 
     <!-- VIEW 8a: EINSTELLUNGEN > HALLENPROFIL -->
@@ -823,12 +810,12 @@
       <!-- 2. Status Filter -->
       <div>
         <label class="block font-semibold text-slate-300 mb-1.5">Status der Routen</label>
-        <div class="grid grid-cols-2 gap-2 bg-slate-900 p-2.5 rounded border border-slate-700">
-          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="open" onchange="applyMapFilters()"> 📍 Offen</label>
-          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="project" onchange="applyMapFilters()"> 🎯 Projekt</label>
-          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="attempted" onchange="applyMapFilters()"> 🔼 Versucht</label>
-          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="topped" onchange="applyMapFilters()"> 🏆 Getoppt</label>
-          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="flt-status-check rounded bg-slate-800 border-slate-700 text-emerald-500" value="flashed" onchange="applyMapFilters()"> ⚡ Geflasht</label>
+        <div class="inc-grid bg-slate-900 p-2 rounded border border-slate-700">
+          <label class="inc-chip st-chip" style="--stc:#94a3b8"><input type="checkbox" class="flt-status-check" value="open" onchange="applyMapFilters()"><span class="st-ico" aria-hidden="true">📍</span><span>Offen</span></label>
+          <label class="inc-chip st-chip" style="--stc:#a78bfa"><input type="checkbox" class="flt-status-check" value="project" onchange="applyMapFilters()"><span class="st-ico" aria-hidden="true">🎯</span><span>Projekt</span></label>
+          <label class="inc-chip st-chip" style="--stc:#38bdf8"><input type="checkbox" class="flt-status-check" value="attempted" onchange="applyMapFilters()"><span class="st-ico" aria-hidden="true">🔼</span><span>Versucht</span></label>
+          <label class="inc-chip st-chip" style="--stc:#34d399"><input type="checkbox" class="flt-status-check" value="topped" onchange="applyMapFilters()"><span class="st-ico" aria-hidden="true">🏆</span><span>Getoppt</span></label>
+          <label class="inc-chip st-chip" style="--stc:#fbbf24"><input type="checkbox" class="flt-status-check" value="flashed" onchange="applyMapFilters()"><span class="st-ico" aria-hidden="true">⚡</span><span>Geflasht</span></label>
         </div>
       </div>
 
@@ -891,6 +878,62 @@
       </div>
     </div>
   </aside>
+
+  <!-- ALARM-BANNER RUHETIMER (auf jeder Seite sichtbar) -->
+  <div id="timer-alarm-banner" style="top: calc(0.75rem + env(safe-area-inset-top, 0px));" class="hidden fixed inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-96 z-[60] items-center gap-3 bg-slate-800 border border-emerald-500 rounded-2xl shadow-2xl px-4 py-3">
+    <span class="text-2xl">⏰</span>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-bold text-slate-100">Pausenzeit abgelaufen!</p>
+      <p class="text-[11px] text-slate-400">Zeit für den nächsten Versuch.</p>
+    </div>
+    <button onclick="dismissTimerAlarm()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs">OK</button>
+  </div>
+
+  <!-- LOGBUCH: SEITENLEISTE VON RECHTS -->
+  <div id="logbook-backdrop" onclick="closeLogbook()" class="fixed inset-0 bg-black/60 z-50 hidden"></div>
+  <aside id="logbook-drawer" aria-hidden="true" class="fixed inset-y-0 right-0 w-[22rem] max-w-full bg-slate-800 border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl" style="padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);">
+    <div class="flex items-center justify-between gap-2 px-4 pt-4 pb-3 border-b border-slate-700">
+      <div class="min-w-0">
+        <h3 class="font-bold text-slate-100 text-base flex items-center gap-2"><span>📝</span> Logbuch</h3>
+        <p class="text-[11px] text-slate-400">Einträge, Sessions und Projekte</p>
+      </div>
+      <button onclick="closeLogbook()" class="text-slate-400 hover:text-slate-100 font-bold text-sm px-2 py-1" aria-label="Schließen">✕</button>
+    </div>
+
+    <div class="px-4 pt-3">
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-1 flex gap-1 text-xs font-semibold">
+        <button id="lb-tab-entries" onclick="setLogbookTab('entries')" class="flex-1 px-2 py-2 rounded-lg transition">Einträge</button>
+        <button id="lb-tab-sessions" onclick="setLogbookTab('sessions')" class="flex-1 px-2 py-2 rounded-lg transition">Sessions</button>
+        <button id="lb-tab-projects" onclick="setLogbookTab('projects')" class="flex-1 px-2 py-2 rounded-lg transition">Projekte</button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+      <!-- Einträge -->
+      <div id="lb-pane-entries" class="space-y-3">
+        <button onclick="openEntryModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-lg transition">+ Allgemeiner Eintrag</button>
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <button id="ef-btn-ALL" onclick="setEntryFilter('ALL')" class="px-3 py-1.5 rounded-lg font-semibold bg-emerald-600 text-white">Alle</button>
+          <button id="ef-btn-general" onclick="setEntryFilter('general')" class="px-3 py-1.5 rounded-lg font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600">🟢 Allgemein</button>
+          <button id="ef-btn-project" onclick="setEntryFilter('project')" class="px-3 py-1.5 rounded-lg font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600">🔵 Projekte</button>
+          <button id="ef-btn-session" onclick="setEntryFilter('session')" class="px-3 py-1.5 rounded-lg font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600">🟠 Sessions</button>
+        </div>
+        <div id="entries-list" class="space-y-3"></div>
+      </div>
+
+      <!-- Sessions -->
+      <div id="lb-pane-sessions" class="hidden space-y-3">
+        <button onclick="openSessionModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-lg transition">+ Session</button>
+        <div id="logbook-sessions-list" class="space-y-3"></div>
+      </div>
+
+      <!-- Projekte -->
+      <div id="lb-pane-projects" class="hidden space-y-3">
+        <div id="logbook-projects-list" class="space-y-3"></div>
+      </div>
+    </div>
+  </aside>
+
 
   <!-- MODALE (EXISTIEREND) -->
 
@@ -1059,8 +1102,8 @@
         </div>
 
         <div class="flex justify-between items-center pt-2 border-t border-slate-700">
-          <button type="button" onclick="deleteMapRoute()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-3 py-1.5 rounded text-xs font-semibold">Löschen</button>
-          <div class="flex gap-2">
+          <button type="button" id="mri-delete-btn" onclick="deleteMapRoute()" class="hidden bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-red-400 px-3 py-1.5 rounded text-xs font-semibold">Löschen</button>
+          <div class="flex gap-2 ml-auto">
             <button type="button" onclick="closeModal('map-interaction-modal')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs text-slate-300">Abbrechen</button>
             <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 font-bold px-4 py-1.5 rounded text-xs text-white">Übernehmen</button>
           </div>
@@ -1073,10 +1116,10 @@
   <div id="delete-route-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-[60]">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
       <div>
-        <h3 class="text-base font-bold text-slate-100">🗑️ Route entfernen</h3>
+        <h3 id="drm-title" class="text-base font-bold text-slate-100">🗑️ Route entfernen</h3>
         <p id="drm-sub" class="text-xs text-slate-400 mt-0.5"></p>
       </div>
-      <p class="text-xs text-slate-300">Soll die Route nach dem Entfernen noch in deiner Statistik mitzählen?</p>
+      <p id="drm-question" class="text-xs text-slate-300">Soll die Route nach dem Entfernen noch in deiner Statistik mitzählen?</p>
       <div class="space-y-2">
         <label class="block cursor-pointer">
           <input type="radio" name="drm-keep" value="keep" checked class="peer sr-only">
@@ -1089,7 +1132,7 @@
           <input type="radio" name="drm-keep" value="drop" class="peer sr-only">
           <span class="block rounded-lg border border-slate-700 bg-slate-900 p-3 text-xs transition peer-checked:border-red-500 peer-checked:bg-red-500/10 peer-focus-visible:ring-2 peer-focus-visible:ring-red-500">
             <b class="block text-sm text-slate-100">🗑️ Komplett löschen</b>
-            <span class="text-slate-400">Route und ihre Daten werden endgültig entfernt und zählen nicht mehr in der Statistik.</span>
+            <span id="drm-drop-desc" class="text-slate-400">Route und ihre Daten werden endgültig entfernt und zählen nicht mehr in der Statistik.</span>
           </span>
         </label>
       </div>
@@ -2055,6 +2098,12 @@
     let tempMapCoords = { x: 0, y: 0 };
     let activeInteractionRouteId = null;
 
+    // Baumodus: Mehrfachauswahl von Routen (zum Löschen) & Langdruck
+    const mapSelectedRoutes = new Set();        // IDs (als String) der markierten Routen
+    let pendingDeleteRouteIds = [];             // Routen, die der Lösch-Dialog gerade betrifft
+    let mapLongPressTimer = null;
+    const MAP_LONGPRESS_MS = 480;
+
     let mapFilters = {
       minLevel: '',
       maxLevel: '',
@@ -2530,7 +2579,8 @@
       renderPrivacySettingsUI();
       renderGymScalesView();
       renderEntries();
-      renderVideos();
+      renderLogbookSessions();
+      renderLogbookProjects();
       renderSocial();
       renderHome();
       initStatsGymFilter();
@@ -2538,14 +2588,14 @@
     }
 
     // --- VIEW SWITCHING (4 Haupt-Tabs der Bottom-Navigation + Unter-Reiter) ---
-    const ALL_VIEWS = ['home', 'map', 'stats-session', 'stats-routes', 'stats-projects', 'stats-hall', 'entries', 'videos', 'timer', 'settings', 'privacy', 'design'];
+    const ALL_VIEWS = ['home', 'map', 'stats-session', 'stats-routes', 'stats-projects', 'stats-hall', 'settings', 'privacy', 'design'];
 
     // Welche Views gehören zu welchem Tab?
     const TAB_GROUPS = {
       home:     { views: ['home'] },                                             // Profil, Social, letzte Aktivität, aktive Projekte
       map:      { views: ['map'] },                                              // Hallenkarte
       stats:    { views: ['stats-session', 'stats-routes', 'stats-projects', 'stats-hall'], sub: true }, // Session, Routen, Projekte, Halle
-      settings: { views: ['settings', 'privacy', 'design', 'timer', 'entries', 'videos'], sub: true } // Hallenprofil, Privatsphäre, Design, Ruhetimer, Logbuch, Videos
+      settings: { views: ['settings', 'privacy', 'design'], sub: true } // Hallenprofil, Privatsphäre, Design
     };
     const lastSubView = { stats: 'stats-session', settings: 'settings' };
     const VIEW_ALIASES = { projects: 'stats-projects', completed: 'stats-projects', sessions: 'stats-session' };
@@ -2611,14 +2661,15 @@
         fabGroup.classList.toggle('flex', showFab);
       }
       setMapTopFabsVisible(tab === 'map' && !builderActive);
+      updateMapSelectionUI();
       if (tab !== 'map') closeMapPopovers();
 
       // View-spezifisches Rendering
       if (visibleViews.includes('map')) renderMapView();
-      if (visibleViews.includes('videos')) renderVideos();
       if (visibleViews.includes('home')) { renderSocial(); renderHome(); }
       if (tab === 'stats') renderStatsAll();
 
+      closeLogbook();
       window.scrollTo({ top: 0 });
     }
 
@@ -2830,6 +2881,8 @@
     }
 
     function onMapGymChange() {
+      mapSelectedRoutes.clear();
+      updateMapSelectionUI();
       resetMapZoom();
       populateFilterLevelDropdowns();
       renderMapView();
@@ -2847,7 +2900,7 @@
     }
 
     // ---------- FABs oben links (Hallenprofil, Routenliste) & Baumenü-FAB ----------
-    const MAP_POPOVERS = ['map-gym-popover', 'map-route-list-panel'];
+    const MAP_POPOVERS = ['map-gym-popover', 'map-route-list-panel', 'map-timer-popover'];
 
     function setMapTopFabsVisible(show) {
       const g = document.getElementById('map-fab-top');
@@ -2951,6 +3004,12 @@
     });
 
     function updateMapEditModeUI() {
+      if (!mapEditMode && mapSelectedRoutes.size) {
+        mapSelectedRoutes.clear();
+        const g = getMapGymName();
+        if (g && document.getElementById('map-pins-layer')) renderMapPins(g);
+      }
+      updateMapSelectionUI();
       const container = document.getElementById('map-container');
       const fabBtn = document.getElementById('map-fab-edit-btn');
       const fabIcon = document.getElementById('map-fab-icon');
@@ -3256,7 +3315,7 @@
       window.addEventListener('pointermove', onMapPointerMove);
       window.addEventListener('pointerup', onMapPointerUp);
       window.addEventListener('pointercancel', onMapPointerUp);
-      container.addEventListener('contextmenu', (e) => { if (builderActive) e.preventDefault(); });
+      container.addEventListener('contextmenu', (e) => { if (builderActive || mapEditMode) e.preventDefault(); });
 
       // Griffe des Baumodus (Ecken verschieben / Kantenmitte = neue Ecke)
       const handles = mapEl('map-builder-handles');
@@ -3305,6 +3364,7 @@
           mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2
         };
         builderClearPreview();
+        clearTimeout(mapLongPressTimer);
         mapGestureMoved = true;
         return;
       }
@@ -3318,6 +3378,22 @@
         tx0: mapWin.tx, ty0: mapWin.ty, moved: false
       };
       if (e.button === 1) e.preventDefault();
+
+      // Baumodus: langes Drücken auf einen Sektor -> alle Routen dieses Sektors löschen
+      clearTimeout(mapLongPressTimer);
+      if (inRouteBuildMode() && mapGesture.type === 'pan' && mapPointers.size === 1) {
+        const px = e.clientX, py = e.clientY, pid = e.pointerId;
+        mapLongPressTimer = setTimeout(() => {
+          const g = mapGesture;
+          if (!g || g.id !== pid || g.moved || mapPointers.size !== 1) return;
+          const gym = getMapGymName();
+          const sec = hitSector(clientToMap(px, py), getMapLayout(gym));
+          if (!sec) return;
+          g.moved = true; mapGestureMoved = true;   // danach kein Tipp-Klick (sonst würde eine Route angelegt)
+          vibrateShort();
+          askDeleteSectorRoutes(sec);
+        }, MAP_LONGPRESS_MS);
+      }
     }
 
     function onMapPointerMove(e) {
@@ -3351,6 +3427,7 @@
       const dx = e.clientX - g.startX;
       const dy = e.clientY - g.startY;
       if (!g.moved && Math.hypot(dx, dy) > 6) g.moved = true;
+      if (g.moved) clearTimeout(mapLongPressTimer);
 
       if (g.type === 'pan' && g.moved) {
         mapFocusedSectorId = null;
@@ -3366,6 +3443,7 @@
     function onMapPointerUp(e) {
       if (mapRouteDrag && mapRouteDrag.id === e.pointerId) { endRouteDrag(e, e.type === 'pointercancel'); return; }
       if (mapFrameDrag && mapFrameDrag.id === e.pointerId) { mapFrameDrag = null; mapGestureMoved = true; renderBuilderContext(); return; }
+      clearTimeout(mapLongPressTimer);
       if (!mapPointers.has(e.pointerId)) return;
       mapPointers.delete(e.pointerId);
       const g = mapGesture;
@@ -3406,14 +3484,28 @@
     function startRouteDrag(e, pinEl) {
       cancelAnimationFrame(mapAnimId);
       mapGestureMoved = false;
-      mapRouteDrag = { id: e.pointerId, el: pinEl, routeId: pinEl.dataset.routeId, x0: e.clientX, y0: e.clientY, moved: false, pending: null, left: pinEl.style.left, top: pinEl.style.top, tf: pinEl.style.transform };
+      mapRouteDrag = { id: e.pointerId, el: pinEl, routeId: pinEl.dataset.routeId, x0: e.clientX, y0: e.clientY, moved: false, pending: null, left: pinEl.style.left, top: pinEl.style.top, tf: pinEl.style.transform,
+                       noDrag: mapSelectedRoutes.size > 0, longPressed: false, lp: null };
+      const d = mapRouteDrag;
+      d.lp = setTimeout(() => {                         // langes Drücken: Route markieren
+        if (mapRouteDrag !== d || d.moved) return;
+        d.longPressed = true;
+        vibrateShort();
+        toggleRouteSelected(d.routeId, true);
+      }, MAP_LONGPRESS_MS);
     }
 
     function moveRouteDrag(e) {
       const d = mapRouteDrag;
+      if (d.longPressed) return;                         // markiert: kein Verschieben mehr
+      if (d.noDrag) {                                    // Auswahl aktiv: Tippen wählt aus, kein Verschieben
+        if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 6) clearTimeout(d.lp);
+        return;
+      }
       if (!d.moved) {
         if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 6) return;
         d.moved = true;
+        clearTimeout(d.lp);
         d.el.style.transform = 'scale(calc(var(--pin-s, 1) * 1.35))';
         d.el.style.zIndex = '5';
         d.el.style.filter = 'drop-shadow(0 0 6px rgba(255,255,255,0.55))';
@@ -3429,6 +3521,12 @@
     async function endRouteDrag(e, cancelled) {
       const d = mapRouteDrag;
       mapRouteDrag = null;
+      if (d) clearTimeout(d.lp);
+      if (d && d.longPressed) {                         // Langdruck hat markiert: folgenden Klick unterdrücken
+        mapGestureMoved = true;
+        setTimeout(() => { mapGestureMoved = false; }, 350);
+        return;
+      }
       if (!d || !d.moved) return;                       // nur getippt: normaler Klick öffnet die Route
       mapGestureMoved = true;
       setTimeout(() => { mapGestureMoved = false; }, 80);
@@ -4419,6 +4517,12 @@
 
       const isDetailed = mapZoomScale >= getPinZoomThreshold();
 
+      // Auswahl nur für sichtbare Routen behalten (z. B. nach Filteränderung)
+      if (mapSelectedRoutes.size) {
+        const vis = new Set(filteredRoutes.map(r => String(r.id)));
+        [...mapSelectedRoutes].forEach(id => { if (!vis.has(id)) mapSelectedRoutes.delete(id); });
+      }
+
       filteredRoutes.forEach(route => {
         const pin = document.createElement('div');
         const colorHex = HOLD_COLOR_MAP[route.holdColor] || '#3b82f6';
@@ -4463,6 +4567,12 @@
           pin.innerText = '';
         }
 
+        if (mapSelectedRoutes.has(String(route.id))) {   // markierte Route: roter Ring, größer
+          pin.style.boxShadow = '0 0 0 2px #fff, 0 0 0 4px #ef4444, 0 3px 8px rgba(0,0,0,0.55)';
+          pin.style.transform = `scale(calc(var(--pin-s, 1) * ${isDetailed ? 1.25 : 2.4}))`;
+          pin.style.zIndex = '4';
+        }
+
         pin.title = `${route.grade} (${route.holdColor}) - Status: ${status}` + routeTagsPlain(route);
 
         if (builderActive) { pin.style.pointerEvents = 'none'; pin.style.opacity = '0.45'; }
@@ -4470,6 +4580,7 @@
         pin.onclick = (e) => {
           e.stopPropagation();
           if (mapGestureMoved) { mapGestureMoved = false; return; } // Karte wurde gezogen, kein Tipp
+          if (inRouteBuildMode() && mapSelectedRoutes.size > 0) { toggleRouteSelected(route.id); return; }   // Auswahl aktiv: Tippen markiert/entmarkiert
           openMapInteractionModal(route.id);
         };
 
@@ -4478,6 +4589,7 @@
 
       // Liste der sichtbaren Routen aktualisieren
       updateMapRouteList(filteredRoutes);
+      updateMapSelectionUI();
     }
 
     // --- AUSKLAPPBARE ROUTENLISTE (sortierbar) ---
@@ -4551,7 +4663,7 @@
     // Wird bei jedem Pin-Rendering aufgerufen; rendert die Liste nur neu, wenn sich Inhalt/Sortierung geändert hat
     function updateMapRouteList(routes) {
       mapRouteListData = routes;
-      const signature = routes.map(r => `${r.id}:${r.grade}:${r.interaction?.status || 'open'}:${r.name || ''}`).join('|') + `#${mapRouteSortKey}#${mapRouteSortDesc}#${mapRouteListOpen}#${(mapFilters.inclines || []).join(',')}#${routes.map(r => (r.incline || '') + (r.styles || []).join('') + (r.holdTypes || []).join('')).join('|')}`;
+      const signature = [...mapSelectedRoutes].join(',') + '§' + routes.map(r => `${r.id}:${r.grade}:${r.interaction?.status || 'open'}:${r.name || ''}`).join('|') + `#${mapRouteSortKey}#${mapRouteSortDesc}#${mapRouteListOpen}#${(mapFilters.inclines || []).join(',')}#${routes.map(r => (r.incline || '') + (r.styles || []).join('') + (r.holdTypes || []).join('')).join('|')}`;
       if (signature === mapRouteListSignature) return;
       mapRouteListSignature = signature;
       renderMapRouteList();
@@ -4671,14 +4783,15 @@
           const statusEmoji = status === 'project' ? '🎯' : status === 'attempted' ? '🔼' : status === 'topped' ? '🏆' : status === 'flashed' ? '⚡' : '';
           const cleanGrade = r.grade ? String(r.grade).replace(/^Level\s*/i, '').replace(/^L\b/i, '') : '?';
           const meta = r.sectorName || r.holdColor || '';
-          return `<button onclick="openMapInteractionModal('${r.id}')" class="w-full flex items-center gap-3 bg-slate-900 hover:bg-slate-700/70 border border-slate-700/70 rounded-lg px-3 py-2 text-left transition">
+          const isSel = mapSelectedRoutes.has(String(r.id));
+          return `<button onpointerdown="mapListPressStart('${r.id}')" onpointerup="mapListPressEnd()" onpointerleave="mapListPressEnd()" onpointercancel="mapListPressEnd()" oncontextmenu="if (inRouteBuildMode()) return false" onclick="mapRouteTap('${r.id}')" class="w-full flex items-center gap-3 ${isSel ? 'bg-red-500/10 border-red-500/70' : 'bg-slate-900 hover:bg-slate-700/70 border-slate-700/70'} border rounded-lg px-3 py-2 text-left transition select-none">
             <span class="w-7 h-7 flex-shrink-0 rounded-full border-2 flex items-center justify-center font-bold text-[10px]" style="background:${colorHex};border-color:${isLight ? '#1c1c1e' : '#ffffff'};color:${isLight ? '#1c1c1e' : '#ffffff'}">${escapeHtmlText(cleanGrade)}</span>
             <span class="flex-1 min-w-0">
               <span class="block text-xs font-semibold text-slate-200 truncate">${escapeHtmlText(r.name || (r.grade + ' ' + r.holdColor))}</span>
               <span class="block text-[10px] text-slate-500 truncate">${escapeHtmlText(meta)}</span>
               ${routeTagChipsHtml(r)}
             </span>
-            <span class="text-sm flex-shrink-0">${statusEmoji}</span>
+            <span class="text-sm flex-shrink-0">${isSel ? '✅' : statusEmoji}</span>
           </button>`;
         }).join('');
         return `<div class="space-y-1.5">
@@ -4691,6 +4804,67 @@
       }).join('');
     }
 
+    // ---------- Baumodus: Routen markieren & löschen ----------
+    function inRouteBuildMode() {
+      const g = document.getElementById('map-fab-group');
+      return !!(mapEditMode && !builderActive && g && !g.classList.contains('hidden'));
+    }
+    function vibrateShort() { try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) { /* egal */ } }
+
+    function updateMapSelectionUI() {
+      const fab = document.getElementById('map-select-fab');
+      const n = mapSelectedRoutes.size;
+      const show = n > 0 && inRouteBuildMode();
+      if (fab) { fab.classList.toggle('hidden', !show); fab.classList.toggle('flex', show); }
+      const cnt = document.getElementById('map-select-count');
+      if (cnt) cnt.innerText = n;
+    }
+    function refreshMapSelection() {
+      const gym = getMapGymName();
+      if (gym) renderMapPins(gym); else updateMapSelectionUI();
+    }
+    function toggleRouteSelected(routeId, forceOn) {
+      const id = String(routeId);
+      const on = forceOn === undefined ? !mapSelectedRoutes.has(id) : forceOn;
+      if (on) mapSelectedRoutes.add(id); else mapSelectedRoutes.delete(id);
+      refreshMapSelection();
+    }
+    function clearRouteSelection() {
+      if (!mapSelectedRoutes.size) return;
+      mapSelectedRoutes.clear();
+      refreshMapSelection();
+    }
+
+    // Routenliste: Langdruck markiert (nur Baumodus), bei aktiver Auswahl markiert/entmarkiert ein Tipp
+    const mapListLP = { t: null, fired: false };
+    function mapListPressStart(id) {
+      mapListLP.fired = false;
+      clearTimeout(mapListLP.t);
+      if (!inRouteBuildMode()) return;
+      mapListLP.t = setTimeout(() => { mapListLP.fired = true; vibrateShort(); toggleRouteSelected(id, true); }, MAP_LONGPRESS_MS);
+    }
+    function mapListPressEnd() { clearTimeout(mapListLP.t); }
+    function mapRouteTap(id) {
+      if (mapListLP.fired) { mapListLP.fired = false; return; }
+      if (inRouteBuildMode() && mapSelectedRoutes.size > 0) { toggleRouteSelected(id); return; }
+      openMapInteractionModal(id);
+    }
+
+    // Gehört die Route zu diesem Sektor? (Name, sonst Geometrie)
+    function routeInSector(r, sec, layout) {
+      if (sec.name && r.sectorName) return r.sectorName === sec.name;
+      const q = snapRoutePosition({ x: Number(r.posX), y: Number(r.posY) }, layout).sector;
+      return !!(q && q.id === sec.id);
+    }
+    function askDeleteSectorRoutes(sec) {
+      const gym = getMapGymName();
+      const layout = getMapLayout(gym);
+      const ids = mapRoutes.filter(r => r.gymName === gym && routeInSector(r, sec, layout)).map(r => String(r.id));
+      if (!ids.length) { alert('In diesem Sektor gibt es keine Routen.'); return; }
+      const name = sec.name || '–';
+      openRouteDeleteDialog(ids, `${ids.length} ${ids.length === 1 ? 'Route' : 'Routen'} im Sektor ${name}`);
+    }
+
     // Tipp auf die Karte: im Routen-Modus Route setzen (rastet an der nächsten Sektorwand ein), sonst auf Sektor zoomen
     function handleMapClick(e) {
       if (builderActive) return;
@@ -4701,6 +4875,11 @@
       const pos = clientToMap(e.clientX, e.clientY);
 
       if (mapEditMode) {
+        if (mapSelectedRoutes.size > 0) {                // Auswahl aktiv: nur markieren, keine neue Route anlegen
+          const pinEl = findPinNear(e.clientX, e.clientY, 18);
+          if (pinEl) toggleRouteSelected(pinEl.dataset.routeId);
+          return;
+        }
         const hasPlan = !!scales[gym]?.planUrl;
         if (!hasPlan && !layoutHasShapes(layout)) return;
         if (pos.x < 0 || pos.x > 100 || pos.y < 0 || pos.y > 100) return;
@@ -4841,6 +5020,8 @@
       if (!route) return;
 
       activeInteractionRouteId = route.id;
+      const delBtn = document.getElementById('mri-delete-btn');
+      if (delBtn) delBtn.classList.toggle('hidden', !inRouteBuildMode());   // Löschen nur im Baumodus
       document.getElementById('mri-route-id').value = route.id;
       document.getElementById('mri-title').innerText = `${routeIsClimb(route) ? climbGradeShort(route) : route.grade} (${route.holdColor})`;
       document.getElementById('mri-subtitle').innerText = `${route.gymName} ${route.sectorName ? '• ' + route.sectorName : ''}`;
@@ -5014,27 +5195,56 @@
       saveStorage('boulder_map_routes', mapRoutes);
     }
 
-    // Öffnet die Auswahl: in Statistik behalten oder komplett löschen
-    function deleteMapRoute() {
-      const route = mapRoutes.find(r => String(r.id) === String(activeInteractionRouteId));
-      if (!route) return;
-      document.getElementById('drm-sub').innerText = `${routeLabel(route)} · ${route.gymName}`;
+    // Öffnet die Auswahl: in Statistik behalten oder komplett löschen (eine oder mehrere Routen)
+    function openRouteDeleteDialog(ids, subText) {
+      pendingDeleteRouteIds = ids.map(String);
+      const n = pendingDeleteRouteIds.length;
+      const set = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+      set('drm-title', n === 1 ? '🗑️ Route entfernen' : `🗑️ ${n} Routen entfernen`);
+      set('drm-sub', subText || '');
+      set('drm-question', n === 1 ? 'Soll die Route nach dem Entfernen noch in deiner Statistik mitzählen?' : 'Sollen die Routen nach dem Entfernen noch in deiner Statistik mitzählen?');
+      set('drm-drop-desc', n === 1 ? 'Route und ihre Daten werden endgültig entfernt und zählen nicht mehr in der Statistik.' : 'Routen und ihre Daten werden endgültig entfernt und zählen nicht mehr in der Statistik.');
       const keepRadio = document.querySelector('input[name="drm-keep"][value="keep"]');
       if (keepRadio) keepRadio.checked = true;
       openModal('delete-route-modal');
     }
 
+    // Einzelne Route (aus dem Routen-Dialog, nur im Baumodus erreichbar)
+    function deleteMapRoute() {
+      const route = mapRoutes.find(r => String(r.id) === String(activeInteractionRouteId));
+      if (!route) return;
+      openRouteDeleteDialog([route.id], `${routeLabel(route)} · ${route.gymName}`);
+    }
+
+    // Alle markierten Routen (FAB im Baumodus)
+    function deleteSelectedRoutes() {
+      const routes = [...mapSelectedRoutes].map(id => mapRoutes.find(r => String(r.id) === id)).filter(Boolean);
+      if (!routes.length) return;
+      openRouteDeleteDialog(routes.map(r => r.id), routes.length === 1 ? `${routeLabel(routes[0])} · ${routes[0].gymName}` : `${routes.length} Routen ausgewählt`);
+    }
+
     async function confirmDeleteMapRoute() {
-      const routeId = activeInteractionRouteId;
-      const route = mapRoutes.find(r => String(r.id) === String(routeId));
+      const idStrs = pendingDeleteRouteIds.slice();
+      const routes = idStrs.map(id => mapRoutes.find(r => String(r.id) === id)).filter(Boolean);
       const keep = (document.querySelector('input[name="drm-keep"]:checked')?.value || 'keep') === 'keep';
-      if (!route) { closeModal('delete-route-modal'); closeModal('map-interaction-modal'); return; }
+      const finish = () => {
+        pendingDeleteRouteIds = [];
+        mapSelectedRoutes.clear();
+        closeModal('delete-route-modal');
+        closeModal('map-interaction-modal');
+        updateMapSelectionUI();
+        renderMapView();
+        renderHome();
+        renderStatsAll();
+      };
+      if (!routes.length) { finish(); return; }
+      const idList = routes.map(r => r.id);
 
       if (keep) {
         const archivedAt = new Date().toISOString();
         let savedInDb = false;
         if (currentAuthUser) {
-          const { error } = await supabaseClient.from('gym_map_routes').update({ archived_at: archivedAt, keep_in_stats: true }).eq('id', routeId);
+          const { error } = await supabaseClient.from('gym_map_routes').update({ archived_at: archivedAt, keep_in_stats: true }).in('id', idList);
           if (error && /column|schema cache/i.test(error.message || '')) {
             alert('In der Datenbank fehlen noch die Spalten archived_at / keep_in_stats. Bitte zuerst das mitgelieferte SQL-Skript ausführen. Bis dahin wird die Route nur auf diesem Gerät archiviert.');
           } else if (error) {
@@ -5044,31 +5254,27 @@
             savedInDb = true;
           }
         }
-        archiveRouteLocally(route, archivedAt);
+        routes.forEach(r => archiveRouteLocally(r, archivedAt));
         if (currentAuthUser && savedInDb) await fetchAllUserDataFromSupabase();
       } else if (currentAuthUser) {
-        const { error } = await supabaseClient.from('gym_map_routes').delete().eq('id', routeId);
+        const { error } = await supabaseClient.from('gym_map_routes').delete().in('id', idList);
         if (error) {
           alert("Fehler beim Löschen der Route: " + error.message);
           return;
         }
-        delete routeExtras[String(routeId)];
+        idStrs.forEach(id => { delete routeExtras[id]; });
         saveRouteExtras();
         await fetchAllUserDataFromSupabase();
       } else {
-        mapRoutes = mapRoutes.filter(r => String(r.id) !== String(routeId));
-        archivedRoutes = archivedRoutes.filter(r => String(r.id) !== String(routeId));
-        delete routeExtras[String(routeId)];
+        const idSet = new Set(idStrs);
+        mapRoutes = mapRoutes.filter(r => !idSet.has(String(r.id)));
+        archivedRoutes = archivedRoutes.filter(r => !idSet.has(String(r.id)));
+        idStrs.forEach(id => { delete routeExtras[id]; });
         saveRouteExtras();
         saveStorage('boulder_map_routes', mapRoutes);
         saveStorage('boulder_archived_routes', archivedRoutes);
       }
-
-      closeModal('delete-route-modal');
-      closeModal('map-interaction-modal');
-      renderMapView();
-      renderHome();
-      renderStatsAll();
+      finish();
     }
 
     // --- PRIVATSPHÄRE CONTROL LOGIC ---
@@ -6680,8 +6886,8 @@
       }
     }
 
-    function renderSessions(list) {
-      const container = document.getElementById('sessions-list');
+    function renderSessions(list, targetId = 'sessions-list') {
+      const container = document.getElementById(targetId);
       if (!container) return;
       const source = Array.isArray(list) ? list : sessions;
       if (source.length === 0) {
@@ -6911,7 +7117,9 @@
 
     function renderVideos() {
       const container = document.getElementById('videos-list');
-      const filterMode = document.getElementById('video-folder-filter').value;
+      const filterSel = document.getElementById('video-folder-filter');
+      if (!container || !filterSel) return;   // Videos-Tab entfernt
+      const filterMode = filterSel.value;
 
       let displayProjects = [...projects];
       if (filterMode === 'WITH_VIDEOS_ONLY') {
@@ -7859,9 +8067,9 @@
     }
 
     // ---------- PROJEKTE ----------
-    function getProjectRecords(range) {
+    function getProjectRecords(range, allGyms = false) {
       const out = [];
-      statsGymRoutes().forEach(r => {
+      (allGyms ? mapRoutes.concat(archivedRoutes).filter(r => !routeIsClimb(r)) : statsGymRoutes()).forEach(r => {
         const i = r.interaction || {};
         const st = routeStatusOf(r);
         const pAt = i.projectAt ? Date.parse(i.projectAt) : 0;
@@ -7870,9 +8078,9 @@
         if (st === 'project') {
           if (r.archivedAt) return;   // entfernte Projekt-Routen sind nicht mehr aktiv
           const ts = pAt || getRouteStatusTimestamp(r);
-          if (tsInRange(ts, range)) out.push({ r, kind: 'active', start: pAt, end: 0, attempts, days: pAt ? Math.max(1, Math.ceil((Date.now() - pAt) / 86400000)) : null });
+          if (allGyms || tsInRange(ts, range)) out.push({ r, kind: 'active', start: pAt, end: 0, attempts, days: pAt ? Math.max(1, Math.ceil((Date.now() - pAt) / 86400000)) : null });
         } else if (st === 'topped' && pAt) {
-          if (tsInRange(tAt || pAt, range)) out.push({ r, kind: 'done', start: pAt, end: tAt, attempts, days: tAt ? Math.max(1, Math.ceil((tAt - pAt) / 86400000)) : null });
+          if (allGyms || tsInRange(tAt || pAt, range)) out.push({ r, kind: 'done', start: pAt, end: tAt, attempts, days: tAt ? Math.max(1, Math.ceil((tAt - pAt) / 86400000)) : null });
         }
       });
       return out;
@@ -8671,30 +8879,201 @@
       chLoadList(false);
     }
 
-    // --- RUHETIMER ---
-    let timerInterval = null, timerSeconds = 120, timerRunning = false;
-    function setTimerSeconds(sec) { timerSeconds = sec; updateTimerDisplay(); }
+    // --- LOGBUCH-SEITENLEISTE (Einträge, Sessions, Projekte) ---
+    let logbookTab = 'entries';
+    function openLogbook(tab) {
+      if (tab) logbookTab = tab;
+      renderEntries(); renderLogbookSessions(); renderLogbookProjects();
+      setLogbookTab(logbookTab);
+      document.getElementById('logbook-drawer').classList.remove('translate-x-full');
+      document.getElementById('logbook-drawer').setAttribute('aria-hidden', 'false');
+      document.getElementById('logbook-backdrop').classList.remove('hidden');
+    }
+    function closeLogbook() {
+      const d = document.getElementById('logbook-drawer'), bd = document.getElementById('logbook-backdrop');
+      if (!d || !bd) return;
+      d.classList.add('translate-x-full');
+      d.setAttribute('aria-hidden', 'true');
+      bd.classList.add('hidden');
+    }
+    function setLogbookTab(tab) {
+      logbookTab = tab;
+      ['entries', 'sessions', 'projects'].forEach(t => {
+        const pane = document.getElementById(`lb-pane-${t}`), btn = document.getElementById(`lb-tab-${t}`);
+        if (pane) pane.classList.toggle('hidden', t !== tab);
+        if (btn) {
+          btn.classList.remove(...SUB_ACTIVE, ...SUB_INACTIVE);
+          btn.classList.add(...(t === tab ? SUB_ACTIVE : SUB_INACTIVE));
+        }
+      });
+    }
+    function renderLogbookSessions() {
+      renderSessions(sessions, 'logbook-sessions-list');
+    }
+    function renderLogbookProjects() {
+      const container = document.getElementById('logbook-projects-list');
+      if (!container) return;
+      const records = getProjectRecords(null, true);
+      if (!records.length) {
+        container.innerHTML = '<p class="text-xs text-slate-500 py-4">Noch keine Projekte. Setze auf der Hallenkarte eine Route auf „🎯 Projekt“.</p>';
+        return;
+      }
+      const active = records.filter(x => x.kind === 'active').sort((a, b) => {
+        const da = a.r.setDate ? getDaysUntilReset(a.r.setDate, a.r.gymName) : null, db = b.r.setDate ? getDaysUntilReset(b.r.setDate, b.r.gymName) : null;
+        return (da === null ? 9999 : da) - (db === null ? 9999 : db);
+      });
+      const done = records.filter(x => x.kind === 'done').sort((a, b) => (b.end || b.start || 0) - (a.end || a.start || 0));
+      const section = (title, list) => list.length ? `<div class="space-y-2"><h4 class="text-[11px] uppercase font-bold text-slate-400">${title} · ${list.length}</h4>${list.map(projectRowHtml).join('')}</div>` : '';
+      container.innerHTML = section('Aktive Projekte', active) + section('Abgeschlossene Projekte', done);
+    }
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLogbook(); });
+
+    // --- RUHETIMER (FAB auf der Hallenkarte) ---
+    // Endzeitpunkt-basiert: bleibt genau, auch wenn der Browser Intervalle drosselt. Alarm = Ton (auch bei stummgeschaltetem iPhone-Klingelschalter),
+    // Vibration, Benachrichtigung (falls erlaubt) und Banner. Wake Lock hält den Bildschirm während des Laufens an.
+    let timerInterval = null, timerSeconds = 120, timerDuration = 120, timerRunning = false, timerEndAt = 0;
+    let timerWakeLock = null, timerAudio = null, timerAlarmStopTimeout = null;
+
+    function buildAlarmWavUrl() {
+      const rate = 22050, beepLen = 0.18, gapLen = 0.12, beeps = 3, tail = 0.7;
+      const total = Math.floor(rate * (beeps * (beepLen + gapLen) + tail));
+      const buf = new ArrayBuffer(44 + total * 2), v = new DataView(buf);
+      const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+      w(0, 'RIFF'); v.setUint32(4, 36 + total * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+      w(36, 'data'); v.setUint32(40, total * 2, true);
+      for (let i = 0; i < total; i++) {
+        const t = i / rate, slot = (beepLen + gapLen), k = Math.floor(t / slot), local = t - k * slot;
+        let s = 0;
+        if (k < beeps && local < beepLen) {
+          const env = Math.min(1, local / 0.01, (beepLen - local) / 0.02);
+          s = Math.sin(2 * Math.PI * 1046 * local) * env * 0.85;
+        }
+        v.setInt16(44 + i * 2, Math.round(s * 32767), true);
+      }
+      return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+    }
+    // Muss durch eine Nutzer-Geste (Start-Klick) freigeschaltet werden, sonst blockieren iOS/Android späteres Abspielen
+    function unlockTimerAudio() {
+      try {
+        if (!timerAudio) { timerAudio = new Audio(buildAlarmWavUrl()); timerAudio.loop = true; timerAudio.preload = 'auto'; }
+        timerAudio.muted = true;
+        const p = timerAudio.play();
+        if (p && p.then) p.then(() => { timerAudio.pause(); timerAudio.currentTime = 0; timerAudio.muted = false; }).catch(() => { timerAudio.muted = false; });
+      } catch (e) { /* kein Audio verfügbar */ }
+    }
+    function playTimerAlarm() {
+      try { if (timerAudio) { timerAudio.muted = false; timerAudio.currentTime = 0; const p = timerAudio.play(); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
+      try { if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400, 150, 800]); } catch (e) {}
+      clearTimeout(timerAlarmStopTimeout);
+      timerAlarmStopTimeout = setTimeout(dismissTimerAlarm, 45000);   // Alarm endet nach 45 s von selbst
+    }
+    function dismissTimerAlarm() {
+      clearTimeout(timerAlarmStopTimeout);
+      try { if (timerAudio) { timerAudio.pause(); timerAudio.currentTime = 0; } } catch (e) {}
+      try { if (navigator.vibrate) navigator.vibrate(0); } catch (e) {}
+      const b = document.getElementById('timer-alarm-banner');
+      if (b) { b.classList.add('hidden'); b.classList.remove('flex'); }
+    }
+    function showTimerAlarmBanner() {
+      const b = document.getElementById('timer-alarm-banner');
+      if (b) { b.classList.remove('hidden'); b.classList.add('flex'); }
+      try {
+        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification('⏰ Pausenzeit abgelaufen!', { body: 'Zeit für den nächsten Versuch.', tag: 'rest-timer' });
+        }
+      } catch (e) { /* manche Mobil-Browser erlauben den Konstruktor nicht */ }
+    }
+
+    function requestTimerWakeLock() {
+      try {
+        if ('wakeLock' in navigator && !timerWakeLock) {
+          navigator.wakeLock.request('screen').then(l => { timerWakeLock = l; l.addEventListener('release', () => { timerWakeLock = null; }); }).catch(() => {});
+        }
+      } catch (e) {}
+    }
+    function releaseTimerWakeLock() {
+      try { if (timerWakeLock) { timerWakeLock.release(); timerWakeLock = null; } } catch (e) {}
+    }
+
+    function fmtTimer(sec) {
+      return `${Math.floor(sec / 60).toString().padStart(2, '0')}:${(sec % 60).toString().padStart(2, '0')}`;
+    }
     function updateTimerDisplay() {
-      const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
-      const s = (timerSeconds % 60).toString().padStart(2, '0');
-      document.getElementById('timer-display').innerText = `${m}:${s}`;
+      const disp = document.getElementById('timer-display');
+      if (disp) disp.innerText = fmtTimer(timerSeconds);
+      const badge = document.getElementById('map-fab-timer-badge');
+      if (badge) {
+        const show = timerRunning || (timerSeconds > 0 && timerSeconds < timerDuration);
+        badge.innerText = fmtTimer(timerSeconds);
+        badge.classList.toggle('hidden', !show);
+        badge.classList.toggle('flex', show);
+      }
+      const fab = document.getElementById('map-fab-timer-btn');
+      if (fab) fab.classList.toggle('ring-2', timerRunning), fab.classList.toggle('ring-emerald-500', timerRunning);
+      const btn = document.getElementById('timer-start-btn');
+      if (btn) btn.innerText = timerRunning ? 'Pause' : (timerSeconds < timerDuration && timerSeconds > 0 ? 'Weiter' : 'Start');
+      document.querySelectorAll('[data-timer-preset]').forEach(b => {
+        const on = parseInt(b.dataset.timerPreset, 10) === timerDuration;
+        b.classList.toggle('bg-emerald-600', on); b.classList.toggle('text-white', on);
+        b.classList.toggle('bg-slate-700', !on);
+      });
+      const clockBtn = document.getElementById('timer-clock-btn');
+      if (clockBtn) clockBtn.classList.toggle('hidden', !/android/i.test(navigator.userAgent));
+    }
+    function stopTimerTicking() {
+      clearInterval(timerInterval); timerInterval = null; timerRunning = false; releaseTimerWakeLock();
+    }
+    function timerTick() {
+      if (!timerRunning) return;
+      const rem = Math.max(0, Math.ceil((timerEndAt - Date.now()) / 1000));
+      timerSeconds = rem;
+      if (rem <= 0) { finishTimer(); return; }
+      updateTimerDisplay();
+    }
+    function finishTimer() {
+      stopTimerTicking();
+      timerSeconds = timerDuration;     // bereit für die nächste Pause
+      updateTimerDisplay();
+      playTimerAlarm();
+      showTimerAlarmBanner();
+    }
+    function setTimerSeconds(sec) {
+      stopTimerTicking(); dismissTimerAlarm();
+      timerDuration = sec; timerSeconds = sec; updateTimerDisplay();
     }
     function toggleTimer() {
-      const btn = document.getElementById('timer-start-btn');
+      dismissTimerAlarm();
       if (timerRunning) {
-        clearInterval(timerInterval); timerRunning = false; btn.innerText = 'Start';
-      } else {
-        timerRunning = true; btn.innerText = 'Pause';
-        timerInterval = setInterval(() => {
-          if (timerSeconds > 0) { timerSeconds--; updateTimerDisplay(); }
-          else { clearInterval(timerInterval); timerRunning = false; btn.innerText = 'Start'; alert('⏰ Pausenzeit abgelaufen!'); }
-        }, 1000);
+        timerTick(); if (!timerRunning) return;
+        stopTimerTicking(); updateTimerDisplay();
+        return;
       }
+      if (timerSeconds <= 0) timerSeconds = timerDuration;
+      unlockTimerAudio();
+      try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+      timerEndAt = Date.now() + timerSeconds * 1000;
+      timerRunning = true;
+      timerInterval = setInterval(timerTick, 250);
+      requestTimerWakeLock();
+      updateTimerDisplay();
     }
     function resetTimer() {
-      if (timerRunning) { clearInterval(timerInterval); timerRunning = false; document.getElementById('timer-start-btn').innerText = 'Start'; }
-      timerSeconds = 120; updateTimerDisplay();
+      stopTimerTicking(); dismissTimerAlarm();
+      timerSeconds = timerDuration; updateTimerDisplay();
     }
+    // Android: Timer zusätzlich in der System-Uhr-App anlegen (läuft dort auch bei gesperrtem Bildschirm)
+    function openClockTimer() {
+      const secs = Math.max(1, timerRunning ? Math.ceil((timerEndAt - Date.now()) / 1000) : timerSeconds);
+      window.location.href = `intent:#Intent;action=android.intent.action.SET_TIMER;i.android.intent.extra.alarm.LENGTH=${secs};S.android.intent.extra.alarm.MESSAGE=Ruhetimer;B.android.intent.extra.alarm.SKIP_UI=false;end`;
+    }
+    // Rückkehr in die App (z. B. nach Bildschirmsperre): Restzeit sofort nachziehen, Wake Lock erneuern
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !timerRunning) return;
+      requestTimerWakeLock(); timerTick();
+    });
+    document.addEventListener('DOMContentLoaded', updateTimerDisplay);
   </script>
 <script>
 /* Lucide-Icons (inline SVG, Akzentfarbe) ersetzen Emojis/Symbole – auch in dynamisch erzeugten Inhalten */
@@ -9044,8 +9423,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImpress
 /* ===== i18n DE/EN ===== Wörterbuch DE->EN. Ergänzen: einfach Einträge in I18N_EN hinzufügen.
    Debug: URL mit ?i18n-debug öffnen -> nicht übersetzte deutsche Texte erscheinen in der Konsole (window.__i18nMissing). */
 (function(){
-  var I18N_EN = {"Hallenkarte": "Gym map", "Statistik": "Stats", "Einstellungen": "Settings", "Routen": "Routes", "Projekte": "Projects", "Halle": "Gym", "Hallenprofil": "Gym profile", "Privatsphäre": "Privacy", "Ruhetimer": "Rest timer", "Logbuch": "Logbook", "Gesamter Zeitraum": "All time", "Letzte 7 Tage": "Last 7 days", "Letzte 30 Tage": "Last 30 days", "Letzte 90 Tage": "Last 90 days", "Letztes Jahr": "Last year", "Eigener Zeitraum…": "Custom range…", "Diagramm": "Chart", "bis": "to", "Willkommen bei BoulderLog!": "Welcome to BoulderLog!", "Melde dich an, um deine Fortschritte zu speichern.": "Sign in to save your progress.", "Anmelden": "Sign in", "Freunde": "Friends", "Hallen": "Gyms", "Freund*in": "Friend", "Anfrage senden": "Send request", "Was deine Crew gerade treibt": "What your crew is up to", "Neue Projekte, Tops und Sessions aus deiner Crew": "New projects, tops and sessions from your crew", "Deine letzten Schritte": "Your latest steps", "Was du zuletzt an der Wand erlebt hast": "What you last experienced on the wall", "Deine offenen Projekte aus der Hallenkarte – Zeit für den nächsten Versuch": "Your open projects from the gym map – time for the next attempt", "Benutzername suchen...": "Search username...", "Profilbild ändern": "Change profile picture", "Alle Freunde anzeigen": "Show all friends", "Offene Anfragen": "Open requests", "Interaktive Hallenkarte": "Interactive gym map", "Hallenkarte bauen": "Build gym map", "Abbrechen": "Cancel", "Fertig": "Done", "Bewegen": "Move", "Matte": "Mat", "Sektor": "Sector", "Ecken": "Corners", "Fenster": "Window", "Letzter Punkt": "Last point", "Abschließen": "Finish", "Noch keine Hallenkarte": "No gym map yet", "Aktive Routen": "Active routes", "Grad": "Grade", "Bauen": "Build", "Routen setzen": "Set routes", "Hallenkarten-Filter": "Gym map filters", "Alle Levels": "All levels", "Status der Routen": "Route status", "Offen": "Open", "Projekt": "Project", "Versucht": "Attempted", "Getoppt": "Topped", "Geflasht": "Flashed", "Grifffarbe": "Hold colour", "Kletter-Styles": "Climbing styles", "Technik": "Technique", "Kraft": "Power", "Wandneigung": "Wall angle", "Senkrecht": "Vertical", "Grifftypen": "Hold types", "Leisten": "Crimps", "Henkel": "Jugs", "Zangen": "Pinches", "Taschen": "Pockets", "Volumen": "Volumes", "Mindestbewertung": "Minimum rating", "Alle Filter zurücksetzen": "Reset all filters", "Filter zurücksetzen": "Reset filters", "Filter öffnen": "Open filters", "Ansicht zurücksetzen": "Reset view", "Routen sortieren": "Sort routes", "Bearbeiten": "Edit", "Hallenprofil wählen": "Choose gym profile", "Entwurf verwerfen": "Discard draft", "Mattenbereiche und Wandsektoren zeichnen": "Draw mat areas and wall sectors", "Deine Sessions": "Your sessions", "Wie oft und wie lange du an der Wand bist": "How often and how long you're on the wall", "Vergangene Sessions": "Past sessions", "Deine Projekte": "Your projects", "Dauer und Versuche – angelegt über die Hallenkarte": "Duration and attempts – created via the gym map", "Wie viel der Halle du schon geknackt hast": "How much of the gym you've cracked", "Was du am liebsten kletterst": "What you like to climb most", "Durchstiegsquote pro Grad, Stil, Grifftyp, Neigung und Wandbereich": "Send rate by grade, style, hold type, angle and wall area", "Alle Routen der Hallenkarte, die du als Projekt, Top oder Flash markiert hast": "All gym map routes you marked as project, top or flash", "Reflektionen, Projekt-Betas und Lerneffekte im Überblick": "Reflections, project betas and learnings at a glance", "Allgemeiner Eintrag": "General entry", "Anzeigen:": "Show:", "Alle Einträge": "All entries", "Allgemein": "General", "Sessions": "Sessions", "Projekt-Videos": "Project videos", "Video-Ordner nach Projekten strukturiert": "Video folders organised by project", "Alle Projekte anzeigen": "Show all projects", "Nur Projekte mit Videos": "Only projects with videos", "Ruhetimer auf der Matte": "Rest timer on the mat", "Pausenzeiten zwischen Versuchen stoppen.": "Time your rest between attempts.", "Verwalte deine Hallen, Skalen, Wandbereiche und Hallenpläne.": "Manage your gyms, grading scales, wall areas and gym plans.", "Neue Halle anlegen": "Add new gym", "Lege fest, was Freunde von dir sehen dürfen.": "Choose what friends may see about you.", "Privatsphäre & Sichtbarkeit": "Privacy & visibility", "Alles aus": "Everything off", "Blendet sämtliche Profildaten und Aktivitäten für Freunde komplett aus": "Hides all profile data and activity from friends completely", "Projekte teilen": "Share projects", "Sessions im Feed zeigen": "Show sessions in feed", "Feed-Meldung, wenn du eine Session anlegst": "Feed post when you add a session", "Statistiken teilen": "Share statistics", "Session-, Routen- und Hallenstatistiken im Profil": "Session, route and gym statistics on your profile", "Challenge-Erfolge teilen": "Share challenge achievements", "Abgeschlossene Challenges automatisch im Feed zeigen": "Automatically show completed challenges in the feed", "Freundesanfragen deaktivieren": "Disable friend requests", "Verhindert, dass dir andere Nutzer*innen Anfragen senden können": "Prevents other users from sending you requests", "Anpassungen für das Erscheinungsbild der App.": "Customise the look of the app.", "Speichern": "Save", "Löschen": "Delete", "Übernehmen": "Apply", "Entfernen": "Remove", "Zurücksetzen": "Reset", "Schwierigkeitsgrad": "Difficulty grade", "Routenname (optional)": "Route name (optional)", "Wandbereich (optional)": "Wall area (optional)", "Neigung (optional)": "Angle (optional)", "Versuche": "Attempts", "Stil": "Style", "Grifftyp": "Hold type", "Keine Bewertung": "No rating", "Persönlicher Kommentar / Beta": "Personal comment / beta", "Route entfernen": "Remove route", "Projekt anlegen": "Create project", "Boulderhalle": "Bouldering gym", "Wandbereich / Sektor": "Wall area / sector", "Projekt verorten": "Locate project", "Durchstieg eintragen": "Log send", "Session eintragen": "Log session", "Datum": "Date", "Uhrzeit": "Time", "Dauer (Minuten)": "Duration (minutes)", "Gekletterte Boulder": "Boulders climbed", "Kommentar": "Comment", "Titel": "Title", "Keine Halle": "No gym", "Inhalt / Reflektion": "Content / reflection", "Name der Halle": "Gym name", "Als Stammhalle festlegen": "Set as home gym", "Schwierigkeitsgrade": "Difficulty grades", "Standardtabelle": "Default table", "Französisch": "French", "Registrieren": "Sign up", "Einloggen": "Log in", "E-Mail": "Email", "Passwort": "Password", "Benutzername": "Username", "Ich bestätige, dass ich mindestens 18 Jahre alt bin.": "I confirm that I am at least 18 years old.", "Konto erstellen": "Create account", "Postfach": "Inbox", "Freundschaftsanfragen": "Friend requests", "Challenge-Einladungen": "Challenge invitations", "Challenge erstellen": "Create challenge", "Einladungen senden": "Send invitations", "Deine Freunde": "Your friends", "Profilbild": "Profile picture", "Foto wählen": "Choose photo", "Statistiken": "Statistics", "Profil": "Profile", "Leaderboard": "Leaderboard", "Zeitbegrenzung": "Time limit", "Teilnehmer": "Participants", "Bitte einmalig das Supabase-Skript challenges_delete.sql ausführen.": "Please run the Supabase script challenges_delete.sql once.", "Neon-Varianten im Dark Mode.": "Neon variants in dark mode.", "Abgedunkelte Pastell-Varianten im Light Mode.": "Dimmed pastel variants in light mode.", "Blau und Orange erscheinen zusätzlich als Zweitfarben (Bauen, Flash, Warnungen).": "Blue and orange also appear as secondary colours (build, flash, warnings).", "Guten Morgen": "Good morning", "Guten Abend": "Good evening", "Schön, dich zu sehen": "Nice to see you", "Neigung": "Angle", "Benötigte Versuche": "Attempts needed", "Lerneffekt": "Learning", "Mehrfachauswahl": "multi-select", "Mehrfachnennung möglich": "multiple answers possible", "laufende Projekte": "ongoing projects", "getoppte Projekte": "topped projects", "Min": "min", "Std": "h", "Sektoren": "Sectors", "Matten": "mats", "Stammhalle": "Home gym", "Weiß": "White", "Gelb": "Yellow", "Blau": "Blue", "Rot": "Red", "Grün": "Green", "Schwarz": "Black", "Violett": "Violet", "Rosa": "Pink", "Lila": "Purple", "Montag": "Monday", "Dienstag": "Tuesday", "Mittwoch": "Wednesday", "Donnerstag": "Thursday", "Freitag": "Friday", "Samstag": "Saturday", "Sonntag": "Sunday", "Aktiv": "Active", "Abgeschlossen": "Completed", "Durchstieg": "Send", "Durchstiegen": "Sent", "Umschraubzyklus": "reset cycle", "Umschrauben": "reset"};
-  var I18N_X = {"Bereit für den nächsten Boulder?": "Ready for the next boulder?", "Heute ist ein guter Tag zum Topspielen.": "Today is a good day to send some problems.", "Deine Projekte warten schon auf dich.": "Your projects are already waiting for you.", "Griffe sammeln, Grenzen verschieben.": "Collect holds, push limits.", "Noch ein Versuch geht immer.": "There's always time for one more try.", "Die Wand ruft – was ist dein Plan?": "The wall is calling – what's your plan?", "Melde dich an, um deine Fortschritte zu speichern und Freunde zu finden.": "Sign in to save your progress and find friends.", "Noch keine Session eingetragen.": "No session logged yet.", "Zuletzt getoppt": "Recently topped", "Noch kein Top – der erste kommt bestimmt! 💪": "No tops yet – the first one is sure to come! 💪", "Neu als Projekt angelegt": "Newly added as project", "Markiere auf der Hallenkarte eine Route als Projekt.": "Mark a route as a project on the gym map.", "Letzte Session": "Last session", "Gerade keine offenen Projekte. Tippe auf der Hallenkarte eine Route an und setze sie auf „🎯 Projekt“.": "No open projects right now. Tap a route on the gym map and set it to “🎯 Project”.", "heute": "today", "gestern": "yesterday", "Tag": "day", "Tage": "days", "Tagen": "days", "oder": "or", "ein": "", "Du": "You", "Ja": "Yes", "Ende": "End", "Typ": "Type", "Klettere": "Climb", "Normal": "Normal", "Groß": "Large", "Farbe": "Colour", "Standard": "Default", "Darstellung": "Display", "Anlegen": "Create", "Breite": "Width", "Höhe": "Height", "Bereich": "Area", "Neigung": "Angle", "Griffe": "Holds", "Weiß": "White", "Gelb": "Yellow", "Blau": "Blue", "Rot": "Red", "Grün": "Green", "Schwarz": "Black", "Violett": "Violet", "Rosa": "Pink", "Lila": "Purple", "Holz": "Wood", "Holz / Natur": "Wood / Natural", "Smaragd": "Emerald", "Neon-Akzente": "Neon accents", "Pastell-Akzente": "Pastel accents", "Folgt dem Gerät": "Follows the device", "Neon-Varianten im Dark Mode.": "Neon variants in dark mode.", "Abgedunkelte Pastell-Varianten im Light Mode.": "Dimmed pastel variants in light mode.", "Farbkonzept": "Colour scheme", "Dark Grey als Dunkel-Modus, gebrochenes Weiß als Hell-Modus.": "Dark grey as the dark mode, off-white as the light mode.", "Akzentfarbe": "Accent colour", "Montag": "Monday", "Dienstag": "Tuesday", "Mittwoch": "Wednesday", "Donnerstag": "Thursday", "Freitag": "Friday", "Samstag": "Saturday", "Sonntag": "Sunday", "Unbekannt": "Unknown", "k.A.": "n/a", "Keine Angabe": "Not specified", "Abmelden": "Sign out", "Annehmen": "Accept", "Ablehnen": "Decline", "Lade…": "Loading…", "abgelaufen": "expired", "Plan als Vorlage": "Plan as template", "Vorschau": "Preview", "Großansicht": "Full view", "Std": "h", "Min": "min", "Aktiv": "Active", "Abgeschlossen": "Completed", "Durchstiegen": "Sent", "Durchstieg": "Send", "Häufigkeit": "Frequency", "Gesamtzeit": "Total time", "Ø Dauer": "Ø Duration", "Ø Versuche": "Ø Attempts", "Ø pro Zyklus": "Ø per cycle", "Routen gesamt": "Total routes", "Gesamtübersicht": "Overview", "Sektoren": "Sectors", "Wandsektor": "Wall sector", "Wandbereich": "Wall area", "Mattenbereich": "Mat area", "Kartenfenster": "Map window", "Routenbild": "Route image", "Planbild": "Plan image", "kein Plan": "no plan", "nicht aktiv": "inactive", "Hallenplan": "Gym plan", "Seilklettern": "Rope climbing", "Boulder-Level": "Boulder levels", "Routen auf Karte": "Routes on map", "⭐ Stammhalle": "⭐ Home gym", "☆ Stammhalle": "☆ Home gym", "✏️ Bearbeiten": "✏️ Edit", "🗑️ Löschen": "🗑️ Delete", "Level Name": "Level name", "Sicherungsart": "Belay type", "Sicherung": "Belay", "Seil": "Rope", "Exen": "Quickdraws", "Umlenker": "Anchor", "Wandhöhe": "Wall height", "Anzahl Exen": "Number of quickdraws", "Wandhöhe / Länge (m)": "Wall height / length (m)", "Mindestseillänge (m)": "Minimum rope length (m)", "Umlenker / Standplatz-Typ": "Anchor / belay station type", "Vorstieg (Lead)": "Lead", "Autobelay (Selbstsicherung)": "Autobelay (self-belay)", "🧗 Seilklettern": "🧗 Rope climbing", "z. B. 2 × Höhe": "e.g. 2 × height", "z. B. Doppelring, Saustecker": "e.g. double ring, hook anchor", "Geschraubt am": "Set on", "Geschraubt am:": "Set on:", "Grad-Einschätzung": "Grade rating", "Fair / Passend": "Fair / Accurate", "Soft (Eher leicht)": "Soft (rather easy)", "Hard (Eher schwer)": "Hard (rather difficult)", "Wird voraussichtlich bereits umgeschraubt": "Probably being reset already", "Hängt voraussichtlich noch 1 Tag": "Expected to stay up for 1 more day", "🎯 Projekt-Countdown": "🎯 Project countdown", "🎯 Countdown abgelaufen – Route ist wohl bald weg": "🎯 Countdown over – route will probably be gone soon", "läuft ab": "expiring", "Der reguläre Umschraubzyklus ist abgelaufen": "The regular reset cycle has ended", "🕒 Voraussichtlich umgeschraubt": "🕒 Probably reset", "Voraussichtlicher Umschraubtermin rückt näher": "Expected reset date is approaching", "⏳ Schraubdatum fehlt": "⏳ Set date missing", "Schraubdatum fehlt": "Set date missing", "Kein Hallenprofil": "No gym profile", "Keine Level": "No levels", "Bearbeitungsmodus aktiv – zum Beenden tippen": "Edit mode active – tap to exit", "Bitte lege zuerst ein Hallenprofil an.": "Please create a gym profile first.", "Änderungen an der Hallenkarte verwerfen?": "Discard changes to the gym map?", "Hallenkarte nur lokal gespeichert (Spalte map_layout fehlt?):": "Gym map saved locally only (column map_layout missing?):", "Hallenkarte nur lokal gespeichert": "Gym map saved locally only", "Eine Form braucht mindestens 3 Ecken.": "A shape needs at least 3 corners.", "Ein Polygon braucht mindestens 3 Ecken.": "A polygon needs at least 3 corners.", "Diesen Mattenbereich wirklich löschen?": "Really delete this mat area?", "Diesen Wandsektor wirklich löschen?": "Really delete this wall sector?", "Der neue Sektor konnte nicht im Hallenprofil gespeichert werden:": "The new sector could not be saved to the gym profile:", "Die neue Position konnte nicht gespeichert werden:": "The new position could not be saved:", "🪨 Bouldern": "🪨 Bouldering", "🧗 Klettern": "🧗 Climbing", "Mausrad oder Pinch zoomen das Kartenfenster, Ziehen verschiebt es. Tippe auf einen Sektor, um ihn groß zu zeigen. Zum Scrollen der Seite einfach neben der Karte wischen.": "Mouse wheel or pinch zooms the map window, dragging moves it. Tap a sector to enlarge it. To scroll the page, just swipe next to the map.", "Ziehen verschiebt das Kartenfenster, Mausrad / zwei Finger zoomen es.": "Dragging moves the map window; mouse wheel / two fingers zoom it.", "Weiter Ecken setzen oder Linien ziehen. Zum Schließen den ersten Punkt antippen oder „Abschließen“.": "Keep placing corners or drawing lines. To close the shape, tap the first point or “Finish”.", "Mattenbereich fertig – zeichne direkt den nächsten oder ändere unten die Farbe. Verschieben: zwei Finger, rechte Maustaste oder Leertaste.": "Mat area done – draw the next one right away or change the colour below. Pan: two fingers, right mouse button or space bar.", "Mattenbereich: Tippe die Ecken an oder ziehe Linien. Du kannst beliebig viele Mattenbereiche zeichnen.": "Mat area: tap the corners or draw lines. You can draw as many mat areas as you like.", "Weiter Ecken setzen. Punkte rasten an vorhandenen Ecken & Kanten ein. Dann „Abschließen“.": "Keep placing corners. Points snap to existing corners & edges. Then “Finish”.", "Sektor fertig – unten benennen oder direkt den nächsten Sektor zeichnen.": "Sector done – name it below or draw the next sector right away.", "Wandsektor: Zeichne die Form eines Wandbereichs nach – wie beim Mattenbereich.": "Wall sector: trace the shape of a wall area – just like the mat area.", "Form antippen = auswählen · Ecke ziehen = verschieben · ○ auf der Kante = neue Ecke · Ecke wählen + „Ecke löschen“.": "Tap a shape = select · drag a corner = move · ○ on an edge = new corner · select a corner + “Delete corner”.", "Ziehe die blauen Griffe an den Fensterkanten: Das Fenster beschneidet die Karte nur, der Inhalt behält seine Größe.": "Drag the blue handles on the window edges: the window only crops the map, the content keeps its size.", "Routen-Punkte: ab diesem Zoom werden sie groß mit Gradzahl gezeigt (darunter klein).": "Route dots: from this zoom level they are shown large with the grade (smaller below it).", "Eigener Wert": "Custom value", "Aktuellen Zoom übernehmen": "Use current zoom", "Tipp: Karte auf die gewünschte Größe zoomen und „Aktuellen Zoom übernehmen“ tippen.": "Tip: zoom the map to the size you want and tap “Use current zoom”.", "Schriftgröße der Wandnamen": "Font size of wall names", "↺ Standardgröße": "↺ Default size", "Neue Matte ist …": "New mat is …", "Klettermatten erhalten einen blauen, gestrichelten Rand. Sektoren werden danach automatisch dem Bereich zugeordnet, in dem sie mehrheitlich liegen.": "Climbing mats get a blue, dashed border. Sectors are then automatically assigned to the area in which most of them lies.", "Tippe auf einen Mattenbereich oder Sektor, um Name, Farbe und Ecken zu bearbeiten.": "Tap a mat area or sector to edit its name, colour and corners.", "✕ Ecke löschen": "✕ Delete corner", "Art der Mattenfläche": "Mat area type", "🗑 Mattenbereich löschen": "🗑 Delete mat area", "– kein Name –": "– no name –", "🧗 Kletterbereich": "🧗 Climbing area", "🪨 Boulderbereich": "🪨 Bouldering area", "z. B. Boulderhöhle": "e.g. boulder cave", "· automatisch nach Mattenfläche": "· automatically by mat area", "Name aus dem Hallenprofil": "Name from the gym profile", "… oder neuen Sektor anlegen (wird im Hallenprofil ergänzt)": "… or create a new sector (will be added to the gym profile)", "Für alle Sektoren": "For all sectors", "🗑 Sektor löschen": "🗑 Delete sector", "Magnet (Ecken, Kanten, Achsen)": "Snap (corners, edges, axes)", "Lade im Hallenprofil einen Plan hoch oder zeichne die Halle über ✏️ Bearbeiten → „Hallenkarte bauen“.": "Upload a plan in the gym profile or draw the gym via ✏️ Edit → “Build gym map”.", "📋 Aktive Routen": "📋 Active routes", "📍 Routen setzen": "📍 Set routes", "Tippe auf die Karte – Routen rasten an der Sektorwand ein": "Tap the map – routes snap to the sector wall", "Baumenü ein-/ausblenden": "Show/hide build menu", "Beim Setzen wurden keine Tags angegeben.": "No tags were specified when the route was set.", "Kein Bereich": "No area", "Ohne Stil": "No style", "Ohne Grifftyp": "No hold type", "Ohne Neigung": "No angle", "Ohne Farbe": "No colour", "Ohne Grad": "No grade", "Ohne Halle": "No gym", "Sortieren nach": "Sort by", "Erneut tippen = Reihenfolge umkehren": "Tap again = reverse order", "Keine Routen sichtbar. Passe die Filter an oder lege im Bearbeitungsmodus neue Routen an.": "No routes visible. Adjust the filters or add new routes in edit mode.", "🧗 Kletterroute (Seil) – Sektor liegt im Kletterbereich": "🧗 Climbing route (rope) – sector is in the climbing area", "🪨 Boulder – Sektor liegt im Boulderbereich": "🪨 Boulder – sector is in the bouldering area", "Bitte einen Schwierigkeitsgrad wählen.": "Please choose a difficulty grade.", "Fehler beim Speichern der Route:": "Error saving route:", "Einschätzung:": "Rating:", "(Flash = 1. Versuch)": "(Flash = 1st attempt)", "(bisherige Versuche)": "(attempts so far)", "(bis zum Durchstieg)": "(until the send)", "Fehler beim Speichern der Interaktion:": "Error saving interaction:", "In der Datenbank fehlen noch die Spalten archived_at / keep_in_stats. Bitte zuerst das mitgelieferte SQL-Skript ausführen. Bis dahin wird die Route nur auf diesem Gerät archiviert.": "The columns archived_at / keep_in_stats are still missing in the database. Please run the provided SQL script first. Until then the route is only archived on this device.", "Fehler beim Archivieren der Route:": "Error archiving route:", "Fehler beim Löschen der Route:": "Error deleting route:", "Fehler beim Speichern der Privatsphäre:": "Error saving privacy settings:", "Login fehlgeschlagen:": "Login failed:", "Die Nutzung ist erst ab 18 Jahren gestattet.": "Use is only permitted from the age of 18.", "Registrierungsfehler:": "Registration error:", "Registrierung erfolgreich!": "Registration successful!", "Fehler beim Prüfen/Anlegen des Profils:": "Error checking/creating profile:", "Fehler beim Synchronisieren aus Supabase:": "Error syncing from Supabase:", "Fehler beim Laden der Social-Daten:": "Error loading social data:", "Bitte melde dich an, um Freundschaftsanfragen zu versenden.": "Please sign in to send friend requests.", "⚠️ Du kannst dir nicht selbst eine Anfrage senden.": "⚠️ You can't send a request to yourself.", "❌ Fehler beim Senden der Anfrage:": "❌ Error sending request:", "Fehler beim Annehmen der Anfrage:": "Error accepting request:", "Neue Verbindung": "New connection", "Fehler beim Ablehnen der Anfrage:": "Error declining request:", "Möchtest du diesen Beitrag aus dem Feed entfernen?": "Do you want to remove this post from the feed?", "Fehler beim Entfernen des Feed-Eintrags:": "Error removing feed entry:", "🔒 Dieser Bereich wurde vom Mitglied als privat markiert.": "🔒 This section has been marked private by the member.", "Lade Projekte...": "Loading projects...", "Lade Statistiken...": "Loading statistics...", "Bitte melde dich an, um Profildaten einzusehen.": "Please sign in to view profile data.", "Fehler beim Laden des Freundesprofils:": "Error loading friend's profile:", "Profil konnte nicht geladen werden.": "Profile could not be loaded.", "laufende Projekte": "ongoing projects", "getoppte Projekte": "topped projects", "🎯 Aktive Projekte": "🎯 Active projects", "Aktuell keine aktiven Projekte.": "No active projects right now.", "🏆 Abgeschlossene Projekte": "🏆 Completed projects", "Noch kein Projekt abgeschlossen.": "No project completed yet.", "🧭 Routen": "🧭 Routes", "🏢 Halle": "🏢 Gym", "Alle Hallen": "All gyms", "Noch keine Sessions eingetragen.": "No sessions logged yet.", "pro Session": "per session", "pro Woche": "per week", "an der Wand": "on the wall", "Liebste Kletter-Tage": "Favourite climbing days", "Am häufigsten:": "Most often:", "Verteilung der Sessions": "Distribution of sessions", "Noch keine bearbeiteten Routen.": "No routes worked on yet.", "· Mehrfachnennung möglich": "· multiple answers possible", "Mehrfachnennung möglich": "Multiple answers possible", "Keine Angaben hinterlegt": "No details provided", "Noch keine Angaben hinterlegt": "No details provided yet", "Bearbeitete Routen": "Routes worked on", "Projekt · Top · Flash": "Project · Top · Flash", "Noch keine Routen auf der Hallenkarte angelegt.": "No routes on the gym map yet.", "auf der Hallenkarte": "on the gym map", "noch kein Flash": "no flash yet", "Anteil der durchstiegenen Routen": "Share of routes sent", "Durchstiegsquote (⚡ = Flash)": "Send rate (⚡ = flash)", "Keine offene Anfragen vorhanden.": "No open requests.", "❌ Das Bild konnte nicht gelesen werden.": "❌ The image could not be read.", "❌ Bitte wähle eine Bilddatei.": "❌ Please choose an image file.", "Bild wird verarbeitet…": "Processing image…", "Speichere…": "Saving…", "❌ Die Spalte „avatar_url“ fehlt in Supabase – bitte zuerst das mitgelieferte SQL ausführen.": "❌ The column “avatar_url” is missing in Supabase – please run the provided SQL first.", "❌ Fehler beim Speichern:": "❌ Error saving:", "❌ Speichern nicht erlaubt (fehlende Update-Berechtigung auf profiles – siehe SQL).": "❌ Saving not allowed (missing update permission on profiles – see SQL).", "✅ Profilbild gespeichert.": "✅ Profile picture saved.", "Profilbild entfernt.": "Profile picture removed.", "Noch keine Freunde – lade jemanden zum Bouldern ein! 🤝": "No friends yet – invite someone to go bouldering! 🤝", "Noch ruhig hier – sobald du oder deine Freunde etwas erleben, siehst du es hier. 🌱": "Quiet here so far – as soon as you or your friends get up to something, you'll see it here. 🌱", "Beitrag entfernen": "Remove post", "Weniger anzeigen ↑": "Show less ↑", "in der Halle": "at the gym", "Feed-Eintrag konnte nicht gespeichert werden:": "Feed entry could not be saved:", "Feed-Eintrag fehlgeschlagen:": "Feed entry failed:", "Neues Projekt": "New project", "Neue Session": "New session", "vor 1 Woche": "1 week ago", "Abgeschlossenes Projekt bearbeiten": "Edit completed project", "Projekt bearbeiten": "Edit project", "Neues Projekt anlegen": "Create new project", "Standard-Wandbereich": "Default wall area", "Fehler beim Speichern in Supabase:": "Error saving to Supabase:", "Möchtest du dieses Projekt wirklich löschen?": "Do you really want to delete this project?", "Fehler beim Löschen des Projekts:": "Error deleting project:", "Fehler beim Aktualisieren des Status:": "Error updating status:", "Fehler beim Aktualisieren des Projekts:": "Error updating project:", "Fehler beim Aktualisieren der Attempts:": "Error updating attempts:", "Session bearbeiten": "Edit session", "Neue Session eintragen": "Log new session", "Fehler beim Speichern der Session in Supabase:": "Error saving session to Supabase:", "Möchtest du diese Session wirklich löschen?": "Do you really want to delete this session?", "Fehler beim Löschen der Session:": "Error deleting session:", "Bisher keine Sessions eingetragen.": "No sessions logged so far.", "Keine Sessions im gewählten Zeitraum.": "No sessions in the selected period.", "Keine Boulder erfasst": "No boulders recorded", "Eintrag bearbeiten": "Edit entry", "Allgemeinen Eintrag anlegen": "Create general entry", "Fehler beim Speichern des Logbucheintrags:": "Error saving logbook entry:", "Möchtest du diesen Eintrag wirklich löschen?": "Do you really want to delete this entry?", "Fehler beim Löschen des Eintrags:": "Error deleting entry:", "Keine Einträge für diese Filterkategorie vorhanden.": "No entries for this filter category.", "Automatisch aus Session": "Automatically from session", "Fehler beim Hochladen des Videos:": "Error uploading video:", "Möchtest du dieses Video löschen?": "Do you want to delete this video?", "Fehler beim Löschen des Videos:": "Error deleting video:", "Keine Projekt-Ordner vorhanden.": "No project folders available.", "Kein Datum": "No date", "Keine Videos hinterlegt.": "No videos added.", "+ Video hinzufügen": "+ Add video", "Noch kein Hallenprofil angelegt. Lege über „+ Neue Halle anlegen“ deine erste Halle an.": "No gym profile yet. Create your first gym via “+ Add new gym”.", "Diese Halle wird beim Öffnen der App automatisch ausgewählt": "This gym is selected automatically when the app opens", "Halle & Skala bearbeiten": "Edit gym & scale", "Die vorhandenen Kletter-Grade durch die Standardtabelle ersetzen?": "Replace the existing climbing grades with the default table?", "Spalte(n) fehlen, speichere lokal:": "Column(s) missing, saving locally:", "Fehler beim Speichern der Halle:": "Error saving gym:", "Fehler beim Löschen der Halle:": "Error deleting gym:", "Keine Position gewählt": "No position selected", "Noch nicht verortet": "Not located yet", "Diagramme konnten nicht geladen werden (keine Verbindung zu Chart.js) – es wird die Textansicht gezeigt.": "Charts could not be loaded (no connection to Chart.js) – showing the text view.", "Noch keine Sessions eingetragen – starte mit „+ Session“. 🧗": "No sessions logged yet – start with “+ Session”. 🧗", "Keine Sessions im gewählten Zeitraum bzw. in dieser Halle.": "No sessions in the selected period or at this gym.", "im Zeitraum": "in period", "Sessions pro Woche": "Sessions per week", "Die letzten 12 Wochen (Wochenbeginn Montag)": "The last 12 weeks (weeks start on Monday)", "Wochenbeginn Montag": "Weeks start on Monday", "Dauer pro Session": "Duration per session", "Deine liebsten Kletter-Tage": "Your favourite climbing days", "Session(s)": "session(s)", "Route(n)": "route(s)", "Tag(e)": "day(s)", "Versuch(e)": "attempt(s)", "Noch keine bearbeiteten Routen in diesem Zeitraum. Markiere auf der Hallenkarte Routen als Projekt, Top oder Flash. 🎯": "No routes worked on in this period yet. Mark routes on the gym map as project, top or flash. 🎯", "Noch keine Neigung hinterlegt – im Routen-Dialog der Karte ergänzbar": "No angle set yet – can be added in the map's route dialog", "🎯 Aktiv": "🎯 Active", "Noch keine Projekte in diesem Zeitraum. Setze auf der Hallenkarte eine Route auf „🎯 Projekt“ – sobald du sie toppst, erscheinen hier Dauer und Versuche.": "No projects in this period yet. Set a route on the gym map to “🎯 Project” – as soon as you top it, duration and attempts appear here.", "noch keine Daten": "no data yet", "Versuche im Routen-Dialog eintragen": "Enter attempts in the route dialog", "Aktive Projekte": "Active projects", "Mit voraussichtlichem Ablauf (Umschrauben) – dringendste zuerst": "With expected expiry (route reset) – most urgent first", "Tage bis zum Durchstieg": "Days until send", "Dein letztes abgeschlossenes Projekt": "Your last completed project", "Noch kein Projekt mit Start- und Enddatum": "No project with start and end date yet", "Versuche pro Projekt": "Attempts per project", "Grün = abgeschlossen · Blau = aktiv": "Green = completed · Blue = active", "Noch keine Versuche eingetragen": "No attempts logged yet", "Alle Projekte": "All projects", "Aktive zuerst, dann abgeschlossene": "Active first, then completed", "Schraubzyklen": "Set cycles", "Routen pro Umschraubzyklus": "Routes per reset cycle", "Noch keine Auswertung möglich – Routen brauchen ein Schraubdatum („Geschraubt am“).": "No analysis possible yet – routes need a set date (“Set on”).", "● läuft": "● ongoing", "Wie viele Routen du pro Umschraubzyklus bouldert": "How many routes you boulder per reset cycle", "Für diese Auswahl sind noch keine Routen auf der Hallenkarte angelegt.": "No routes have been added to the gym map for this selection yet.", "Anteil der Routen, die du im Zeitraum durchstiegen hast": "Share of routes you sent in the period", "🏅 Geschafft": "🏅 Done", "⏱ Bereit zum Start": "⏱ Ready to start", "⌛ Zeit abgelaufen": "⌛ Time's up", "🔥 Läuft": "🔥 Running", "🗓 Startet bald": "🗓 Starting soon", "⌛ Beendet": "⌛ Ended", "▶ Jetzt starten": "▶ Start now", "👥 Einladen": "👥 Invite", "Challenge für alle löschen": "Delete challenge for everyone", "Challenge aus meiner Liste entfernen": "Remove challenge from my list", "🎲 Generisch": "🎲 Generic", "🎯 Spezifisch": "🎯 Specific", "Melde dich an, um Challenges zu nutzen.": "Sign in to use challenges.", "Das Challenges-Backend ist noch nicht eingerichtet. Bitte zuerst das Supabase-Skript": "The challenges backend has not been set up yet. Please run the Supabase script", "im SQL-Editor ausführen.": "in the SQL editor first.", "✉️ Einladungen": "✉️ Invitations", "🔥 Aktiv": "🔥 Active", "🏁 Abgeschlossen / Beendet": "🏁 Completed / Ended", "Noch keine Challenges – erstelle die erste im Tab „Challenge erstellen“.": "No challenges yet – create the first one in the “Create challenge” tab.", "Fehler:": "Error:", "Timer jetzt starten? Ab sofort läuft deine Zeit.": "Start timer now? Your time starts running immediately.", "Keine Berechtigung zum Löschen.": "No permission to delete.", "Keine Berechtigung zum Entfernen.": "No permission to remove.", "Das hat nicht geklappt:": "That didn't work:", "Keine Challenge-Einladungen.": "No challenge invitations.", "Jemand": "Someone", "lädt dich zur Challenge": "invites you to the challenge", "Noch hat niemand Routen geschafft – sei die/der Erste! 🚀": "Nobody has completed any routes yet – be the first! 🚀", "👥 Freunde einladen": "👥 Invite friends", "Keine Routen gefunden.": "No routes found.", "Starte zuerst den Timer, damit Durchstiege zählen.": "Start the timer first so that sends count.", "Die Challenge läuft aktuell nicht – Durchstiege zählen nicht.": "The challenge is not running right now – sends don't count.", "🏅 Challenge geschafft! Glückwunsch!": "🏅 Challenge completed! Congratulations!", "Du hast noch keine Freunde, die du einladen kannst.": "You don't have any friends to invite yet.", "Bitte wähle mindestens eine Person aus.": "Please select at least one person.", "Keine Halle vorhanden": "No gym available", "Bitte melde dich an, um Challenges zu erstellen.": "Please sign in to create challenges.", "Alle Routen": "All routes", "In der Hallenkarte gibt es aktuell keine Routen mit diesen Merkmalen.": "There are currently no routes with these attributes on the gym map.", "Keine Routen in dieser Halle.": "No routes at this gym.", "Bitte gib einen Titel ein.": "Please enter a title.", "Bitte wähle eine Halle (Hallenprofil muss gespeichert sein).": "Please choose a gym (gym profile must be saved).", "Für diese Merkmale gibt es in der Hallenkarte keine Routen.": "There are no routes with these attributes on the gym map.", "Das Mindest-Level darf nicht größer als das Maximal-Level sein.": "The minimum level must not be higher than the maximum level.", "Bitte wähle mindestens eine Route aus.": "Please select at least one route.", "Das Enddatum muss nach dem Startdatum liegen.": "The end date must be after the start date.", "Bitte gib eine Dauer für den Timer an.": "Please enter a duration for the timer.", "Das Challenges-Backend ist noch nicht eingerichtet (challenges.sql ausführen).": "The challenges backend has not been set up yet (run challenges.sql).", "Routen konnten nicht gespeichert werden:": "Routes could not be saved:", "⏰ Pausenzeit abgelaufen!": "⏰ Rest time is over!", "Challenge erstellt!": "Challenge created!", "Du bist Challenge-Admin. Lade jetzt deine Freunde ein.": "You are the challenge admin. Invite your friends now.", "Zur Challenge-Liste": "To challenge list", "Aktiv & verfügbar": "Active & available", "% aller Routen mit diesen Merkmalen:": "% of all routes with these attributes:", "Level von – bis": "Level from – to", "leer = keine Grenze": "empty = no limit", "Innerhalb einer Gruppe reicht ein Treffer (z. B. Dyno": "Within a group, one match is enough (e.g. Dyno", "Kraft), zwischen den Gruppen müssen alle passen – wie im Filterfenster.": "Power), across groups all must match – as in the filter window.", "Routen auswählen": "Select routes", "0 gewählt": "0 selected", "📅 Fester Zeitraum": "📅 Fixed period", "⏱ Eigener Timer": "⏱ Own timer", "Der Timer startet individuell, sobald jemand die Challenge aktiv beginnt.": "The timer starts individually as soon as someone begins the challenge.", "Teilnehmer dürfen weitere Freunde einladen": "Participants may invite more friends", "Standard: nur Challenge-Admins laden ein": "Default: only challenge admins invite", "＋ Freund*in hinzufügen": "＋ Add friend", "Das Bild wird quadratisch zugeschnitten und für deine Freunde sichtbar.": "The image is cropped to a square and visible to your friends.", "Freund*in · nur Ansicht": "Friend · view only", "z. B. Überhang Dyno": "e.g. overhang dyno", "Notizen zur Route...": "Notes on the route...", "z. B. Gelber Dyno an der Volumenecke": "e.g. yellow dyno at the volume corner", "z. B. Schlüsselzug ist der Heelhook links...": "e.g. the crux move is the heel hook on the left...", "Erkenntnis/Beta...": "Insight/beta...", "Gefühl, Haut...": "Feel, skin...", "Gravitationskraft (links Jupiter, Mitte Erde, rechts Mond)": "Gravity (left Jupiter, centre Earth, right Moon)", "Titel (z. B. Sommer-Sechser)": "Title (e.g. summer sixer)", "Beschreibung (optional)": "Description (optional)", "Steuere, was Freunde in deinem Profil und im Social Feed sehen. Freunde sehen deine Daten nur nach einem Klick auf ihre Freundesliste.": "Control what friends see on your profile and in the social feed. Friends only see your data after clicking through from their friends list.", "Aktive & abgeschlossene Projekte im Profil + Feed-Meldungen (neues Projekt, Top)": "Active & completed projects on your profile + feed posts (new project, top)", "Schwierigkeitsgrad-Bereich": "Difficulty grade range", "Linken und rechten Pol ziehen": "Drag the left and right handles", "Alle Sterne-Bewertungen": "All star ratings", "⭐ Mindestens 1 Stern": "⭐ At least 1 star", "⭐⭐ Mindestens 2 Sterne": "⭐⭐ At least 2 stars", "⭐⭐⭐ Mindestens 3 Sterne": "⭐⭐⭐ At least 3 stars", "⭐⭐⭐⭐ Mindestens 4 Sterne": "⭐⭐⭐⭐ At least 4 stars", "⭐⭐⭐⭐⭐ 5 Sterne": "⭐⭐⭐⭐⭐ 5 stars", "⭐ 1 Stern": "⭐ 1 star", "⭐⭐ 2 Sterne": "⭐⭐ 2 stars", "⭐⭐⭐ 3 Sterne": "⭐⭐⭐ 3 stars", "⭐⭐⭐⭐ 4 Sterne": "⭐⭐⭐⭐ 4 stars", "📍 Route auf Karte anlegen": "📍 Add route to map", "Position relativ auf der Karte:": "Position relative to the map:", "Kletter-Styles (Mehrfachauswahl)": "Climbing styles (multi-select)", "Grifftypen (Mehrfachauswahl)": "Hold types (multi-select)", "Mein Status für diese Route": "My status for this route", "⚡ Geflasht (1. Versuch)": "⚡ Flashed (1st attempt)", "Neigung der Route": "Route angle", "Sternebewertung (1-5)": "Star rating (1-5)", "Soll die Route nach dem Entfernen noch in deiner Statistik mitzählen?": "Should the route still count in your statistics after removal?", "📊 In Statistik behalten": "📊 Keep in statistics", "Verschwindet von Karte und Liste, zählt aber weiter mit – z. B. für den Durchschnitt über mehrere Umschraubzyklen.": "Disappears from the map and list but still counts – e.g. for the average over several reset cycles.", "🗑️ Komplett löschen": "🗑️ Delete completely", "Route und ihre Daten werden endgültig entfernt und zählen nicht mehr in der Statistik.": "The route and its data are permanently removed and no longer count in the statistics.", "Schwierigkeit / Level": "Difficulty / level", "Name des Boulderdurchstiegs": "Name of the boulder send", "Projektnotiz / Beta / Beschreibung": "Project note / beta / description", "Verortung auf Hallenplan": "Location on gym plan", "Crimps (Leisten)": "Crimps", "Sloper (Aufleger)": "Sloper", "Jugs (Henkel)": "Jugs", "Pinch (Zangen)": "Pinch", "Pockets (Taschen)": "Pockets", "Volumes (Volumen)": "Volumes", "Routenbild hochladen": "Upload route image", "Bild verknüpft": "Image linked", "Heute gestartet?": "Started today?", "Nein (Datum wählen)": "No (choose date)", "Startdatum:": "Start date:", "Durchstiegsdatum:": "Send date:", "Klicke auf den Plan, um die Position festzulegen.": "Click on the plan to set the position.", "🎉 Durchstieg eintragen": "🎉 Log send", "Heute durchstiegen?": "Sent today?", "Lerneffekt festhalten?": "Record a learning?", "Halle (optional)": "Gym (optional)", "Sektoren (Kommagetrennt)": "Sectors (comma-separated)", "⭐ Als Stammhalle festlegen": "⭐ Set as home gym", "(wird beim Öffnen der App automatisch gewählt)": "(selected automatically when the app opens)", "Hallenplan hochladen": "Upload gym plan", "Plan verknüpft": "Plan linked", "Umschraubzyklus (Wochen)": "Reset cycle (weeks)", "🪨 Bouldern – Skalen": "🪨 Bouldering – scales", "FB-/V-Skala Übersetzung": "FB / V-scale conversion", "Automatisch umrechnen (FB ↔ V-Skala)": "Convert automatically (FB ↔ V-scale)", "Gibst du eine Skala ein, wird die andere ergänzt. Abschalten, falls dir die Umrechnung zu ungenau ist.": "If you enter one scale, the other is filled in. Turn off if the conversion is too inaccurate for you.", "🧗 Klettern – Skalen (UIAA / Französisch)": "🧗 Climbing – scales (UIAA / French)", "Kletterhallen nutzen praktisch immer die offiziellen Skalen – darum gibt es hier keine eigenen Level-Namen. Wähle, welche Skalen deine Halle anzeigt.": "Climbing gyms almost always use the official scales – so there are no custom level names here. Choose which scales your gym displays.", "UIAA-Skala": "UIAA scale", "Französische Skala": "French scale", "Automatisch umrechnen (UIAA ↔ Französisch)": "Convert automatically (UIAA ↔ French)", "Gibst du eine Skala ein, wird die andere ergänzt.": "If you enter one scale, the other is filled in.", "Ohne eigene Einträge wird für Kletterrouten automatisch die komplette Standardtabelle angeboten.": "Without custom entries, the complete default table is offered for climbing routes automatically."};
+  var I18N_EN = {"Hallenkarte": "Gym map", "Statistik": "Stats", "Einstellungen": "Settings", "Routen": "Routes", "Projekte": "Projects", "Halle": "Gym", "Hallenprofil": "Gym profile", "Privatsphäre": "Privacy", "Ruhetimer": "Rest timer", "Logbuch": "Logbook", "Gesamter Zeitraum": "All time", "Letzte 7 Tage": "Last 7 days", "Letzte 30 Tage": "Last 30 days", "Letzte 90 Tage": "Last 90 days", "Letztes Jahr": "Last year", "Eigener Zeitraum…": "Custom range…", "Diagramm": "Chart", "bis": "to", "Willkommen bei BoulderLog!": "Welcome to BoulderLog!", "Melde dich an, um deine Fortschritte zu speichern.": "Sign in to save your progress.", "Anmelden": "Sign in", "Freunde": "Friends", "Hallen": "Gyms", "Freund*in": "Friend", "Anfrage senden": "Send request", "Was deine Crew gerade treibt": "What your crew is up to", "Neue Projekte, Tops und Sessions aus deiner Crew": "New projects, tops and sessions from your crew", "Deine letzten Schritte": "Your latest steps", "Was du zuletzt an der Wand erlebt hast": "What you last experienced on the wall", "Deine offenen Projekte aus der Hallenkarte – Zeit für den nächsten Versuch": "Your open projects from the gym map – time for the next attempt", "Benutzername suchen...": "Search username...", "Profilbild ändern": "Change profile picture", "Alle Freunde anzeigen": "Show all friends", "Offene Anfragen": "Open requests", "Interaktive Hallenkarte": "Interactive gym map", "Hallenkarte bauen": "Build gym map", "Abbrechen": "Cancel", "Fertig": "Done", "Bewegen": "Move", "Matte": "Mat", "Sektor": "Sector", "Ecken": "Corners", "Fenster": "Window", "Letzter Punkt": "Last point", "Abschließen": "Finish", "Noch keine Hallenkarte": "No gym map yet", "Aktive Routen": "Active routes", "Grad": "Grade", "Bauen": "Build", "Routen setzen": "Set routes", "Hallenkarten-Filter": "Gym map filters", "Alle Levels": "All levels", "Status der Routen": "Route status", "Offen": "Open", "Projekt": "Project", "Versucht": "Attempted", "Getoppt": "Topped", "Geflasht": "Flashed", "Grifffarbe": "Hold colour", "Kletter-Styles": "Climbing styles", "Technik": "Technique", "Kraft": "Power", "Wandneigung": "Wall angle", "Senkrecht": "Vertical", "Grifftypen": "Hold types", "Leisten": "Crimps", "Henkel": "Jugs", "Zangen": "Pinches", "Taschen": "Pockets", "Volumen": "Volumes", "Mindestbewertung": "Minimum rating", "Alle Filter zurücksetzen": "Reset all filters", "Filter zurücksetzen": "Reset filters", "Filter öffnen": "Open filters", "Ansicht zurücksetzen": "Reset view", "Routen sortieren": "Sort routes", "Bearbeiten": "Edit", "Hallenprofil wählen": "Choose gym profile", "Entwurf verwerfen": "Discard draft", "Mattenbereiche und Wandsektoren zeichnen": "Draw mat areas and wall sectors", "Deine Sessions": "Your sessions", "Wie oft und wie lange du an der Wand bist": "How often and how long you're on the wall", "Vergangene Sessions": "Past sessions", "Deine Projekte": "Your projects", "Dauer und Versuche – angelegt über die Hallenkarte": "Duration and attempts – created via the gym map", "Wie viel der Halle du schon geknackt hast": "How much of the gym you've cracked", "Was du am liebsten kletterst": "What you like to climb most", "Durchstiegsquote pro Grad, Stil, Grifftyp, Neigung und Wandbereich": "Send rate by grade, style, hold type, angle and wall area", "Alle Routen der Hallenkarte, die du als Projekt, Top oder Flash markiert hast": "All gym map routes you marked as project, top or flash", "Reflektionen, Projekt-Betas und Lerneffekte im Überblick": "Reflections, project betas and learnings at a glance", "Allgemeiner Eintrag": "General entry", "Anzeigen:": "Show:", "Alle Einträge": "All entries", "Allgemein": "General", "Sessions": "Sessions", "Projekt-Videos": "Project videos", "Video-Ordner nach Projekten strukturiert": "Video folders organised by project", "Alle Projekte anzeigen": "Show all projects", "Nur Projekte mit Videos": "Only projects with videos", "Ruhetimer auf der Matte": "Rest timer on the mat", "Pausenzeiten zwischen Versuchen stoppen.": "Time your rest between attempts.", "Verwalte deine Hallen, Skalen, Wandbereiche und Hallenpläne.": "Manage your gyms, grading scales, wall areas and gym plans.", "Neue Halle anlegen": "Add new gym", "Lege fest, was Freunde von dir sehen dürfen.": "Choose what friends may see about you.", "Privatsphäre & Sichtbarkeit": "Privacy & visibility", "Alles aus": "Everything off", "Blendet sämtliche Profildaten und Aktivitäten für Freunde komplett aus": "Hides all profile data and activity from friends completely", "Projekte teilen": "Share projects", "Sessions im Feed zeigen": "Show sessions in feed", "Feed-Meldung, wenn du eine Session anlegst": "Feed post when you add a session", "Statistiken teilen": "Share statistics", "Session-, Routen- und Hallenstatistiken im Profil": "Session, route and gym statistics on your profile", "Challenge-Erfolge teilen": "Share challenge achievements", "Abgeschlossene Challenges automatisch im Feed zeigen": "Automatically show completed challenges in the feed", "Freundesanfragen deaktivieren": "Disable friend requests", "Verhindert, dass dir andere Nutzer*innen Anfragen senden können": "Prevents other users from sending you requests", "Anpassungen für das Erscheinungsbild der App.": "Customise the look of the app.", "Speichern": "Save", "Löschen": "Delete", "Übernehmen": "Apply", "Entfernen": "Remove", "Zurücksetzen": "Reset", "Schwierigkeitsgrad": "Difficulty grade", "Routenname (optional)": "Route name (optional)", "Wandbereich (optional)": "Wall area (optional)", "Neigung (optional)": "Angle (optional)", "Versuche": "Attempts", "Stil": "Style", "Grifftyp": "Hold type", "Keine Bewertung": "No rating", "Persönlicher Kommentar / Beta": "Personal comment / beta", "Route entfernen": "Remove route", "Projekt anlegen": "Create project", "Boulderhalle": "Bouldering gym", "Wandbereich / Sektor": "Wall area / sector", "Projekt verorten": "Locate project", "Durchstieg eintragen": "Log send", "Session eintragen": "Log session", "Datum": "Date", "Uhrzeit": "Time", "Dauer (Minuten)": "Duration (minutes)", "Gekletterte Boulder": "Boulders climbed", "Kommentar": "Comment", "Titel": "Title", "Keine Halle": "No gym", "Inhalt / Reflektion": "Content / reflection", "Name der Halle": "Gym name", "Als Stammhalle festlegen": "Set as home gym", "Schwierigkeitsgrade": "Difficulty grades", "Standardtabelle": "Default table", "Französisch": "French", "Registrieren": "Sign up", "Einloggen": "Log in", "E-Mail": "Email", "Passwort": "Password", "Benutzername": "Username", "Ich bestätige, dass ich mindestens 18 Jahre alt bin.": "I confirm that I am at least 18 years old.", "Konto erstellen": "Create account", "Postfach": "Inbox", "Freundschaftsanfragen": "Friend requests", "Challenge-Einladungen": "Challenge invitations", "Challenge erstellen": "Create challenge", "Einladungen senden": "Send invitations", "Deine Freunde": "Your friends", "Profilbild": "Profile picture", "Foto wählen": "Choose photo", "Statistiken": "Statistics", "Profil": "Profile", "Leaderboard": "Leaderboard", "Zeitbegrenzung": "Time limit", "Teilnehmer": "Participants", "Bitte einmalig das Supabase-Skript challenges_delete.sql ausführen.": "Please run the Supabase script challenges_delete.sql once.", "Neon-Varianten im Dark Mode.": "Neon variants in dark mode.", "Abgedunkelte Pastell-Varianten im Light Mode.": "Dimmed pastel variants in light mode.", "Blau und Orange erscheinen zusätzlich als Zweitfarben (Bauen, Flash, Warnungen).": "Blue and orange also appear as secondary colours (build, flash, warnings).", "Guten Morgen": "Good morning", "Guten Abend": "Good evening", "Schön, dich zu sehen": "Nice to see you", "Neigung": "Angle", "Benötigte Versuche": "Attempts needed", "Lerneffekt": "Learning", "Mehrfachauswahl": "multi-select", "Mehrfachnennung möglich": "multiple answers possible", "laufende Projekte": "ongoing projects", "getoppte Projekte": "topped projects", "Min": "min", "Std": "h", "Sektoren": "Sectors", "Matten": "mats", "Stammhalle": "Home gym", "Weiß": "White", "Gelb": "Yellow", "Blau": "Blue", "Rot": "Red", "Grün": "Green", "Schwarz": "Black", "Violett": "Violet", "Rosa": "Pink", "Lila": "Purple", "Montag": "Monday", "Dienstag": "Tuesday", "Mittwoch": "Wednesday", "Donnerstag": "Thursday", "Freitag": "Friday", "Samstag": "Saturday", "Sonntag": "Sunday", "Aktiv": "Active", "Abgeschlossen": "Completed", "Durchstieg": "Send", "Durchstiegen": "Sent", "Umschraubzyklus": "reset cycle", "Umschrauben": "reset", "Logbuch öffnen": "Open logbook", "Einträge, Sessions und Projekte": "Entries, sessions and projects", "Einträge": "Entries", "Alle": "All", "+ Session": "+ Session", "Pause zwischen Versuchen": "Break between attempts", "Weiter": "Resume", "📱 Zusätzlich in der Uhr-App starten": "📱 Also start in clock app", "Der Alarm klingt mit Ton und Vibration. Während der Timer läuft, bleibt der Bildschirm an, damit der Ton zuverlässig kommt.": "The alarm sounds with tone and vibration. While the timer runs, the screen stays on so the sound arrives reliably.", "Pausenzeit abgelaufen!": "Rest time is up!", "Zeit für den nächsten Versuch.": "Time for the next attempt.", "Schließen": "Close", "Abgeschlossene Projekte": "Completed projects", "Noch keine Projekte. Setze auf der Hallenkarte eine Route auf „🎯 Projekt“.": "No projects yet. Set a route to “🎯 Project” on the gym map."};
+  var I18N_X = {"Auswahl aufheben": "Clear selection", "Ausgewählte Routen löschen": "Delete selected routes", "Sollen die Routen nach dem Entfernen noch in deiner Statistik mitzählen?": "Should the routes still count in your statistics after removal?", "Routen und ihre Daten werden endgültig entfernt und zählen nicht mehr in der Statistik.": "Routes and their data are permanently removed and no longer count in the statistics.", "In diesem Sektor gibt es keine Routen.": "There are no routes in this sector.", "Bereit für den nächsten Boulder?": "Ready for the next boulder?", "Heute ist ein guter Tag zum Topspielen.": "Today is a good day to send some problems.", "Deine Projekte warten schon auf dich.": "Your projects are already waiting for you.", "Griffe sammeln, Grenzen verschieben.": "Collect holds, push limits.", "Noch ein Versuch geht immer.": "There's always time for one more try.", "Die Wand ruft – was ist dein Plan?": "The wall is calling – what's your plan?", "Melde dich an, um deine Fortschritte zu speichern und Freunde zu finden.": "Sign in to save your progress and find friends.", "Noch keine Session eingetragen.": "No session logged yet.", "Zuletzt getoppt": "Recently topped", "Noch kein Top – der erste kommt bestimmt! 💪": "No tops yet – the first one is sure to come! 💪", "Neu als Projekt angelegt": "Newly added as project", "Markiere auf der Hallenkarte eine Route als Projekt.": "Mark a route as a project on the gym map.", "Letzte Session": "Last session", "Gerade keine offenen Projekte. Tippe auf der Hallenkarte eine Route an und setze sie auf „🎯 Projekt“.": "No open projects right now. Tap a route on the gym map and set it to “🎯 Project”.", "heute": "today", "gestern": "yesterday", "Tag": "day", "Tage": "days", "Tagen": "days", "oder": "or", "ein": "", "Du": "You", "Ja": "Yes", "Ende": "End", "Typ": "Type", "Klettere": "Climb", "Normal": "Normal", "Groß": "Large", "Farbe": "Colour", "Standard": "Default", "Darstellung": "Display", "Anlegen": "Create", "Breite": "Width", "Höhe": "Height", "Bereich": "Area", "Neigung": "Angle", "Griffe": "Holds", "Weiß": "White", "Gelb": "Yellow", "Blau": "Blue", "Rot": "Red", "Grün": "Green", "Schwarz": "Black", "Violett": "Violet", "Rosa": "Pink", "Lila": "Purple", "Holz": "Wood", "Holz / Natur": "Wood / Natural", "Smaragd": "Emerald", "Neon-Akzente": "Neon accents", "Pastell-Akzente": "Pastel accents", "Folgt dem Gerät": "Follows the device", "Neon-Varianten im Dark Mode.": "Neon variants in dark mode.", "Abgedunkelte Pastell-Varianten im Light Mode.": "Dimmed pastel variants in light mode.", "Farbkonzept": "Colour scheme", "Dark Grey als Dunkel-Modus, gebrochenes Weiß als Hell-Modus.": "Dark grey as the dark mode, off-white as the light mode.", "Akzentfarbe": "Accent colour", "Montag": "Monday", "Dienstag": "Tuesday", "Mittwoch": "Wednesday", "Donnerstag": "Thursday", "Freitag": "Friday", "Samstag": "Saturday", "Sonntag": "Sunday", "Unbekannt": "Unknown", "k.A.": "n/a", "Keine Angabe": "Not specified", "Abmelden": "Sign out", "Annehmen": "Accept", "Ablehnen": "Decline", "Lade…": "Loading…", "abgelaufen": "expired", "Plan als Vorlage": "Plan as template", "Vorschau": "Preview", "Großansicht": "Full view", "Std": "h", "Min": "min", "Aktiv": "Active", "Abgeschlossen": "Completed", "Durchstiegen": "Sent", "Durchstieg": "Send", "Häufigkeit": "Frequency", "Gesamtzeit": "Total time", "Ø Dauer": "Ø Duration", "Ø Versuche": "Ø Attempts", "Ø pro Zyklus": "Ø per cycle", "Routen gesamt": "Total routes", "Gesamtübersicht": "Overview", "Sektoren": "Sectors", "Wandsektor": "Wall sector", "Wandbereich": "Wall area", "Mattenbereich": "Mat area", "Kartenfenster": "Map window", "Routenbild": "Route image", "Planbild": "Plan image", "kein Plan": "no plan", "nicht aktiv": "inactive", "Hallenplan": "Gym plan", "Seilklettern": "Rope climbing", "Boulder-Level": "Boulder levels", "Routen auf Karte": "Routes on map", "⭐ Stammhalle": "⭐ Home gym", "☆ Stammhalle": "☆ Home gym", "✏️ Bearbeiten": "✏️ Edit", "🗑️ Löschen": "🗑️ Delete", "Level Name": "Level name", "Sicherungsart": "Belay type", "Sicherung": "Belay", "Seil": "Rope", "Exen": "Quickdraws", "Umlenker": "Anchor", "Wandhöhe": "Wall height", "Anzahl Exen": "Number of quickdraws", "Wandhöhe / Länge (m)": "Wall height / length (m)", "Mindestseillänge (m)": "Minimum rope length (m)", "Umlenker / Standplatz-Typ": "Anchor / belay station type", "Vorstieg (Lead)": "Lead", "Autobelay (Selbstsicherung)": "Autobelay (self-belay)", "🧗 Seilklettern": "🧗 Rope climbing", "z. B. 2 × Höhe": "e.g. 2 × height", "z. B. Doppelring, Saustecker": "e.g. double ring, hook anchor", "Geschraubt am": "Set on", "Geschraubt am:": "Set on:", "Grad-Einschätzung": "Grade rating", "Fair / Passend": "Fair / Accurate", "Soft (Eher leicht)": "Soft (rather easy)", "Hard (Eher schwer)": "Hard (rather difficult)", "Wird voraussichtlich bereits umgeschraubt": "Probably being reset already", "Hängt voraussichtlich noch 1 Tag": "Expected to stay up for 1 more day", "🎯 Projekt-Countdown": "🎯 Project countdown", "🎯 Countdown abgelaufen – Route ist wohl bald weg": "🎯 Countdown over – route will probably be gone soon", "läuft ab": "expiring", "Der reguläre Umschraubzyklus ist abgelaufen": "The regular reset cycle has ended", "🕒 Voraussichtlich umgeschraubt": "🕒 Probably reset", "Voraussichtlicher Umschraubtermin rückt näher": "Expected reset date is approaching", "⏳ Schraubdatum fehlt": "⏳ Set date missing", "Schraubdatum fehlt": "Set date missing", "Kein Hallenprofil": "No gym profile", "Keine Level": "No levels", "Bearbeitungsmodus aktiv – zum Beenden tippen": "Edit mode active – tap to exit", "Bitte lege zuerst ein Hallenprofil an.": "Please create a gym profile first.", "Änderungen an der Hallenkarte verwerfen?": "Discard changes to the gym map?", "Hallenkarte nur lokal gespeichert (Spalte map_layout fehlt?):": "Gym map saved locally only (column map_layout missing?):", "Hallenkarte nur lokal gespeichert": "Gym map saved locally only", "Eine Form braucht mindestens 3 Ecken.": "A shape needs at least 3 corners.", "Ein Polygon braucht mindestens 3 Ecken.": "A polygon needs at least 3 corners.", "Diesen Mattenbereich wirklich löschen?": "Really delete this mat area?", "Diesen Wandsektor wirklich löschen?": "Really delete this wall sector?", "Der neue Sektor konnte nicht im Hallenprofil gespeichert werden:": "The new sector could not be saved to the gym profile:", "Die neue Position konnte nicht gespeichert werden:": "The new position could not be saved:", "🪨 Bouldern": "🪨 Bouldering", "🧗 Klettern": "🧗 Climbing", "Mausrad oder Pinch zoomen das Kartenfenster, Ziehen verschiebt es. Tippe auf einen Sektor, um ihn groß zu zeigen. Zum Scrollen der Seite einfach neben der Karte wischen.": "Mouse wheel or pinch zooms the map window, dragging moves it. Tap a sector to enlarge it. To scroll the page, just swipe next to the map.", "Ziehen verschiebt das Kartenfenster, Mausrad / zwei Finger zoomen es.": "Dragging moves the map window; mouse wheel / two fingers zoom it.", "Weiter Ecken setzen oder Linien ziehen. Zum Schließen den ersten Punkt antippen oder „Abschließen“.": "Keep placing corners or drawing lines. To close the shape, tap the first point or “Finish”.", "Mattenbereich fertig – zeichne direkt den nächsten oder ändere unten die Farbe. Verschieben: zwei Finger, rechte Maustaste oder Leertaste.": "Mat area done – draw the next one right away or change the colour below. Pan: two fingers, right mouse button or space bar.", "Mattenbereich: Tippe die Ecken an oder ziehe Linien. Du kannst beliebig viele Mattenbereiche zeichnen.": "Mat area: tap the corners or draw lines. You can draw as many mat areas as you like.", "Weiter Ecken setzen. Punkte rasten an vorhandenen Ecken & Kanten ein. Dann „Abschließen“.": "Keep placing corners. Points snap to existing corners & edges. Then “Finish”.", "Sektor fertig – unten benennen oder direkt den nächsten Sektor zeichnen.": "Sector done – name it below or draw the next sector right away.", "Wandsektor: Zeichne die Form eines Wandbereichs nach – wie beim Mattenbereich.": "Wall sector: trace the shape of a wall area – just like the mat area.", "Form antippen = auswählen · Ecke ziehen = verschieben · ○ auf der Kante = neue Ecke · Ecke wählen + „Ecke löschen“.": "Tap a shape = select · drag a corner = move · ○ on an edge = new corner · select a corner + “Delete corner”.", "Ziehe die blauen Griffe an den Fensterkanten: Das Fenster beschneidet die Karte nur, der Inhalt behält seine Größe.": "Drag the blue handles on the window edges: the window only crops the map, the content keeps its size.", "Routen-Punkte: ab diesem Zoom werden sie groß mit Gradzahl gezeigt (darunter klein).": "Route dots: from this zoom level they are shown large with the grade (smaller below it).", "Eigener Wert": "Custom value", "Aktuellen Zoom übernehmen": "Use current zoom", "Tipp: Karte auf die gewünschte Größe zoomen und „Aktuellen Zoom übernehmen“ tippen.": "Tip: zoom the map to the size you want and tap “Use current zoom”.", "Schriftgröße der Wandnamen": "Font size of wall names", "↺ Standardgröße": "↺ Default size", "Neue Matte ist …": "New mat is …", "Klettermatten erhalten einen blauen, gestrichelten Rand. Sektoren werden danach automatisch dem Bereich zugeordnet, in dem sie mehrheitlich liegen.": "Climbing mats get a blue, dashed border. Sectors are then automatically assigned to the area in which most of them lies.", "Tippe auf einen Mattenbereich oder Sektor, um Name, Farbe und Ecken zu bearbeiten.": "Tap a mat area or sector to edit its name, colour and corners.", "✕ Ecke löschen": "✕ Delete corner", "Art der Mattenfläche": "Mat area type", "🗑 Mattenbereich löschen": "🗑 Delete mat area", "– kein Name –": "– no name –", "🧗 Kletterbereich": "🧗 Climbing area", "🪨 Boulderbereich": "🪨 Bouldering area", "z. B. Boulderhöhle": "e.g. boulder cave", "· automatisch nach Mattenfläche": "· automatically by mat area", "Name aus dem Hallenprofil": "Name from the gym profile", "… oder neuen Sektor anlegen (wird im Hallenprofil ergänzt)": "… or create a new sector (will be added to the gym profile)", "Für alle Sektoren": "For all sectors", "🗑 Sektor löschen": "🗑 Delete sector", "Magnet (Ecken, Kanten, Achsen)": "Snap (corners, edges, axes)", "Lade im Hallenprofil einen Plan hoch oder zeichne die Halle über ✏️ Bearbeiten → „Hallenkarte bauen“.": "Upload a plan in the gym profile or draw the gym via ✏️ Edit → “Build gym map”.", "📋 Aktive Routen": "📋 Active routes", "📍 Routen setzen": "📍 Set routes", "Tippe auf die Karte – Routen rasten an der Sektorwand ein": "Tap the map – routes snap to the sector wall", "Baumenü ein-/ausblenden": "Show/hide build menu", "Beim Setzen wurden keine Tags angegeben.": "No tags were specified when the route was set.", "Kein Bereich": "No area", "Ohne Stil": "No style", "Ohne Grifftyp": "No hold type", "Ohne Neigung": "No angle", "Ohne Farbe": "No colour", "Ohne Grad": "No grade", "Ohne Halle": "No gym", "Sortieren nach": "Sort by", "Erneut tippen = Reihenfolge umkehren": "Tap again = reverse order", "Keine Routen sichtbar. Passe die Filter an oder lege im Bearbeitungsmodus neue Routen an.": "No routes visible. Adjust the filters or add new routes in edit mode.", "🧗 Kletterroute (Seil) – Sektor liegt im Kletterbereich": "🧗 Climbing route (rope) – sector is in the climbing area", "🪨 Boulder – Sektor liegt im Boulderbereich": "🪨 Boulder – sector is in the bouldering area", "Bitte einen Schwierigkeitsgrad wählen.": "Please choose a difficulty grade.", "Fehler beim Speichern der Route:": "Error saving route:", "Einschätzung:": "Rating:", "(Flash = 1. Versuch)": "(Flash = 1st attempt)", "(bisherige Versuche)": "(attempts so far)", "(bis zum Durchstieg)": "(until the send)", "Fehler beim Speichern der Interaktion:": "Error saving interaction:", "In der Datenbank fehlen noch die Spalten archived_at / keep_in_stats. Bitte zuerst das mitgelieferte SQL-Skript ausführen. Bis dahin wird die Route nur auf diesem Gerät archiviert.": "The columns archived_at / keep_in_stats are still missing in the database. Please run the provided SQL script first. Until then the route is only archived on this device.", "Fehler beim Archivieren der Route:": "Error archiving route:", "Fehler beim Löschen der Route:": "Error deleting route:", "Fehler beim Speichern der Privatsphäre:": "Error saving privacy settings:", "Login fehlgeschlagen:": "Login failed:", "Die Nutzung ist erst ab 18 Jahren gestattet.": "Use is only permitted from the age of 18.", "Registrierungsfehler:": "Registration error:", "Registrierung erfolgreich!": "Registration successful!", "Fehler beim Prüfen/Anlegen des Profils:": "Error checking/creating profile:", "Fehler beim Synchronisieren aus Supabase:": "Error syncing from Supabase:", "Fehler beim Laden der Social-Daten:": "Error loading social data:", "Bitte melde dich an, um Freundschaftsanfragen zu versenden.": "Please sign in to send friend requests.", "⚠️ Du kannst dir nicht selbst eine Anfrage senden.": "⚠️ You can't send a request to yourself.", "❌ Fehler beim Senden der Anfrage:": "❌ Error sending request:", "Fehler beim Annehmen der Anfrage:": "Error accepting request:", "Neue Verbindung": "New connection", "Fehler beim Ablehnen der Anfrage:": "Error declining request:", "Möchtest du diesen Beitrag aus dem Feed entfernen?": "Do you want to remove this post from the feed?", "Fehler beim Entfernen des Feed-Eintrags:": "Error removing feed entry:", "🔒 Dieser Bereich wurde vom Mitglied als privat markiert.": "🔒 This section has been marked private by the member.", "Lade Projekte...": "Loading projects...", "Lade Statistiken...": "Loading statistics...", "Bitte melde dich an, um Profildaten einzusehen.": "Please sign in to view profile data.", "Fehler beim Laden des Freundesprofils:": "Error loading friend's profile:", "Profil konnte nicht geladen werden.": "Profile could not be loaded.", "laufende Projekte": "ongoing projects", "getoppte Projekte": "topped projects", "🎯 Aktive Projekte": "🎯 Active projects", "Aktuell keine aktiven Projekte.": "No active projects right now.", "🏆 Abgeschlossene Projekte": "🏆 Completed projects", "Noch kein Projekt abgeschlossen.": "No project completed yet.", "🧭 Routen": "🧭 Routes", "🏢 Halle": "🏢 Gym", "Alle Hallen": "All gyms", "Noch keine Sessions eingetragen.": "No sessions logged yet.", "pro Session": "per session", "pro Woche": "per week", "an der Wand": "on the wall", "Liebste Kletter-Tage": "Favourite climbing days", "Am häufigsten:": "Most often:", "Verteilung der Sessions": "Distribution of sessions", "Noch keine bearbeiteten Routen.": "No routes worked on yet.", "· Mehrfachnennung möglich": "· multiple answers possible", "Mehrfachnennung möglich": "Multiple answers possible", "Keine Angaben hinterlegt": "No details provided", "Noch keine Angaben hinterlegt": "No details provided yet", "Bearbeitete Routen": "Routes worked on", "Projekt · Top · Flash": "Project · Top · Flash", "Noch keine Routen auf der Hallenkarte angelegt.": "No routes on the gym map yet.", "auf der Hallenkarte": "on the gym map", "noch kein Flash": "no flash yet", "Anteil der durchstiegenen Routen": "Share of routes sent", "Durchstiegsquote (⚡ = Flash)": "Send rate (⚡ = flash)", "Keine offene Anfragen vorhanden.": "No open requests.", "❌ Das Bild konnte nicht gelesen werden.": "❌ The image could not be read.", "❌ Bitte wähle eine Bilddatei.": "❌ Please choose an image file.", "Bild wird verarbeitet…": "Processing image…", "Speichere…": "Saving…", "❌ Die Spalte „avatar_url“ fehlt in Supabase – bitte zuerst das mitgelieferte SQL ausführen.": "❌ The column “avatar_url” is missing in Supabase – please run the provided SQL first.", "❌ Fehler beim Speichern:": "❌ Error saving:", "❌ Speichern nicht erlaubt (fehlende Update-Berechtigung auf profiles – siehe SQL).": "❌ Saving not allowed (missing update permission on profiles – see SQL).", "✅ Profilbild gespeichert.": "✅ Profile picture saved.", "Profilbild entfernt.": "Profile picture removed.", "Noch keine Freunde – lade jemanden zum Bouldern ein! 🤝": "No friends yet – invite someone to go bouldering! 🤝", "Noch ruhig hier – sobald du oder deine Freunde etwas erleben, siehst du es hier. 🌱": "Quiet here so far – as soon as you or your friends get up to something, you'll see it here. 🌱", "Beitrag entfernen": "Remove post", "Weniger anzeigen ↑": "Show less ↑", "in der Halle": "at the gym", "Feed-Eintrag konnte nicht gespeichert werden:": "Feed entry could not be saved:", "Feed-Eintrag fehlgeschlagen:": "Feed entry failed:", "Neues Projekt": "New project", "Neue Session": "New session", "vor 1 Woche": "1 week ago", "Abgeschlossenes Projekt bearbeiten": "Edit completed project", "Projekt bearbeiten": "Edit project", "Neues Projekt anlegen": "Create new project", "Standard-Wandbereich": "Default wall area", "Fehler beim Speichern in Supabase:": "Error saving to Supabase:", "Möchtest du dieses Projekt wirklich löschen?": "Do you really want to delete this project?", "Fehler beim Löschen des Projekts:": "Error deleting project:", "Fehler beim Aktualisieren des Status:": "Error updating status:", "Fehler beim Aktualisieren des Projekts:": "Error updating project:", "Fehler beim Aktualisieren der Attempts:": "Error updating attempts:", "Session bearbeiten": "Edit session", "Neue Session eintragen": "Log new session", "Fehler beim Speichern der Session in Supabase:": "Error saving session to Supabase:", "Möchtest du diese Session wirklich löschen?": "Do you really want to delete this session?", "Fehler beim Löschen der Session:": "Error deleting session:", "Bisher keine Sessions eingetragen.": "No sessions logged so far.", "Keine Sessions im gewählten Zeitraum.": "No sessions in the selected period.", "Keine Boulder erfasst": "No boulders recorded", "Eintrag bearbeiten": "Edit entry", "Allgemeinen Eintrag anlegen": "Create general entry", "Fehler beim Speichern des Logbucheintrags:": "Error saving logbook entry:", "Möchtest du diesen Eintrag wirklich löschen?": "Do you really want to delete this entry?", "Fehler beim Löschen des Eintrags:": "Error deleting entry:", "Keine Einträge für diese Filterkategorie vorhanden.": "No entries for this filter category.", "Automatisch aus Session": "Automatically from session", "Fehler beim Hochladen des Videos:": "Error uploading video:", "Möchtest du dieses Video löschen?": "Do you want to delete this video?", "Fehler beim Löschen des Videos:": "Error deleting video:", "Keine Projekt-Ordner vorhanden.": "No project folders available.", "Kein Datum": "No date", "Keine Videos hinterlegt.": "No videos added.", "+ Video hinzufügen": "+ Add video", "Noch kein Hallenprofil angelegt. Lege über „+ Neue Halle anlegen“ deine erste Halle an.": "No gym profile yet. Create your first gym via “+ Add new gym”.", "Diese Halle wird beim Öffnen der App automatisch ausgewählt": "This gym is selected automatically when the app opens", "Halle & Skala bearbeiten": "Edit gym & scale", "Die vorhandenen Kletter-Grade durch die Standardtabelle ersetzen?": "Replace the existing climbing grades with the default table?", "Spalte(n) fehlen, speichere lokal:": "Column(s) missing, saving locally:", "Fehler beim Speichern der Halle:": "Error saving gym:", "Fehler beim Löschen der Halle:": "Error deleting gym:", "Keine Position gewählt": "No position selected", "Noch nicht verortet": "Not located yet", "Diagramme konnten nicht geladen werden (keine Verbindung zu Chart.js) – es wird die Textansicht gezeigt.": "Charts could not be loaded (no connection to Chart.js) – showing the text view.", "Noch keine Sessions eingetragen – starte mit „+ Session“. 🧗": "No sessions logged yet – start with “+ Session”. 🧗", "Keine Sessions im gewählten Zeitraum bzw. in dieser Halle.": "No sessions in the selected period or at this gym.", "im Zeitraum": "in period", "Sessions pro Woche": "Sessions per week", "Die letzten 12 Wochen (Wochenbeginn Montag)": "The last 12 weeks (weeks start on Monday)", "Wochenbeginn Montag": "Weeks start on Monday", "Dauer pro Session": "Duration per session", "Deine liebsten Kletter-Tage": "Your favourite climbing days", "Session(s)": "session(s)", "Route(n)": "route(s)", "Tag(e)": "day(s)", "Versuch(e)": "attempt(s)", "Noch keine bearbeiteten Routen in diesem Zeitraum. Markiere auf der Hallenkarte Routen als Projekt, Top oder Flash. 🎯": "No routes worked on in this period yet. Mark routes on the gym map as project, top or flash. 🎯", "Noch keine Neigung hinterlegt – im Routen-Dialog der Karte ergänzbar": "No angle set yet – can be added in the map's route dialog", "🎯 Aktiv": "🎯 Active", "Noch keine Projekte in diesem Zeitraum. Setze auf der Hallenkarte eine Route auf „🎯 Projekt“ – sobald du sie toppst, erscheinen hier Dauer und Versuche.": "No projects in this period yet. Set a route on the gym map to “🎯 Project” – as soon as you top it, duration and attempts appear here.", "noch keine Daten": "no data yet", "Versuche im Routen-Dialog eintragen": "Enter attempts in the route dialog", "Aktive Projekte": "Active projects", "Mit voraussichtlichem Ablauf (Umschrauben) – dringendste zuerst": "With expected expiry (route reset) – most urgent first", "Tage bis zum Durchstieg": "Days until send", "Dein letztes abgeschlossenes Projekt": "Your last completed project", "Noch kein Projekt mit Start- und Enddatum": "No project with start and end date yet", "Versuche pro Projekt": "Attempts per project", "Grün = abgeschlossen · Blau = aktiv": "Green = completed · Blue = active", "Noch keine Versuche eingetragen": "No attempts logged yet", "Alle Projekte": "All projects", "Aktive zuerst, dann abgeschlossene": "Active first, then completed", "Schraubzyklen": "Set cycles", "Routen pro Umschraubzyklus": "Routes per reset cycle", "Noch keine Auswertung möglich – Routen brauchen ein Schraubdatum („Geschraubt am“).": "No analysis possible yet – routes need a set date (“Set on”).", "● läuft": "● ongoing", "Wie viele Routen du pro Umschraubzyklus bouldert": "How many routes you boulder per reset cycle", "Für diese Auswahl sind noch keine Routen auf der Hallenkarte angelegt.": "No routes have been added to the gym map for this selection yet.", "Anteil der Routen, die du im Zeitraum durchstiegen hast": "Share of routes you sent in the period", "🏅 Geschafft": "🏅 Done", "⏱ Bereit zum Start": "⏱ Ready to start", "⌛ Zeit abgelaufen": "⌛ Time's up", "🔥 Läuft": "🔥 Running", "🗓 Startet bald": "🗓 Starting soon", "⌛ Beendet": "⌛ Ended", "▶ Jetzt starten": "▶ Start now", "👥 Einladen": "👥 Invite", "Challenge für alle löschen": "Delete challenge for everyone", "Challenge aus meiner Liste entfernen": "Remove challenge from my list", "🎲 Generisch": "🎲 Generic", "🎯 Spezifisch": "🎯 Specific", "Melde dich an, um Challenges zu nutzen.": "Sign in to use challenges.", "Das Challenges-Backend ist noch nicht eingerichtet. Bitte zuerst das Supabase-Skript": "The challenges backend has not been set up yet. Please run the Supabase script", "im SQL-Editor ausführen.": "in the SQL editor first.", "✉️ Einladungen": "✉️ Invitations", "🔥 Aktiv": "🔥 Active", "🏁 Abgeschlossen / Beendet": "🏁 Completed / Ended", "Noch keine Challenges – erstelle die erste im Tab „Challenge erstellen“.": "No challenges yet – create the first one in the “Create challenge” tab.", "Fehler:": "Error:", "Timer jetzt starten? Ab sofort läuft deine Zeit.": "Start timer now? Your time starts running immediately.", "Keine Berechtigung zum Löschen.": "No permission to delete.", "Keine Berechtigung zum Entfernen.": "No permission to remove.", "Das hat nicht geklappt:": "That didn't work:", "Keine Challenge-Einladungen.": "No challenge invitations.", "Jemand": "Someone", "lädt dich zur Challenge": "invites you to the challenge", "Noch hat niemand Routen geschafft – sei die/der Erste! 🚀": "Nobody has completed any routes yet – be the first! 🚀", "👥 Freunde einladen": "👥 Invite friends", "Keine Routen gefunden.": "No routes found.", "Starte zuerst den Timer, damit Durchstiege zählen.": "Start the timer first so that sends count.", "Die Challenge läuft aktuell nicht – Durchstiege zählen nicht.": "The challenge is not running right now – sends don't count.", "🏅 Challenge geschafft! Glückwunsch!": "🏅 Challenge completed! Congratulations!", "Du hast noch keine Freunde, die du einladen kannst.": "You don't have any friends to invite yet.", "Bitte wähle mindestens eine Person aus.": "Please select at least one person.", "Keine Halle vorhanden": "No gym available", "Bitte melde dich an, um Challenges zu erstellen.": "Please sign in to create challenges.", "Alle Routen": "All routes", "In der Hallenkarte gibt es aktuell keine Routen mit diesen Merkmalen.": "There are currently no routes with these attributes on the gym map.", "Keine Routen in dieser Halle.": "No routes at this gym.", "Bitte gib einen Titel ein.": "Please enter a title.", "Bitte wähle eine Halle (Hallenprofil muss gespeichert sein).": "Please choose a gym (gym profile must be saved).", "Für diese Merkmale gibt es in der Hallenkarte keine Routen.": "There are no routes with these attributes on the gym map.", "Das Mindest-Level darf nicht größer als das Maximal-Level sein.": "The minimum level must not be higher than the maximum level.", "Bitte wähle mindestens eine Route aus.": "Please select at least one route.", "Das Enddatum muss nach dem Startdatum liegen.": "The end date must be after the start date.", "Bitte gib eine Dauer für den Timer an.": "Please enter a duration for the timer.", "Das Challenges-Backend ist noch nicht eingerichtet (challenges.sql ausführen).": "The challenges backend has not been set up yet (run challenges.sql).", "Routen konnten nicht gespeichert werden:": "Routes could not be saved:", "⏰ Pausenzeit abgelaufen!": "⏰ Rest time is over!", "Challenge erstellt!": "Challenge created!", "Du bist Challenge-Admin. Lade jetzt deine Freunde ein.": "You are the challenge admin. Invite your friends now.", "Zur Challenge-Liste": "To challenge list", "Aktiv & verfügbar": "Active & available", "% aller Routen mit diesen Merkmalen:": "% of all routes with these attributes:", "Level von – bis": "Level from – to", "leer = keine Grenze": "empty = no limit", "Innerhalb einer Gruppe reicht ein Treffer (z. B. Dyno": "Within a group, one match is enough (e.g. Dyno", "Kraft), zwischen den Gruppen müssen alle passen – wie im Filterfenster.": "Power), across groups all must match – as in the filter window.", "Routen auswählen": "Select routes", "0 gewählt": "0 selected", "📅 Fester Zeitraum": "📅 Fixed period", "⏱ Eigener Timer": "⏱ Own timer", "Der Timer startet individuell, sobald jemand die Challenge aktiv beginnt.": "The timer starts individually as soon as someone begins the challenge.", "Teilnehmer dürfen weitere Freunde einladen": "Participants may invite more friends", "Standard: nur Challenge-Admins laden ein": "Default: only challenge admins invite", "＋ Freund*in hinzufügen": "＋ Add friend", "Das Bild wird quadratisch zugeschnitten und für deine Freunde sichtbar.": "The image is cropped to a square and visible to your friends.", "Freund*in · nur Ansicht": "Friend · view only", "z. B. Überhang Dyno": "e.g. overhang dyno", "Notizen zur Route...": "Notes on the route...", "z. B. Gelber Dyno an der Volumenecke": "e.g. yellow dyno at the volume corner", "z. B. Schlüsselzug ist der Heelhook links...": "e.g. the crux move is the heel hook on the left...", "Erkenntnis/Beta...": "Insight/beta...", "Gefühl, Haut...": "Feel, skin...", "Gravitationskraft (links Jupiter, Mitte Erde, rechts Mond)": "Gravity (left Jupiter, centre Earth, right Moon)", "Titel (z. B. Sommer-Sechser)": "Title (e.g. summer sixer)", "Beschreibung (optional)": "Description (optional)", "Steuere, was Freunde in deinem Profil und im Social Feed sehen. Freunde sehen deine Daten nur nach einem Klick auf ihre Freundesliste.": "Control what friends see on your profile and in the social feed. Friends only see your data after clicking through from their friends list.", "Aktive & abgeschlossene Projekte im Profil + Feed-Meldungen (neues Projekt, Top)": "Active & completed projects on your profile + feed posts (new project, top)", "Schwierigkeitsgrad-Bereich": "Difficulty grade range", "Linken und rechten Pol ziehen": "Drag the left and right handles", "Alle Sterne-Bewertungen": "All star ratings", "⭐ Mindestens 1 Stern": "⭐ At least 1 star", "⭐⭐ Mindestens 2 Sterne": "⭐⭐ At least 2 stars", "⭐⭐⭐ Mindestens 3 Sterne": "⭐⭐⭐ At least 3 stars", "⭐⭐⭐⭐ Mindestens 4 Sterne": "⭐⭐⭐⭐ At least 4 stars", "⭐⭐⭐⭐⭐ 5 Sterne": "⭐⭐⭐⭐⭐ 5 stars", "⭐ 1 Stern": "⭐ 1 star", "⭐⭐ 2 Sterne": "⭐⭐ 2 stars", "⭐⭐⭐ 3 Sterne": "⭐⭐⭐ 3 stars", "⭐⭐⭐⭐ 4 Sterne": "⭐⭐⭐⭐ 4 stars", "📍 Route auf Karte anlegen": "📍 Add route to map", "Position relativ auf der Karte:": "Position relative to the map:", "Kletter-Styles (Mehrfachauswahl)": "Climbing styles (multi-select)", "Grifftypen (Mehrfachauswahl)": "Hold types (multi-select)", "Mein Status für diese Route": "My status for this route", "⚡ Geflasht (1. Versuch)": "⚡ Flashed (1st attempt)", "Neigung der Route": "Route angle", "Sternebewertung (1-5)": "Star rating (1-5)", "Soll die Route nach dem Entfernen noch in deiner Statistik mitzählen?": "Should the route still count in your statistics after removal?", "📊 In Statistik behalten": "📊 Keep in statistics", "Verschwindet von Karte und Liste, zählt aber weiter mit – z. B. für den Durchschnitt über mehrere Umschraubzyklen.": "Disappears from the map and list but still counts – e.g. for the average over several reset cycles.", "🗑️ Komplett löschen": "🗑️ Delete completely", "Route und ihre Daten werden endgültig entfernt und zählen nicht mehr in der Statistik.": "The route and its data are permanently removed and no longer count in the statistics.", "Schwierigkeit / Level": "Difficulty / level", "Name des Boulderdurchstiegs": "Name of the boulder send", "Projektnotiz / Beta / Beschreibung": "Project note / beta / description", "Verortung auf Hallenplan": "Location on gym plan", "Crimps (Leisten)": "Crimps", "Sloper (Aufleger)": "Sloper", "Jugs (Henkel)": "Jugs", "Pinch (Zangen)": "Pinch", "Pockets (Taschen)": "Pockets", "Volumes (Volumen)": "Volumes", "Routenbild hochladen": "Upload route image", "Bild verknüpft": "Image linked", "Heute gestartet?": "Started today?", "Nein (Datum wählen)": "No (choose date)", "Startdatum:": "Start date:", "Durchstiegsdatum:": "Send date:", "Klicke auf den Plan, um die Position festzulegen.": "Click on the plan to set the position.", "🎉 Durchstieg eintragen": "🎉 Log send", "Heute durchstiegen?": "Sent today?", "Lerneffekt festhalten?": "Record a learning?", "Halle (optional)": "Gym (optional)", "Sektoren (Kommagetrennt)": "Sectors (comma-separated)", "⭐ Als Stammhalle festlegen": "⭐ Set as home gym", "(wird beim Öffnen der App automatisch gewählt)": "(selected automatically when the app opens)", "Hallenplan hochladen": "Upload gym plan", "Plan verknüpft": "Plan linked", "Umschraubzyklus (Wochen)": "Reset cycle (weeks)", "🪨 Bouldern – Skalen": "🪨 Bouldering – scales", "FB-/V-Skala Übersetzung": "FB / V-scale conversion", "Automatisch umrechnen (FB ↔ V-Skala)": "Convert automatically (FB ↔ V-scale)", "Gibst du eine Skala ein, wird die andere ergänzt. Abschalten, falls dir die Umrechnung zu ungenau ist.": "If you enter one scale, the other is filled in. Turn off if the conversion is too inaccurate for you.", "🧗 Klettern – Skalen (UIAA / Französisch)": "🧗 Climbing – scales (UIAA / French)", "Kletterhallen nutzen praktisch immer die offiziellen Skalen – darum gibt es hier keine eigenen Level-Namen. Wähle, welche Skalen deine Halle anzeigt.": "Climbing gyms almost always use the official scales – so there are no custom level names here. Choose which scales your gym displays.", "UIAA-Skala": "UIAA scale", "Französische Skala": "French scale", "Automatisch umrechnen (UIAA ↔ Französisch)": "Convert automatically (UIAA ↔ French)", "Gibst du eine Skala ein, wird die andere ergänzt.": "If you enter one scale, the other is filled in.", "Ohne eigene Einträge wird für Kletterrouten automatisch die komplette Standardtabelle angeboten.": "Without custom entries, the complete default table is offered for climbing routes automatically."};
   var I18N_PAT = [["^Der\\ neue\\ Sektor\\ konnte\\ nicht\\ im\\ Hallenprofil\\ gespeichert\\ werden:\\s+([\\s\\S]+)$", "The new sector could not be saved to the gym profile: $1", true], ["^Hallenkarte\\ nur\\ lokal\\ gespeichert\\ \\(Spalte\\ map_layout\\ fehlt\\?\\):\\s+([\\s\\S]+)$", "Gym map saved locally only (column map_layout missing?): $1", true], ["^Die\\ neue\\ Position\\ konnte\\ nicht\\ gespeichert\\ werden:\\s+([\\s\\S]+)$", "The new position could not be saved: $1", true], ["^Fehler\\ beim\\ Speichern\\ der\\ Session\\ in\\ Supabase:\\s+([\\s\\S]+)$", "Error saving session to Supabase: $1", true], ["^Feed\\-Eintrag\\ konnte\\ nicht\\ gespeichert\\ werden:\\s+([\\s\\S]+)$", "Feed entry could not be saved: $1", true], ["^Fehler\\ beim\\ Speichern\\ des\\ Logbucheintrags:\\s+([\\s\\S]+)$", "Error saving logbook entry: $1", true], ["^Fehler\\ beim\\ Synchronisieren\\ aus\\ Supabase:\\s+([\\s\\S]+)$", "Error syncing from Supabase: $1", true], ["^Fehler\\ beim\\ Entfernen\\ des\\ Feed\\-Eintrags:\\s+([\\s\\S]+)$", "Error removing feed entry: $1", true], ["^Routen\\ konnten\\ nicht\\ gespeichert\\ werden:\\s+([\\s\\S]+)$", "Routes could not be saved: $1", true], ["^Fehler\\ beim\\ Speichern\\ der\\ Privatsphäre:\\s+([\\s\\S]+)$", "Error saving privacy settings: $1", true], ["^Fehler\\ beim\\ Prüfen/Anlegen\\ des\\ Profils:\\s+([\\s\\S]+)$", "Error checking/creating profile: $1", true], ["^Fehler\\ beim\\ Aktualisieren\\ des\\ Projekts:\\s+([\\s\\S]+)$", "Error updating project: $1", true], ["^Fehler\\ beim\\ Aktualisieren\\ der\\ Attempts:\\s+([\\s\\S]+)$", "Error updating attempts: $1", true], ["^Fehler\\ beim\\ Speichern\\ der\\ Interaktion:\\s+([\\s\\S]+)$", "Error saving interaction: $1", true], ["^Fehler\\ beim\\ Laden\\ des\\ Freundesprofils:\\s+([\\s\\S]+)$", "Error loading friend's profile: $1", true], ["^Fehler\\ beim\\ Aktualisieren\\ des\\ Status:\\s+([\\s\\S]+)$", "Error updating status: $1", true], ["^%\\ aller\\ Routen\\ mit\\ diesen\\ Merkmalen:\\s+([\\s\\S]+)$", "% of all routes with these attributes: $1", true], ["^Fehler\\ beim\\ Laden\\ der\\ Social\\-Daten:\\s+([\\s\\S]+)$", "Error loading social data: $1", true], ["^Fehler\\ beim\\ Archivieren\\ der\\ Route:\\s+([\\s\\S]+)$", "Error archiving route: $1", true], ["^Fehler\\ beim\\ Speichern\\ in\\ Supabase:\\s+([\\s\\S]+)$", "Error saving to Supabase: $1", true], ["^Spalte\\(n\\)\\ fehlen,\\ speichere\\ lokal:\\s+([\\s\\S]+)$", "Column(s) missing, saving locally: $1", true], ["^❌\\ Fehler\\ beim\\ Senden\\ der\\ Anfrage:\\s+([\\s\\S]+)$", "❌ Error sending request: $1", true], ["^Fehler\\ beim\\ Annehmen\\ der\\ Anfrage:\\s+([\\s\\S]+)$", "Error accepting request: $1", true], ["^Fehler\\ beim\\ Ablehnen\\ der\\ Anfrage:\\s+([\\s\\S]+)$", "Error declining request: $1", true], ["^Fehler\\ beim\\ Löschen\\ des\\ Projekts:\\s+([\\s\\S]+)$", "Error deleting project: $1", true], ["^Fehler\\ beim\\ Löschen\\ des\\ Eintrags:\\s+([\\s\\S]+)$", "Error deleting entry: $1", true], ["^Fehler\\ beim\\ Hochladen\\ des\\ Videos:\\s+([\\s\\S]+)$", "Error uploading video: $1", true], ["^Fehler\\ beim\\ Speichern\\ der\\ Route:\\s+([\\s\\S]+)$", "Error saving route: $1", true], ["^Fehler\\ beim\\ Löschen\\ der\\ Session:\\s+([\\s\\S]+)$", "Error deleting session: $1", true], ["^Fehler\\ beim\\ Speichern\\ der\\ Halle:\\s+([\\s\\S]+)$", "Error saving gym: $1", true], ["^Fehler\\ beim\\ Löschen\\ des\\ Videos:\\s+([\\s\\S]+)$", "Error deleting video: $1", true], ["^Position\\ relativ\\ auf\\ der\\ Karte:\\s+([\\s\\S]+)$", "Position relative to the map: $1", true], ["^Fehler\\ beim\\ Löschen\\ der\\ Route:\\s+([\\s\\S]+)$", "Error deleting route: $1", true], ["^Fehler\\ beim\\ Löschen\\ der\\ Halle:\\s+([\\s\\S]+)$", "Error deleting gym: $1", true], ["^Feed\\-Eintrag\\ fehlgeschlagen:\\s+([\\s\\S]+)$", "Feed entry failed: $1", true], ["^❌\\ Fehler\\ beim\\ Speichern:\\s+([\\s\\S]+)$", "❌ Error saving: $1", true], ["^Das\\ hat\\ nicht\\ geklappt:\\s+([\\s\\S]+)$", "That didn't work: $1", true], ["^Login\\ fehlgeschlagen:\\s+([\\s\\S]+)$", "Login failed: $1", true], ["^Registrierungsfehler:\\s+([\\s\\S]+)$", "Registration error: $1", true], ["^Durchstiegsdatum:\\s+([\\s\\S]+)$", "Send date: $1", true], ["^Geschraubt\\ am:\\s+([\\s\\S]+)$", "Set on: $1", true], ["^Am\\ häufigsten:\\s+([\\s\\S]+)$", "Most often: $1", true], ["^Einschätzung:\\s+([\\s\\S]+)$", "Rating: $1", true], ["^„([\\s\\S]*?)“\\ für\\ ALLE\\ Teilnehmer\\ löschen\\?\\ Ergebnisse\\ und\\ Leaderboard\\ gehen\\ verloren\\.\\ Das\\ lässt\\ sich\\ nicht\\ rückgängig\\ machen\\.$", "Delete “$1” for ALL participants? Results and leaderboard will be lost. This cannot be undone.", false], ["^„([\\s\\S]*?)“\\ aus\\ deiner\\ Liste\\ entfernen\\?\\ Du\\ verlässt\\ die\\ Challenge\\ und\\ dein\\ Fortschritt\\ dort\\ wird\\ entfernt\\.$", "Remove “$1” from your list? You will leave the challenge and your progress there will be removed.", false], ["^≈\\ ([\\s\\S]*?)\\ von\\ ([\\s\\S]*?)\\ Routen\\ müssen\\ geschafft\\ werden\\ \\(aktueller\\ Stand\\ der\\ Hallenkarte\\)\\.$", "≈ $1 of $2 routes must be completed (current state of the gym map).", false], ["^ℹ\\ Es\\ liegt\\ bereits\\ eine\\ Anfrage\\ oder\\ Verbindung\\ mit\\ ([\\s\\S]*?)\\ vor\\.$", "ℹ There is already a request or connection with $1.", false], ["^🚫\\ Nutzer\\*in\\ \"([\\s\\S]*?)\"\\ hat\\ Freundesanfragen\\ deaktiviert\\.$", "🚫 User \"$1\" has disabled friend requests.", false], ["^Hängt\\ voraussichtlich\\ noch\\ ca\\.\\ ([\\s\\S]*?)\\ Wochen\\ \\(([\\s\\S]*?)\\ Tage\\)$", "Expected to stay up for approx. $1 more weeks ($2 days)", false], ["^Keine\\ deiner\\ Freunde\\ hat\\ das\\ Hallenprofil\\ „([\\s\\S]*?)“\\.$", "None of your friends has the gym profile “$1”.", false], ["^Möchtest\\ du\\ die\\ Halle\\ \"([\\s\\S]*?)\"\\ wirklich\\ löschen\\?$", "Do you really want to delete the gym \"$1\"?", false], ["^✉️️\\ Freundschaftsanfrage\\ an\\ \"([\\s\\S]*?)\"\\ gesendet!$", "✉️️ Friend request sent to \"$1\"!", false], ["^Deine\\ letzten\\ ([\\s\\S]*?)\\ abgeschlossenen\\ Projekte$", "Your last $1 completed projects", false], ["^([\\s\\S]*?)\\ und\\ ([\\s\\S]*?)\\ sind\\ jetzt\\ miteinander\\ vernetzt\\.$", "$1 and $2 are now connected.", false], ["^⚠️\\ Du\\ bist\\ bereits\\ mit\\ ([\\s\\S]*?)\\ befreundet\\.$", "⚠️ You are already friends with $1.", false], ["^Umschraubzyklus\\ der\\ Halle:\\ ([\\s\\S]*?)\\ Wochen$", "Gym reset cycle: $1 weeks", false], ["^Kein\\ Hallenplan\\ für\\ \"([\\s\\S]*?)\"\\ vorhanden\\.$", "No gym plan available for \"$1\".", false], ["^Hängt\\ voraussichtlich\\ noch\\ ([\\s\\S]*?)\\ Tage$", "Expected to stay up for $1 more days", false], ["^bis\\ zum\\ Durchstieg\\ ·\\ ([\\s\\S]*?)\\ Projekt\\(e\\)$", "until send · $1 project(s)", false], ["^❌\\ Nutzer\\*in\\ \"([\\s\\S]*?)\"\\ existiert\\ nicht\\.$", "❌ User \"$1\" does not exist.", false], ["^([\\s\\S]*?)\\ Routen\\ \\&\\ Durchstiege\\ eintragen$", "Log $1 routes & sends", false], ["^▶\\ Challenge\\ jetzt\\ starten\\ \\(([\\s\\S]*?)\\)$", "▶ Start challenge now ($1)", false], ["^Mindestens\\ ([\\s\\S]*?)\\ m\\ erforderlich$", "At least $1 m required", false], ["^Mehr\\ anzeigen\\ \\(([\\s\\S]*?)\\ weitere\\)\\ ↓$", "Show more ($1 more) ↓", false], ["^pro\\ Projekt\\ ·\\ ([\\s\\S]*?)\\ Projekt\\(e\\)$", "per project · $1 project(s)", false], ["^([\\s\\S]*?)Umschrauben\\ alle\\ ([\\s\\S]*?)\\ Wochen$", "$1Reset every $2 weeks", false], ["^Eingeladen,\\ noch\\ offen:\\ ([\\s\\S]*?)$", "Invited, still open: $1", false], ["^Schön,\\ dich\\ zu\\ sehen,\\ ([\\s\\S]*?)!$", "Nice to see you, $1!", false], ["^⏳\\ Umschrauben\\ in\\ ([\\s\\S]*?)\\ Tagen$", "⏳ Reset in $1 days", false], ["^⏳\\ Umschrauben\\ in\\ ([\\s\\S]*?)\\ Tag$", "⏳ Reset in $1 day", false], ["^Lerneffekt\\ /\\ Ascend:\\ ([\\s\\S]*?)$", "Learning / ascent: $1", false], ["^Session\\ Reflektion\\ \\(([\\s\\S]*?)\\)$", "Session reflection ($1)", false], ["^⏳\\ ([\\s\\S]*?)\\ Tage\\ verbleibend$", "⏳ $1 days left", false], ["^([\\s\\S]*?)\\ Matten\\ ·\\ ([\\s\\S]*?)\\ Sektoren$", "$1 mats · $2 sectors", false], ["^Feste\\ Routenauswahl([\\s\\S]*?)$", "Fixed route selection$1", false], ["^([\\s\\S]*?)\\ \\(Zyklus:\\ ([\\s\\S]*?)\\ Wochen\\)$", "$1 (cycle: $2 weeks)", false], ["^🔍\\ Suche\\ nach\\ \"([\\s\\S]*?)\"\\.\\.\\.$", "🔍 Searching for \"$1\"...", false], ["^([\\s\\S]*?)\\ aktiv\\ ·\\ ([\\s\\S]*?)\\ entfernt$", "$1 active · $2 removed", false], ["^⏱\\ ([\\s\\S]*?)\\ ab\\ deinem\\ Start$", "⏱ $1 from your start", false], ["^([\\s\\S]*?)%\\ aller\\ ([\\s\\S]*?)er\\-Routen([\\s\\S]*?)$", "$1% of all $2-level routes$3", false], ["^Letzte\\ ([\\s\\S]*?)\\ Sessions$", "Last $1 sessions", false], ["^Guten\\ Morgen,\\ ([\\s\\S]*?)!$", "Good morning, $1!", false], ["^Stufe\\ 1\\ ·\\ ab\\ ([\\s\\S]*?)\\ %$", "Level 1 · from $1 %", false], ["^Stufe\\ 2\\ ·\\ ab\\ ([\\s\\S]*?)\\ %$", "Level 2 · from $1 %", false], ["^Guten\\ Abend,\\ ([\\s\\S]*?)!$", "Good evening, $1!", false], ["^Einladen\\ zu\\ „([\\s\\S]*?)“([\\s\\S]*?)$", "Invite to “$1”$2", false], ["^seit\\ ([\\s\\S]*?)\\ Tag\\(en\\)$", "for $1 day(s)", false], ["^in\\ der\\ Halle\\ ([\\s\\S]*?)$", "at gym $1", false], ["^([\\s\\S]*?)%\\ deiner\\ Tops$", "$1% of your tops", false], ["^vor\\ ([\\s\\S]*?)\\ Monaten$", "$1 months ago", false], ["^([\\s\\S]*?)\\ Versuch\\(e\\)$", "$1 attempt(s)", false], ["^vor\\ ([\\s\\S]*?)\\ Wochen$", "$1 weeks ago", false], ["^Dauer:\\ ([\\s\\S]*?)\\ Min$", "Duration: $1 min", false], ["^noch\\ ([\\s\\S]*?)\\ Tage$", "$1 days left", false], ["^([\\s\\S]*?)%\\ der\\ Tops$", "$1% of tops", false], ["^im\\ Sektor\\ ([\\s\\S]*?)$", "in sector $1", false], ["^vor\\ ([\\s\\S]*?)\\ Tagen$", "$1 days ago", false], ["^bis\\ Level\\ ([\\s\\S]*?)$", "up to level $1", false], ["^noch\\ ([\\s\\S]*?)\\ Tag$", "$1 day left", false], ["^([\\s\\S]*?)\\ Std\\ ([\\s\\S]*?)\\ Min$", "$1 h $2 min", false], ["^ab\\ Level\\ ([\\s\\S]*?)$", "from level $1", false], ["^\\(([\\s\\S]*?)\\ Routen\\)$", "($1 routes)", false], ["^·\\ ([\\s\\S]*?)\\ offen$", "· $1 open", false], ["^von\\ ([\\s\\S]*?)\\ ·\\ 🏆([\\s\\S]*?)$", "of $1 · 🏆$2", false], ["^([\\s\\S]*?)/([\\s\\S]*?)\\ Routen$", "$1/$2 routes", false], ["^([\\s\\S]*?)\\ gewählt$", "$1 selected", false], ["^([\\s\\S]*?)\\ Tag\\(e\\)$", "$1 day(s)", false], ["^([\\s\\S]*?)\\ von\\ ([\\s\\S]*?)$", "$1 of $2", false], ["^Nach\\ ([\\s\\S]*?)$", "By $1", false], ["^([\\s\\S]*?)\\ Tage$", "$1 days", false], ["^([\\s\\S]*?)\\ Min$", "$1 min", false], ["^([\\s\\S]*?)\\ Std$", "$1 h", false]];
   window.I18N_EN = I18N_EN; window.I18N_X = I18N_X;
   var LANG_KEY='boulder_lang', lang='de';
@@ -9070,6 +9449,9 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImpress
     return g;
   }
   var SPECIAL=[
+    [/^(?:\S+\s)?(\d+) Routen entfernen$/, function(m){return '🗑️ Remove '+m[1]+' routes';}],
+    [/^(\d+) Routen ausgewählt$/, function(m){return m[1]+' routes selected';}],
+    [/^(\d+) Routen? im Sektor (.+)$/, function(m){return pl(m[1],'route','routes')+' in sector '+m[2];}],
     [/^Meist bist du (\S+?)s dabei$/, function(m,T){return 'Most often on '+T(m[1])+'s';}],
     [/^(\d+) Freunde? ohne Hallenprofil „([\s\S]*)“ (?:wird|werden) nicht angezeigt – die Challenge lässt sich nur mit demselben Hallenprofil spielen\.$/, function(m){var n=+m[1];return n+' friend'+(n===1?'':'s')+' without gym profile “'+m[2]+'” '+(n===1?'is':'are')+' not shown – the challenge can only be played with the same gym profile.';}],
     [/^✉️ (\d+) Einladung(?:en)? gesendet\.$/, function(m){return '✉️ '+pl(m[1],'invitation','invitations')+' sent.';}],
