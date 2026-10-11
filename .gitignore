@@ -3,3 +3,7 @@
 *
 !.gitignore
 !index.html
+# Web-App (Homescreen): Manifest und App-Icons
+!manifest.webmanifest
+!icons/
+!icons/*.png
