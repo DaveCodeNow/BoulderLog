@@ -85,6 +85,13 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_sJWoqlpDOk7bhUlw-2Ts2Q_CxtI2v2g';
     // Link aus der "Passwort zurücksetzen"-Mail? Muss vor createClient gelesen werden, das den Hash danach entfernt
     const AUTH_RECOVERY_FROM_URL = /type=recovery/.test(location.hash);
+    // Fehlgeschlagener Link aus einer Auth-Mail (z. B. abgelaufen/schon benutzt): Supabase hängt #error=…&error_code=… an
+    const AUTH_LINK_ERROR = (() => {
+      try {
+        const p = new URLSearchParams((location.hash || '').replace(/^#/, '') || location.search);
+        return p.get('error') ? { code: p.get('error_code') || p.get('error'), description: p.get('error_description') || '' } : null;
+      } catch (e) { return null; }
+    })();
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   </script>
@@ -250,23 +257,103 @@
     /* Startseite für nicht angemeldete Nutzer*innen. auth-pending = Sitzung wird noch geprüft (nur Logo als Splash) */
     #landing { display: none; }
     body.guest-mode > :not(#landing), body.auth-pending > :not(#landing) { display: none !important; }
-    body.guest-mode #landing, body.auth-pending #landing { display: flex; flex: 1; align-items: center; justify-content: center; padding: 2.5rem 1rem; }
-    body.auth-pending #landing .landing-body, body.auth-pending #landing .landing-auth { display: none; }
-    .landing-inner { width: 100%; max-width: 64rem; display: grid; gap: 2.5rem; align-items: center; }
-    @media (min-width: 900px) { body.guest-mode .landing-inner { grid-template-columns: 1.15fr 1fr; gap: 4rem; } }
-    .landing-intro { display: flex; flex-direction: column; align-items: center; text-align: center; }
-    @media (min-width: 900px) { body.guest-mode .landing-intro { align-items: flex-start; text-align: left; } }
-    .landing-logo .gl-logo { height: clamp(9rem, 22vw, 13rem); }
-    .landing-lead { margin-top: 1.5rem; font-size: 1rem; line-height: 1.5; color: rgb(var(--s-300)); max-width: 32rem; }
-    .landing-features { margin-top: 1.75rem; display: grid; gap: 1rem; text-align: left; max-width: 32rem; list-style: none; padding: 0; }
-    .landing-features li { position: relative; padding-left: 1.6rem; }
-    .landing-features li::before { content: ''; position: absolute; left: 0; top: .35rem; width: .7rem; height: .7rem; border-radius: 999px;
-      background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
-    .landing-features b { display: block; font-size: .9rem; font-weight: 600; color: rgb(var(--s-100)); }
-    .landing-features span { display: block; margin-top: .1rem; font-size: .8rem; line-height: 1.45; color: rgb(var(--s-400)); }
-    .landing-auth { display: flex; justify-content: center; }
-    .landing-auth #auth-card { max-width: 24rem; padding: 1.75rem; box-shadow: 0 20px 45px rgba(0,0,0,.28); }
+    body.guest-mode #landing, body.auth-pending #landing { display: block; flex: 1; }
+
+    /* Split-Screen: links ein vollflächiges Marken-Panel in der Akzentfarbe, rechts eine ruhige Fläche mit der Anmeldung.
+       Am Laptop füllt alles genau eine Bildschirmhöhe (100dvh); Größen skalieren mit der Höhe, nichts ragt heraus. */
+    .landing-split { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); }
+    @media (min-width: 900px) {
+      .landing-split { height: 100vh; height: 100dvh; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+    }
+
+    /* --- Marken-Panel: App-Grau mit grünen Akzenten (exakt die gewählte Akzentfarbe) --- */
+    .lp-brand { position: relative; overflow: hidden; isolation: isolate; color: rgb(var(--s-100));
+      display: flex; flex-direction: column; justify-content: space-between; gap: clamp(1rem, 3vh, 2rem);
+      padding: clamp(1.5rem, 5vh, 3.25rem) clamp(1.25rem, 4vw, 3.5rem);
+      background: rgb(var(--s-950)); border-right: 1px solid color-mix(in srgb, var(--accent) 28%, rgb(var(--s-800))); }
+    /* Präsentes Logo in Originalfarben, mit weichem Akzent-Schein dahinter */
+    .lp-logo { position: relative; align-self: flex-start; }
+    .lp-logo::before { content: ''; position: absolute; inset: -15%; z-index: -1; border-radius: 50%;
+      background: radial-gradient(circle, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%); filter: blur(12px); }
+    .lp-logo .gl-logo { height: clamp(6rem, 22vh, 11rem); }
+    /* Größe so gewählt, dass auch das längste Wechselwort in eine Zeile passt */
+    .lp-headline { font-size: clamp(1.5rem, 2.5vw + .25rem, 2.4rem); line-height: 1.15; font-weight: 700; letter-spacing: -.01em; color: rgb(var(--s-50)); }
+    .lp-rotate { display: inline-block; color: var(--accent); white-space: nowrap; }
+    .lp-rotate.is-typing::after { content: '▍'; margin-left: .05em; animation: lp-caret 1s steps(1) infinite; }
+    .lp-sub { margin-top: clamp(.5rem, 1.6vh, 1rem); font-size: clamp(.8rem, .5vw + .6rem, .95rem); line-height: 1.5; color: rgb(var(--s-400)); max-width: 30rem; }
+
+    /* Features: kompakt; beim Start einmal nacheinander hervorgehoben (.is-active), danach ruhig */
+    .lp-features { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(.3rem, 1vh, .5rem); max-width: 32rem; }
+    .lp-features li { display: grid; grid-template-columns: 1.9rem minmax(0, 1fr); column-gap: .75rem; align-items: center;
+      padding: clamp(.4rem, 1.1vh, .6rem) .7rem; border-radius: .9rem; border: 1px solid transparent; transition: background-color .4s, border-color .4s, transform .4s; }
+    .lp-features li .lp-num { grid-row: span 2; width: 1.9rem; height: 1.9rem; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); transition: background-color .4s, color .4s; }
+    .lp-features li b { font-size: .88rem; font-weight: 600; color: rgb(var(--s-100)); }
+    .lp-features li span:last-child { font-size: .74rem; line-height: 1.35; color: rgb(var(--s-400)); }
+    .lp-features li.is-active { background: color-mix(in srgb, var(--accent) 9%, transparent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); transform: translateX(4px); }
+    .lp-features li.is-active .lp-num { background: var(--accent); color: rgb(var(--s-950)); }
+    @keyframes lp-caret { 50% { opacity: 0; } }
+    @keyframes lp-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    body.guest-mode .lp-brand > *, body.guest-mode .lp-form > * { animation: lp-in .6s ease-out both; }
+    body.guest-mode .lp-brand > .lp-copy { animation-delay: .08s; }
+    body.guest-mode .lp-brand > .lp-features { animation-delay: .16s; }
+    body.guest-mode .lp-form > * { animation-delay: .2s; }
+
+    /* --- Anmelde-Fläche --- */
+    .lp-form { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+      padding: clamp(1.5rem, 4vh, 3rem) 1rem; background: rgb(var(--s-900)); }
+    .lp-form-title { width: 100%; max-width: 24rem; }
+    .lp-form-title h2 { font-size: 1.35rem; font-weight: 700; color: rgb(var(--s-100)); }
+    .lp-form-title p { margin-top: .2rem; font-size: .8rem; color: rgb(var(--s-400)); }
+    .landing-auth { width: 100%; display: flex; justify-content: center; }
+    .landing-auth #auth-card { width: 100%; max-width: 24rem; padding: 1.75rem; border-radius: 1.25rem;
+      border: 1px solid rgb(var(--s-700)); background: rgb(var(--s-800)); box-shadow: 0 24px 60px rgba(0,0,0,.28); }
     .landing-auth #auth-close-btn { display: none; }
+    .lp-legal { font-size: 10px; color: rgb(var(--s-500)); text-align: center; max-width: 24rem; }
+
+    /* Handy: Panel kompakt oben (Features als waagerecht wischbare Liste), Anmeldung darunter */
+    @media (max-width: 899px) {
+      /* Kompakter Kopf, damit die Anmeldung schnell im Blick ist; Abstand zu Notch/Statusleiste (Web-App vom Homebildschirm) */
+      .lp-brand { justify-content: flex-start; gap: 1.1rem; text-align: center; align-items: center;
+        padding: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem)) 1.25rem 1.5rem; }
+      .lp-copy { display: flex; flex-direction: column; align-items: center; }
+      .lp-sub { margin-inline: auto; }
+      .lp-features { width: 100%; max-width: none; text-align: left; }
+      .lp-form { justify-content: flex-start; padding: 1.5rem 1rem max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem)); }
+      .lp-form-title { text-align: center; }
+      .lp-headline { font-size: clamp(1.45rem, 6.5vw, 2rem); }
+      .lp-features { grid-auto-flow: column; grid-auto-columns: minmax(13.5rem, 72%); overflow-x: auto; scroll-snap-type: x mandatory;
+        padding-bottom: .25rem; margin-inline: -.25rem; scrollbar-width: none; }
+      .lp-brand { border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, rgb(var(--s-800))); }
+      .lp-logo { align-self: center; }
+      .lp-logo .gl-logo { height: clamp(5.5rem, 26vw, 8rem); }
+      .lp-features li { scroll-snap-align: start; background: rgb(var(--s-800) / .7); border-color: rgb(var(--s-700)); }
+      .lp-features li.is-active { transform: none; }
+    }
+    /* Kleine Smartphones: Untertitel weglassen, damit die Anmeldung ohne viel Scrollen erreichbar ist */
+    @media (max-width: 480px) {
+      .lp-sub { display: none; }
+      .lp-features { grid-auto-columns: minmax(12.5rem, 78%); }
+      .landing-auth #auth-card { padding: 1.35rem; }
+    }
+    /* Niedrige Laptop-Bildschirme: Beschreibungen der Features ausblenden, damit alles auf eine Höhe passt */
+    @media (min-width: 900px) and (max-height: 700px) {
+      .lp-features li span:last-child { display: none; }
+      .lp-features li .lp-num { grid-row: auto; }
+      .lp-logo .gl-logo { height: clamp(5rem, 18vh, 8rem); }
+    }
+
+    /* Splash beim Prüfen der Sitzung: nur das Panel mit Logo */
+    body.auth-pending .lp-form, body.auth-pending .lp-copy, body.auth-pending .lp-features { display: none; }
+    body.auth-pending .landing-split { grid-template-columns: minmax(0, 1fr); }
+    body.auth-pending .lp-brand { min-height: 100vh; min-height: 100dvh; justify-content: center; align-items: center; border: 0; }
+    body.auth-pending .lp-logo { align-self: center; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .lp-rotate::after, body.guest-mode .lp-brand > *, body.guest-mode .lp-form > * { animation: none !important; }
+      .lp-features li { transition: none; }
+    }
     /* Anmeldebox: Fokus in der Akzentfarbe statt des schwarzen Browser-Rahmens */
     #auth-card input[type="email"], #auth-card input[type="password"], #auth-card input[type="text"] { transition: border-color .15s, box-shadow .15s; }
     #auth-card input[type="email"]:focus, #auth-card input[type="password"]:focus, #auth-card input[type="text"]:focus {
@@ -340,21 +427,34 @@
   <!-- STARTSEITE FÜR NICHT ANGEMELDETE: Logo, fünf Kernfunktionen, Anmeldefenster.
        Solange sie aktiv ist (body.guest-mode), ist der Rest der App ausgeblendet. -->
   <section id="landing" aria-label="Willkommen">
-    <div class="landing-inner">
-      <div class="landing-intro">
-        <div id="landing-logo" class="landing-logo"></div>
-        <div class="landing-body">
-          <p class="landing-lead">Dein digitales Boulder-Logbuch – für dich, deine Freund*innen und deine Halle.</p>
-          <ul class="landing-features">
-            <li><b>Interaktive Hallenkarte</b><span>Routen direkt auf dem Hallenplan finden, abhaken, bewerten und als Projekt markieren.</span></li>
-            <li><b>Logbuch &amp; Statistik</b><span>Durchstiege und Sessions festhalten und deinen Fortschritt nach Level, Stil und Zeit verfolgen.</span></li>
-            <li><b>Challenges mit Freund*innen</b><span>Eigene Challenges starten, Freund*innen einladen und Bestenlisten vergleichen.</span></li>
-            <li><b>Partnerhallen</b><span>Per Code freischalten: aktuelle Routen, Sektorstatus, offizielle Challenges und Events deiner Halle.</span></li>
-            <li><b>Für Hallenteams</b><span>Hallenkarte bauen, Schraubplan und Routesetter-Team organisieren, Zielvorgaben im Blick behalten.</span></li>
-          </ul>
+    <!-- Split-Screen: links Marken-Panel (Logo, wechselnde Schlagzeile, 5 Features), rechts die Anmeldung.
+         Reihenfolge im HTML = Lesereihenfolge. -->
+    <div class="landing-split">
+      <div class="lp-brand">
+        <div class="lp-logo"><div id="landing-logo" class="landing-logo"></div></div>
+
+        <div class="lp-copy">
+          <h1 class="lp-headline">Das Boulder-Logbuch<br>für <span class="lp-rotate" id="lp-rotate">deine Halle.</span></h1>
+          <p class="lp-sub">Baue deine Halle digital nach, logge deine Begehungen und wachse gemeinsam mit deiner Crew – von der ersten Session bis zum Projekt.</p>
         </div>
+
+        <ul class="lp-features" aria-label="Was BoulderLog kann">
+          <li><span class="lp-num">1</span><b>Interaktive Hallenkarte</b><span>Routen auf dem Hallenplan finden, abhaken und bewerten.</span></li>
+          <li><span class="lp-num">2</span><b>Logbuch &amp; Statistik</b><span>Fortschritt nach Level, Stil und Zeit verfolgen.</span></li>
+          <li><span class="lp-num">3</span><b>Challenges mit Freund*innen</b><span>Herausfordern, einladen, Bestenlisten vergleichen.</span></li>
+          <li><span class="lp-num">4</span><b>Partnerhallen</b><span>Aktuelle Routen, Sektorstatus und Events deiner Halle.</span></li>
+          <li><span class="lp-num">5</span><b>Für Hallenteams</b><span>Hallenkarte, Schraubplan und Setter-Team an einem Ort.</span></li>
+        </ul>
       </div>
-      <div id="landing-auth-slot" class="landing-auth"></div>
+
+      <div class="lp-form">
+        <div class="lp-form-title">
+          <h2>Willkommen zurück</h2>
+          <p>Melde dich an oder erstelle in wenigen Sekunden ein Konto.</p>
+        </div>
+        <div id="landing-auth-slot" class="landing-auth"></div>
+        <p class="lp-legal">BoulderLog · von der Climbing-Community, für die Climbing-Community</p>
+      </div>
     </div>
   </section>
 
@@ -6743,11 +6843,65 @@
       const card = document.getElementById('auth-card');
       const target = on ? document.getElementById('landing-auth-slot') : document.getElementById('auth-modal');
       if (card && target && card.parentElement !== target) target.appendChild(card);
+      if (on) startLandingAnimations(); else stopLandingAnimations();
       if (on) {
         closeModal('auth-modal');
         // Nicht mitten in "Passwort vergessen" o. Ä. zurückspringen; neues Passwort gibt es nur angemeldet
         if (!document.getElementById('auth-reset-form').classList.contains('hidden')) switchAuthTab('login');
       }
+    }
+
+    // Bewegte Elemente der Startseite – laufen beim Öffnen genau einmal und kommen dann zur Ruhe:
+    //  - Schlagzeile tippt die Wörter nacheinander und bleibt beim letzten („deine Halle.“) stehen
+    //  - die Features werden dazu einmal nacheinander hervorgehoben
+    // Bei "Bewegung reduzieren" steht sofort der Endzustand da.
+    const LANDING_WORDS = ['deine Projekte.', 'deine Crew.', 'deine Challenges.', 'deine Halle.'];   // letztes = Endzustand
+    let landingHighlightTimer = null, landingTypeTimer = null;
+    function stopLandingAnimations() {
+      clearTimeout(landingHighlightTimer); clearTimeout(landingTypeTimer);
+      landingHighlightTimer = null; landingTypeTimer = null;
+      document.querySelectorAll('.lp-features li.is-active').forEach(li => li.classList.remove('is-active'));
+      const el = document.getElementById('lp-rotate');
+      if (el) { el.textContent = LANDING_WORDS[LANDING_WORDS.length - 1]; el.classList.remove('is-typing'); }
+    }
+    function startLandingAnimations() {
+      stopLandingAnimations();
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const items = [...document.querySelectorAll('.lp-features li')];
+      let active = 0;
+      const highlight = () => {
+        items.forEach((li, i) => li.classList.toggle('is-active', i === active));
+        active++;
+        landingHighlightTimer = setTimeout(active <= items.length ? highlight : () => items.forEach(li => li.classList.remove('is-active')), 900);
+      };
+      landingHighlightTimer = setTimeout(highlight, 500);
+
+      // Schreibmaschine: Wort tippen, kurz stehen lassen, löschen, nächstes – beim letzten Wort anhalten
+      const el = document.getElementById('lp-rotate');
+      if (!el) return;
+      let word = 0, chars = 0, deleting = false;
+      el.textContent = ' ';
+      el.classList.add('is-typing');
+      const tick = () => {
+        const text = LANDING_WORDS[word];
+        const isLast = word === LANDING_WORDS.length - 1;
+        let delay;
+        if (deleting) {
+          chars--;
+          el.textContent = text.slice(0, chars) || ' ';
+          if (chars <= 0) { deleting = false; word++; }
+          delay = 40;
+        } else {
+          chars++;
+          el.textContent = text.slice(0, chars);
+          if (chars < text.length) delay = 75;
+          else if (isLast) { landingTypeTimer = setTimeout(() => el.classList.remove('is-typing'), 1200); return; }   // eingestellt
+          else { deleting = true; delay = 1100; }
+        }
+        landingTypeTimer = setTimeout(tick, delay);
+      };
+      landingTypeTimer = setTimeout(tick, 600);
     }
 
     (function initLanding() {
@@ -6888,7 +7042,7 @@
           alert(resendError ? "Senden fehlgeschlagen: " + resendError.message : "Bestätigungsmail wurde erneut gesendet.");
         }
       } else if (error) {
-        alert("Anmeldung fehlgeschlagen: " + error.message);
+        alert("Anmeldung fehlgeschlagen: " + authErrorText(error));
       } else {
         closeModal('auth-modal');
       }
@@ -6914,7 +7068,7 @@
       });
 
       if (error) {
-        alert("Registrierungsfehler: " + error.message);
+        alert("Registrierung fehlgeschlagen: " + authErrorText(error));
       } else if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
         // Supabase verschleiert bereits registrierte Adressen (kein Fehler, aber keine Identität)
         alert("Zu dieser E-Mail-Adresse gibt es bereits ein Konto. Bitte melde dich an.");
@@ -6928,6 +7082,28 @@
         closeModal('auth-modal');
       }
     }
+
+    // Verständliche Texte für häufige Supabase-Auth-Fehler
+    function authErrorText(error) {
+      const m = String(error?.message || error || '');
+      if (/rate limit/i.test(m)) return 'Gerade wurden zu viele E-Mails verschickt. Bitte versuche es in etwa einer Stunde erneut.';
+      if (/invalid login credentials/i.test(m)) return 'E-Mail oder Passwort ist falsch.';
+      if (/already registered|already been registered/i.test(m)) return 'Zu dieser E-Mail-Adresse gibt es bereits ein Konto. Bitte melde dich an.';
+      if (/password should be at least|weak password/i.test(m)) return 'Das Passwort ist zu kurz oder zu schwach (mindestens 6 Zeichen).';
+      if (/invalid email|unable to validate email/i.test(m)) return 'Bitte gib eine gültige E-Mail-Adresse ein.';
+      if (/NetworkError|Failed to fetch|Load failed/i.test(m)) return 'Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung.';
+      return m;
+    }
+
+    // Link aus einer Auth-Mail hat nicht funktioniert (abgelaufen, schon benutzt, ungültig): verständlich erklären
+    (function reportAuthLinkError() {
+      if (!AUTH_LINK_ERROR) return;
+      try { history.replaceState(null, '', location.pathname); } catch (e) { /* egal */ }
+      const expired = /otp_expired|expired/i.test(AUTH_LINK_ERROR.code + ' ' + AUTH_LINK_ERROR.description);
+      setTimeout(() => alert(expired
+        ? 'Dieser Link ist abgelaufen oder wurde bereits benutzt.\n\nBestätigungslink: Melde dich einfach an – du kannst dir die Bestätigungsmail dann erneut schicken lassen.\nPasswort-Link: Fordere über „Passwort vergessen?“ einen neuen an.'
+        : `Der Link aus der E-Mail hat nicht funktioniert (${AUTH_LINK_ERROR.description || AUTH_LINK_ERROR.code}).`), 300);
+    })();
 
     // Rücksprung-Adresse für Bestätigungslinks: die aktuell geöffnete App-Seite (ohne Hash/Parameter)
     function authRedirectUrl() {
