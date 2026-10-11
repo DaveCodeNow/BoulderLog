@@ -1,0 +1,5 @@
+# Öffentliches Repository: nur die App selbst hochladen.
+# SQL-Skripte, E-Mail-Vorlagen, Diagnosen und Editor-Einstellungen bleiben lokal.
+*
+!.gitignore
+!index.html
