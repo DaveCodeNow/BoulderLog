@@ -3057,6 +3057,8 @@
 
     let scales = loadStorage('boulder_scales', defaultScales);
     let partnerGymMeta = {};
+    let myCommunities = [];        // Communities aus my_communities(): { id, name, my_role, my_status, members[], gyms[] }
+    let communityGymMeta = {};     // gymId -> { communityId, communityName, role: 'admin' | 'member' }
     let partnerAdminData = {};        // Hallenadmin: gymId -> { code, validUntil, invites: [] }
     let partnerProfiles = {};         // Partnerhalle: gymId -> { logo, gallery: [], news: [] }
     let partnerOfficialChallenges = {}; // Partnerhalle: gymId -> laufende/kommende offizielle Challenges
@@ -3444,6 +3446,8 @@
       });
       friendsCount = 0;
       localFriendsList = [];
+      myCommunities = [];
+      communityGymMeta = {};
       pendingRequests = loadStorage('boulder_pending_requests', []);
       socialFeed = [];
       myAvatarUrl = null;
@@ -3583,13 +3587,34 @@
             ? supabaseClient.from('partner_gyms').select('gym_id, slug, gyms(*)')
             : res;
         };
-        const [{ data: gymsData }, { data: partnerRows, error: partnerLoadError }, { data: memberRows }, { data: sectorStatusRows }] = await Promise.all([
+        const [{ data: gymsData }, { data: partnerRows, error: partnerLoadError }, { data: memberRows }, { data: sectorStatusRows }, { data: commData, error: commErr }] = await Promise.all([
           supabaseClient.from('gyms').select('*').eq('user_id', currentAuthUser.id),
           loadPartnerGyms(),
           supabaseClient.from('partner_gym_members').select('gym_id, role').eq('user_id', currentAuthUser.id),
-          supabaseClient.from('partner_sector_status').select('gym_id, sector_name, status, updated_at')
+          supabaseClient.from('partner_sector_status').select('gym_id, sector_name, status, updated_at'),
+          // Communities (supabase_community.sql): eigene Mitgliedschaften + offene Einladungen
+          supabaseClient.rpc('my_communities')
         ]);
         if (partnerLoadError) console.warn('Partnerhallen konnten nicht geladen werden:', partnerLoadError.message);
+        if (commErr) console.warn('Communities konnten nicht geladen werden (supabase_community.sql ausgeführt?):', commErr.message);
+
+        // Community-Hallen: Rolle je Halle; Hallen anderer Mitglieder zusätzlich laden
+        myCommunities = Array.isArray(commData) ? commData : [];
+        communityGymMeta = {};
+        myCommunities.filter(c => c.my_status === 'accepted').forEach(c => (c.gyms || []).forEach(g => {
+          communityGymMeta[String(g.id)] = { communityId: c.id, communityName: c.name, role: c.my_role === 'admin' ? 'admin' : 'member' };
+        }));
+        const ownGymIds = new Set((gymsData || []).map(g => String(g.id)));
+        const foreignCommGymIds = Object.keys(communityGymMeta).filter(id => !ownGymIds.has(id));
+        const { data: commGymRows } = foreignCommGymIds.length
+          ? await supabaseClient.from('gyms').select('*').in('id', foreignCommGymIds)
+          : { data: [] };
+
+        // Sektorstatus („Umbau“ / „neu“) je Halle – Partner- und Community-Hallen
+        const sectorStatusByGym = {};
+        (sectorStatusRows || []).forEach(s => {
+          (sectorStatusByGym[String(s.gym_id)] ||= {})[s.sector_name] = { status: s.status, updatedAt: s.updated_at };
+        });
 
         const gymRecords = [...(gymsData || [])];
         partnerGymMeta = {};
@@ -3600,25 +3625,29 @@
           partnerGymMeta[String(partner.gym_id)] = { slug: partner.slug, memberRole: null, sectorStatus: {}, statTargets: partner.stat_targets || {} };
         });
         (memberRows || []).forEach(m => { if (partnerGymMeta[String(m.gym_id)]) partnerGymMeta[String(m.gym_id)].memberRole = m.role; });
-        (sectorStatusRows || []).forEach(s => {
-          const meta = partnerGymMeta[String(s.gym_id)];
-          if (meta) meta.sectorStatus[s.sector_name] = { status: s.status, updatedAt: s.updated_at };
-        });
+        Object.values(partnerGymMeta).forEach(meta => { meta.sectorStatus = {}; });
+        Object.entries(sectorStatusByGym).forEach(([id, st]) => { if (partnerGymMeta[id]) partnerGymMeta[id].sectorStatus = st; });
+        (commGymRows || []).forEach(g => { if (!gymRecords.some(existing => String(existing.id) === String(g.id))) gymRecords.push(g); });
 
         scales = {};
         gymRecords.forEach(g => {
           const isPartner = !!partnerGymMeta[String(g.id)];
+          const comm = isPartner ? null : (communityGymMeta[String(g.id)] || null);
           const isOwner = g.user_id === currentAuthUser.id;
-          // Fremde Partnerhalle mit gleichem Namen wie ein eigenes Profil: Schlüssel eindeutig machen
+          // Fremde Partner-/Community-Halle mit gleichem Namen wie ein eigenes Profil: Schlüssel eindeutig machen
           let key = g.name;
-          if (!isOwner && scales[key]) key = `${g.name} (Partnerhalle)`;
+          if (!isOwner && scales[key]) key = comm ? `${g.name} (Community)` : `${g.name} (Partnerhalle)`;
           scales[key] = {
             db_id: g.id,
             isPartner,
             isOwner,
+            isCommunity: !!comm,
+            communityId: comm?.communityId || null,
+            communityName: comm?.communityName || null,
+            communityRole: comm?.role || null,
             partnerSlug: partnerGymMeta[String(g.id)]?.slug || null,
             memberRole: isOwner ? null : (partnerGymMeta[String(g.id)]?.memberRole || null),
-            sectorStatus: partnerGymMeta[String(g.id)]?.sectorStatus || {},
+            sectorStatus: sectorStatusByGym[String(g.id)] || {},
             statTargets: partnerGymMeta[String(g.id)]?.statTargets || {},
             hasFB: g.has_fb,
             cycleWeeks: g.cycle_weeks,
@@ -8840,8 +8869,11 @@
       document.getElementById('map-fab-gym-partner')?.classList.toggle('hidden', !selectedPartner);
       const roleNote = document.getElementById('map-gym-partner-role');
       if (roleNote) {
-        roleNote.classList.toggle('hidden', !selectedPartner);
-        roleNote.textContent = { admin: 'Partnerhalle · du bist Hallenadmin', setter: 'Partnerhalle · du bist Routesetter', guest: 'Partnerhalle · nur ansehen' }[partnerRoleFor(selectedGym)] || '';
+        const selectedComm = scales[selectedGym]?.isCommunity ? scales[selectedGym] : null;
+        roleNote.classList.toggle('hidden', !selectedPartner && !selectedComm);
+        roleNote.textContent = selectedComm
+          ? `Community „${selectedComm.communityName || ''}“ · ${selectedComm.communityRole === 'admin' ? 'du bist Admin' : 'du bist Mitglied'}`
+          : { admin: 'Partnerhalle · du bist Hallenadmin', setter: 'Partnerhalle · du bist Routesetter', guest: 'Partnerhalle · nur ansehen' }[partnerRoleFor(selectedGym)] || '';
       }
 
       fillPartnerIcons();
@@ -8874,8 +8906,12 @@
     // Die gewählte Ansicht (Nutzer*in / Routesetter / Hallenadmin) begrenzt diese Rolle nach oben:
     // als Hallenadmin in der Nutzer*innen-Ansicht ist die eigene Partnerhalle also wirklich nur lesbar.
     // Mehr Rechte als die echte Rolle gibt die Ansicht nie – serverseitig erzwingt RLS dasselbe.
+    // Rolle in geteilten Hallen: Partnerhalle (admin | setter | guest) oder Community-Halle (admin | guest = Mitglied).
+    // null = eigene Halle ohne Einschränkung. Für Communities gilt die echte Rolle – die Vorschau-Ansicht
+    // für Partner-Personal (partnerUiRole) deckelt nur Partnerhallen.
     function partnerRoleFor(gymName) {
       const gym = scales[gymName];
+      if (gym?.isCommunity) return gym.communityRole === 'admin' ? 'admin' : 'guest';
       if (!gym?.isPartner) return null;
       const actual = gym.isOwner ? 'admin' : gym.memberRole === 'routesetter' ? 'setter' : 'guest';
       const cap = PARTNER_VIEW_CAP[partnerUiRole] || 'guest';
@@ -10333,7 +10369,7 @@
 
     function getSectorStatus(gymName, sectorName) {
       const gym = scales[gymName];
-      const entry = gym?.isPartner ? gym.sectorStatus?.[sectorName] : null;
+      const entry = (gym?.isPartner || gym?.isCommunity) ? gym.sectorStatus?.[sectorName] : null;
       if (!entry) return null;
       if (entry.status === 'new' && entry.updatedAt && Date.now() - new Date(entry.updatedAt).getTime() > SECTOR_NEW_DAYS * 864e5) return null;
       return entry.status;
@@ -10342,7 +10378,7 @@
     // Nutzer*innen sehen an Wänden im Umbau keine Routen; Admin & Setter sehen weiterhin alles
     function routeHiddenBySectorStatus(route, gymName) {
       const gym = scales[gymName];
-      if (!gym?.isPartner || canSetSectorStatus(gymName)) return false;
+      if (!(gym?.isPartner || gym?.isCommunity) || canSetSectorStatus(gymName)) return false;
       if (!Object.values(gym.sectorStatus || {}).some(e => e.status === 'resetting')) return false;
       let sector = route.sectorName;
       if (!sector) sector = findRouteSector(gymName, null, Number(route.posX), Number(route.posY))?.name || null;
@@ -11803,7 +11839,7 @@
     // Gesendet wird eine Momentaufnahme: Halle (Skala, Sektoren, Plan, gebaute Wände) und alle Routen mit ihren Infos.
     // Beim Übernehmen entsteht daraus eine neue, eigenständige Halle der Empfänger*in – nichts bleibt verknüpft.
     // Persönliches (Durchstiege, Bewertungen, Kommentare) steckt in map_route_interactions und wird nicht kopiert.
-    const GYM_COPY_OMIT = ['id', 'user_id', 'created_at', 'updated_at'];
+    const GYM_COPY_OMIT = ['id', 'user_id', 'created_at', 'updated_at', 'community_id'];   // Kopie ist immer eine eigene Halle
     const ROUTE_COPY_OMIT = ['id', 'gym_id', 'created_by', 'created_at', 'updated_at'];
     const omitKeys = (row, keys) => Object.fromEntries(Object.entries(row || {}).filter(([k]) => !keys.includes(k)));
     let gymShareModalGym = null;
@@ -12023,7 +12059,7 @@
               <span class="gc-chevron" aria-hidden="true">›</span>
             </summary>
             <div class="px-4 pb-4 sm:px-5 sm:pb-5 space-y-4">
-            <p class="text-[11px] text-slate-400">${isHome ? '<span class="text-emerald-400 font-semibold">⭐ Stammhalle</span> · ' : ''}${isReadOnly ? (isPartnerSetter(gymName) ? 'Partnerhalle · du bist Routesetter' : 'Partnerhallenprofil · schreibgeschützt') : `${isPartner ? 'Partnerhalle · du bist Hallenadmin · ' : ''}Umschrauben alle ${scale.cycleWeeks || 4} Wochen`}</p>
+            <p class="text-[11px] text-slate-400">${isHome ? '<span class="text-emerald-400 font-semibold">⭐ Stammhalle</span> · ' : ''}${scale.isCommunity ? `Community „${escapeHtmlText(scale.communityName || '')}“ · ${isReadOnly ? 'du bist Mitglied (nur ansehen)' : `du bist Admin · Umschrauben alle ${scale.cycleWeeks || 4} Wochen`}` : isReadOnly ? (isPartnerSetter(gymName) ? 'Partnerhalle · du bist Routesetter' : 'Partnerhallenprofil · schreibgeschützt') : `${isPartner ? 'Partnerhalle · du bist Hallenadmin · ' : ''}Umschrauben alle ${scale.cycleWeeks || 4} Wochen`}</p>
 
             ${partnerProfileHtml(gymName)}
 
@@ -12043,7 +12079,7 @@
               ${isReadOnly ? '<button disabled aria-disabled="true" class="gc-btn opacity-50 cursor-not-allowed">🔒 Nur ansehen</button>' : `<button onclick="openCustomScaleModal('${escapeHtmlText(gymName)}')" class="gc-btn primary">✏️ Bearbeiten</button>`}
               ${isPartner && !adminView ? `<button onclick="selectPartnerGym(partnerGymKeyById('${escapeHtmlText(String(scale.db_id))}'))" class="gc-btn">🗺️ Zur Karte</button>` : ''}
               <button onclick="toggleHomeGym('${gymName}')" class="gc-btn ${isHome ? 'home-on' : ''}" title="Diese Halle wird beim Öffnen der App automatisch ausgewählt">${isHome ? '⭐ Stammhalle' : '☆ Stammhalle'}</button>
-              ${isReadOnly ? '' : `<button onclick="deleteCustomScale('${escapeHtmlText(gymName)}')" class="gc-btn danger">🗑️ Löschen</button>`}
+              ${isReadOnly || (scale.isCommunity && !scale.isOwner) ? '' : `<button onclick="deleteCustomScale('${escapeHtmlText(gymName)}')" class="gc-btn danger">🗑️ Löschen</button>`}
             </div>
             ${!isPartner && scale.isOwner && scale.db_id && !adminView ? `<button onclick="openGymShareModal(partnerGymKeyById('${escapeHtmlText(String(scale.db_id))}'))" class="gc-btn w-full" style="flex:none">✉️ Als Kopie an Freund*in senden</button>` : ''}
             ${adminView ? partnerAdminSectionHtml(gymName) : ''}
@@ -12335,7 +12371,15 @@
     }
 
     async function deleteCustomScale(gymName) {
-      if (!confirm(`Möchtest du die Halle "${gymName}" wirklich löschen?`)) return;
+      const sc = scales[gymName];
+      if (sc?.isCommunity && (!sc.isOwner || sc.communityRole !== 'admin')) {
+        alert('Community-Hallen kann nur die Person löschen, die sie angelegt hat – und nur als Admin.');
+        return;
+      }
+      const question = sc?.isCommunity
+        ? `„${gymName}“ gehört zur Community „${sc.communityName || ''}“. Beim Löschen verschwinden Halle und Routen für alle Mitglieder.\n\nWirklich löschen?`
+        : `Möchtest du die Halle "${gymName}" wirklich löschen?`;
+      if (!confirm(question)) return;
       if (mapLayouts[gymName]) { delete mapLayouts[gymName]; saveMapLayouts(); }   // erst nach der Bestätigung
       if (homeGym === gymName) setHomeGym('');
       if (gymExtras[gymName]) { delete gymExtras[gymName]; saveGymExtras(); }
