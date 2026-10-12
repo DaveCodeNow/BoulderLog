@@ -720,11 +720,6 @@
 
     <!-- VIEW 0: HALLENKARTE -->
     <div id="view-map" class="hidden space-y-6">
-      <div class="px-1">
-        <h2 class="text-xl font-bold text-slate-100">Interaktive Hallenkarte</h2>
-        <p class="text-xs text-slate-400">Mausrad oder zwei Finger zoomen das Kartenfenster, Ziehen verschiebt es. Tippe auf einen Sektor, um ihn groß zu zeigen. Um die Seite zu bewegen, einfach neben der Karte wischen.</p>
-      </div>
-
       <!-- FABs OBEN LINKS: Hallenprofil & Routenliste -->
       <!-- Logo der Partnerhalle oben rechts (nur Partnerhallen mit Logo im Hallenprofil).
            Das Logo füllt die Kachel randlos aus; die Kachel übernimmt sein Seitenverhältnis, die runden Ecken schneiden es ab. -->
@@ -4574,10 +4569,20 @@
       const D = getDefaultMapWin();
       if (!D.P) return false;
       const f = getMapFrameInsets();
+      const H = Math.round(D.h + f.t + f.b);
       c.style.width = Math.round(D.w + f.l + f.r) + 'px';
-      c.style.height = Math.round(D.h + f.t + f.b) + 'px';
+      c.style.height = H + 'px';
       c.style.left = ((f.r - f.l) / 2) + 'px';
-      c.style.marginTop = (-f.t) + 'px';
+      // Fenster vertikal mittig im sichtbaren Bereich (zwischen Bildschirmoberkante und unterer Navigationsleiste).
+      // Außerhalb des Baumodus wird das tatsächliche (zugeschnittene) Fenster zentriert; im Baumodus bleibt das
+      // Standardfenster der Bezugspunkt, damit der Inhalt beim Ziehen der Fenster-Griffe nicht springt.
+      const wrap = mapEl('map-container-wrap');
+      const wrapTop = wrap ? wrap.getBoundingClientRect().top + window.scrollY : 0;
+      const visH = getVisibleArea().h;
+      const top = builderActive
+        ? Math.max(0, (visH - D.h) / 2 - wrapTop) - f.t
+        : Math.max(0, (visH - H) / 2 - wrapTop);
+      c.style.marginTop = Math.round(top) + 'px';
       return true;
     }
 
