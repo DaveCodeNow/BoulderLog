@@ -505,6 +505,9 @@
     .gl-logo path, .gl-logo polygon, .gl-logo rect, .gl-logo circle { fill: var(--logo-fg); }
     .gl-logo .gl-grey { fill: var(--logo-grey); }
     .gl-logo .gl-accent { fill: var(--accent); }
+    /* Fest positionierte Elemente der Kartenansicht (FABs, Popover, Logo) richten sich nur nach top/bottom –
+       der Abstand aus space-y-6 der Ansicht würde sie sonst je nach Reihenfolge unterschiedlich verschieben */
+    #view-map > .fixed { margin-top: 0; }
     /* Hallenkarte oben rechts, eigene Halle: BoulderLog-Zeichen frei stehend wie im Homebereich (ohne Kachel) */
     #map-partner-logo.is-app { width: 2.75rem; height: 2.75rem; max-width: none; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; align-items: center; justify-content: center; margin-top: -.125rem; }   /* Mitte auf Höhe der FABs oben links */
     #map-partner-logo .map-app-logo { height: 100%; width: 100%; }
