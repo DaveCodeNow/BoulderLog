@@ -28,11 +28,13 @@
       document.addEventListener('touchmove', function (e) {
         if (e.touches && e.touches.length > 1) e.preventDefault();
       }, { passive: false });
-      // Double-Tap-Zoom (Fallback für ältere iOS-Versionen)
+      // Double-Tap-Zoom (Fallback für ältere iOS-Versionen).
+      // Ausnahme: Chips im Kartenfilter – dort ist Doppeltippen eine Funktion (Merkmal ausblenden) und braucht den zweiten Klick.
+      // Zoom bleibt trotzdem aus (touch-action auf html/body und den Chips).
       var lastTouchEnd = 0;
       document.addEventListener('touchend', function (e) {
         var now = Date.now();
-        if (now - lastTouchEnd < 300 && !(e.target.closest && e.target.closest('input, textarea, select'))) e.preventDefault();
+        if (now - lastTouchEnd < 300 && !(e.target.closest && e.target.closest('input, textarea, select, #map-filter-drawer label'))) e.preventDefault();
         lastTouchEnd = now;
       }, { passive: false });
       // Strg + Mausrad / Trackpad-Pinch zoomt nicht die Seite
@@ -716,6 +718,10 @@
       </div>
 
       <!-- FABs OBEN LINKS: Hallenprofil & Routenliste -->
+      <!-- Logo der Partnerhalle oben rechts (nur Partnerhallen mit Logo im Hallenprofil) -->
+      <div id="map-partner-logo" style="top: calc(0.75rem + env(safe-area-inset-top, 0px));" class="hidden fixed right-3 z-30 pointer-events-none select-none h-10 max-w-[7.5rem] items-center justify-center px-2 py-1 rounded-xl bg-slate-800/80 border border-slate-600/70 shadow-lg">
+        <img alt="" class="block h-full w-auto max-w-full object-contain" draggable="false">
+      </div>
       <div id="map-fab-top" style="top: calc(0.75rem + env(safe-area-inset-top, 0px));" class="hidden fixed left-3 z-40 flex-col gap-2">
         <button id="map-fab-gym-btn" onclick="toggleMapPopover('map-gym-popover')" class="relative w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-600/70 shadow-lg backdrop-blur flex items-center justify-center transition active:scale-95" title="Hallenprofil wählen">
           <span class="text-base">🏢</span>
@@ -4298,6 +4304,26 @@
       if (!g) return;
       g.classList.toggle('hidden', !show);
       g.classList.toggle('flex', show);
+      updateMapPartnerLogo();
+    }
+
+    // Logo der Partnerhalle oben rechts: nur zusammen mit den FABs oben links (also auf der Hallenkarte), nicht im Baumodus
+    function updateMapPartnerLogo() {
+      const box = document.getElementById('map-partner-logo');
+      if (!box) return;
+      const gym = getMapGymName();
+      const logo = partnerProfileFor(gym)?.logo || null;
+      const fabsShown = !document.getElementById('map-fab-top')?.classList.contains('hidden');
+      const img = box.querySelector('img');
+      // Kachel erst zeigen, wenn das Bild wirklich geladen ist – kein leerer Kasten ohne Logo oder bei kaputtem Bild
+      const setVisible = on => { box.classList.toggle('hidden', !on); box.classList.toggle('flex', on); };
+      if (!logo || !fabsShown || builderActive) { setVisible(false); return; }
+      img.alt = `Logo ${gym}`;
+      if (img.getAttribute('src') === logo) { setVisible(img.complete && img.naturalWidth > 0); return; }
+      setVisible(false);
+      img.onload = () => { if (img.getAttribute('src') === logo) updateMapPartnerLogo(); };
+      img.onerror = () => setVisible(false);
+      img.src = logo;
     }
 
     function closeMapPopovers(exceptId) {
@@ -5220,6 +5246,7 @@
       renderMapVector();
       renderBuilderOverlay();
       renderMapPins(selectedGym);
+      updateMapPartnerLogo();
     }
 
     // =====================================================================
@@ -9209,6 +9236,7 @@
       partnerProfiles[String(scale.db_id)] = normalizePartnerProfile(profile);
       closeModal('partner-profile-modal');
       renderGymScalesView();
+      updateMapPartnerLogo();
     }
 
     // Hallenkarten neu zeichnen (enthalten in der Admin-Ansicht die Partner-Verwaltung)
