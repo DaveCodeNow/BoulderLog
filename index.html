@@ -4316,6 +4316,16 @@
       if (lst) {
         lst.style.transform = `translate(${x}px, ${y}px) scale(${k})`;
         lst.style.setProperty('--lab-s', (1 / total).toFixed(4));
+        // Wandnamen erst ab der eingestellten Zoomstufe einblenden (weicher Übergang kurz davor)
+        const lth = getLabelZoomThreshold();
+        let lop = 1;
+        if (lth > 0) {
+          const from = lth / MAP_LABEL_FADE_BAND;
+          lop = Math.min(1, Math.max(0, (s - from) / (lth - from)));
+          if (builderActive) lop = Math.max(lop, 0.35);   // im Baumodus nur abgeschwächt, damit die Namen bearbeitbar bleiben
+        }
+        lst.style.opacity = lop >= 1 ? '' : lop.toFixed(3);
+        lst.style.visibility = lop <= 0 ? 'hidden' : '';
       }
       container.style.setProperty('--ui-s', (1 / s).toFixed(4));
       const ui = container.querySelector('[data-map-ui]');
@@ -4860,6 +4870,14 @@
       return v > 0 ? v : MAP_ZOOM_THRESHOLD;
     }
 
+    // Ab welchem Fenster-Zoom die Wandnamen eingeblendet werden (pro Halle einstellbar, 0 = immer sichtbar)
+    const MAP_LABEL_FADE_BAND = 1.25;   // Einblenden beginnt bei Schwelle / 1.25 und ist an der Schwelle abgeschlossen
+    function getLabelZoomThreshold() {
+      const L = getMapLayout();
+      const v = L ? Number(L.labelZoom) : 0;
+      return v > 0 ? v : 0;
+    }
+
     function renderMapVector() {
       const svg = mapEl('map-vector-svg');
       const labels = mapEl('map-labels-layer');
@@ -5020,11 +5038,11 @@
       L.sectors.forEach(sc => { sc.discipline = sectorDiscipline(L, sc); });
       const stamp = new Date().toISOString();
       const hasViewport = !viewportIsDefault(L.viewport);
-      const hasSettings = !!(L.pinZoom || L.labelSize === 'large');
+      const hasSettings = !!(L.pinZoom || L.labelZoom || L.labelSize === 'large');
       if (L.mats.length === 0 && L.sectors.length === 0 && !hasViewport && !hasSettings) {
         delete mapLayouts[gym];
       } else {
-        mapLayouts[gym] = { version: 1, aspect: L.aspect, updatedAt: stamp, mats: L.mats, sectors: L.sectors, viewport: hasViewport ? L.viewport : null, pinZoom: L.pinZoom || null, labelSize: L.labelSize || 'normal' };
+        mapLayouts[gym] = { version: 1, aspect: L.aspect, updatedAt: stamp, mats: L.mats, sectors: L.sectors, viewport: hasViewport ? L.viewport : null, pinZoom: L.pinZoom || null, labelZoom: L.labelZoom || null, labelSize: L.labelSize || 'normal' };
       }
       saveMapLayouts();
       applySectorInclines();   // geänderte Sektor-Neigungen sofort an Routen ohne eigene Neigung weitergeben
@@ -5512,6 +5530,7 @@
       const on = 'bg-sky-600 text-white', off = 'bg-slate-700 text-slate-300 hover:bg-slate-600';
       const near = v => Math.abs(th - v) < 0.01;
       const large = L.labelSize === 'large';
+      const lth = getLabelZoomThreshold();
       const b = 'py-1.5 rounded-lg text-[11px] font-semibold transition ';
       return `<div class="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 space-y-3 mt-2">
         <p class="text-xs font-bold text-slate-200">Darstellung</p>
@@ -5526,6 +5545,18 @@
             <span id="bld-pinzoom-val" class="font-mono text-sky-300 w-10 text-right">${Math.round(th * 100)} %</span></label>
           <button onclick="builderSetPinZoom(mapWin.s)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold">Aktuellen Zoom übernehmen</button>
           <p class="hidden sm:block text-[10px] text-slate-500">Tipp: Karte auf die gewünschte Größe zoomen und „Aktuellen Zoom übernehmen“ tippen.</p>
+        </div>
+        <div class="space-y-1.5">
+          <p class="text-[11px] text-slate-400">Wandnamen einblenden</p>
+          <p class="hidden sm:block text-[11px] text-slate-400 leading-snug">Die Namen erscheinen erst ab diesem Zoom (kurz davor werden sie weich eingeblendet).</p>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="builderSetLabelZoom(0)" class="${b}${!lth ? on : off}">Immer</button>
+            <button onclick="builderSetLabelZoom(${MAP_PIN_ZOOM_PRESETS.early})" class="${b}${lth ? on : off}">Ab Zoomstufe</button>
+          </div>
+          <label class="flex items-center gap-2 text-[11px] text-slate-400">Eigener Wert
+            <input type="range" min="110" max="600" step="10" value="${Math.round((lth || 1.1) * 100)}" oninput="builderSetLabelZoom(this.value / 100, true)" onchange="renderBuilderContext()" class="flex-1 accent-sky-500">
+            <span id="bld-labelzoom-val" class="font-mono text-sky-300 w-10 text-right">${lth ? Math.round(lth * 100) + ' %' : 'immer'}</span></label>
+          <button onclick="builderSetLabelZoom(Math.max(mapWin.s, 1.1))" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold">Aktuellen Zoom übernehmen</button>
         </div>
         <div class="space-y-1.5">
           <p class="text-[11px] text-slate-400">Schriftgröße der Wandnamen</p>
@@ -5543,6 +5574,16 @@
       builderLayout.pinZoom = v;
       applyMapTransform();   // schaltet die Punkte live um
       if (fromSlider) { const el = mapEl('bld-pinzoom-val'); if (el) el.innerText = Math.round(v * 100) + ' %'; }
+      else renderBuilderContext();
+    }
+
+    function builderSetLabelZoom(v, fromSlider) {
+      if (!builderLayout) return;
+      v = Number(v) > 0 ? Math.min(6, Math.max(1.1, Math.round(Number(v) * 100) / 100)) : 0;
+      builderLayout.labelZoom = v || null;
+      applyMapTransform();   // blendet die Namen live ein/aus
+      // Beim Ziehen nur die Anzeige aktualisieren (Neuaufbau würde den Regler unterbrechen), danach per onchange alles
+      if (fromSlider) { const el = mapEl('bld-labelzoom-val'); if (el) el.innerText = Math.round(v * 100) + ' %'; }
       else renderBuilderContext();
     }
 
