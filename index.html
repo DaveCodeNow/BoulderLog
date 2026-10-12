@@ -1869,13 +1869,15 @@
         <input type="hidden" id="mri-route-id">
         <div>
           <label class="block text-xs text-slate-400 mb-1">Mein Status für diese Route</label>
-          <select id="mri-status" onchange="onMriStatusChange()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
-            <option value="open">Offen</option>
-            <option value="project">🎯 Projekt</option>
-            <option value="attempted">🔼 Versucht</option>
-            <option value="topped">🏆 Durchstiegen</option>
-            <option value="flashed">⚡ Flash-Begehung (1. Versuch)</option>
-          </select>
+          <!-- Status-Karten wie im Filter, hier aber Einfachauswahl (Radio); der Wert liegt weiter im versteckten #mri-status -->
+          <input type="hidden" id="mri-status" value="open">
+          <div class="inc-grid bg-slate-900 p-2 rounded border border-slate-700" role="radiogroup" aria-label="Mein Status für diese Route">
+            <label class="inc-chip st-chip" style="--stc:#94a3b8"><input type="radio" name="mri-status-r" class="mri-status-radio" value="open" onchange="setMriStatus(this.value)"><span class="st-ico" aria-hidden="true">📍</span><span>Offen</span></label>
+            <label class="inc-chip st-chip" style="--stc:#a78bfa"><input type="radio" name="mri-status-r" class="mri-status-radio" value="project" onchange="setMriStatus(this.value)"><span class="st-ico" aria-hidden="true">🎯</span><span>Projekt</span></label>
+            <label class="inc-chip st-chip" style="--stc:#38bdf8"><input type="radio" name="mri-status-r" class="mri-status-radio" value="attempted" onchange="setMriStatus(this.value)"><span class="st-ico" aria-hidden="true">🔼</span><span>Versucht</span></label>
+            <label class="inc-chip st-chip" style="--stc:#34d399"><input type="radio" name="mri-status-r" class="mri-status-radio" value="topped" onchange="setMriStatus(this.value)"><span class="st-ico" aria-hidden="true">🏆</span><span>Durchstiegen</span></label>
+            <label class="inc-chip st-chip" style="--stc:rgb(var(--gold))"><input type="radio" name="mri-status-r" class="mri-status-radio" value="flashed" onchange="setMriStatus(this.value)"><span class="st-ico" aria-hidden="true">⚡</span><span>Flash-Begehung</span></label>
+          </div>
         </div>
 
         <div id="mri-attempts-wrap" class="hidden">
@@ -6869,6 +6871,7 @@
       const isProj = document.getElementById('mri-status').value === 'project';
       panel.classList.toggle('hidden', !isProj);
       if (!isProj) return;
+      loadConfetti().catch(() => {});   // schon vorladen, damit das Konfetti beim Toppen sofort startet
       const id = String(activeInteractionRouteId);
       const route = mapRoutes.find(r => String(r.id) === id);
       const startIso = routeExtras[id]?.projectAt || route?.interaction?.projectAt || null;
@@ -6897,6 +6900,53 @@
       await saveMapRouteInteraction({ preventDefault() {} }, { projectAction: action });
     }
 
+    // ---------- Konfetti beim getoppten Projekt (canvas-confetti, wird erst bei Bedarf nachgeladen) ----------
+    const CONFETTI_SRC = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
+    let confettiLoading = null;
+    function loadConfetti() {
+      if (window.confetti) return Promise.resolve(window.confetti);
+      if (!confettiLoading) {
+        confettiLoading = new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = CONFETTI_SRC; s.async = true;
+          s.onload = () => window.confetti ? resolve(window.confetti) : reject();
+          s.onerror = () => { confettiLoading = null; s.remove(); reject(); };   // offline: später erneut versuchen
+          document.head.appendChild(s);
+        });
+      }
+      return confettiLoading;
+    }
+    // CSS-Farbe (auch var()/rgb()) als Hex – canvas-confetti versteht nur Hex
+    function cssColorHex(css) {
+      const el = document.createElement('span');
+      el.style.color = css; el.style.display = 'none';
+      document.body.appendChild(el);
+      const m = getComputedStyle(el).color.match(/\d+(\.\d+)?/g) || [];
+      el.remove();
+      return m.length >= 3 ? '#' + m.slice(0, 3).map(n => Math.round(Number(n)).toString(16).padStart(2, '0')).join('') : null;
+    }
+    async function celebrateWithConfetti() {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      let confetti;
+      try { confetti = await loadConfetti(); } catch (e) { return; }   // ohne Konfetti weiter – der Glückwunsch steht trotzdem
+      // Farben aus dem App-Design: Akzent (zwei Töne), Gold und ein helles Weiß – passt in Dark und Light
+      const colors = ['var(--accent)', 'rgb(var(--ac-300))', 'rgb(var(--ac-500))', 'rgb(var(--gold))', '#f8fafc']
+        .map(cssColorHex).filter(Boolean);
+      const base = { colors, zIndex: 90, disableForReducedMotion: true };
+      // 1) Zwei Konfetti-Kanonen von links und rechts unten
+      confetti({ ...base, particleCount: 80, angle: 60, spread: 60, startVelocity: 68, origin: { x: 0, y: 1 } });
+      confetti({ ...base, particleCount: 80, angle: 120, spread: 60, startVelocity: 68, origin: { x: 1, y: 1 } });
+      // 2) Danach kurzer, sanfter Regen von oben
+      setTimeout(() => {
+        const end = Date.now() + 1600;
+        (function rain() {
+          confetti({ ...base, particleCount: 2, angle: 270, spread: 70, startVelocity: 6, gravity: 0.7, drift: (Math.random() - 0.5) * 0.8,
+            ticks: 320, scalar: 0.9, origin: { x: Math.random(), y: -0.05 } });
+          if (Date.now() < end) requestAnimationFrame(rain);
+        })();
+      }, 350);
+    }
+
     let pendingProjectTopInfo = null;
     function showProjectToppedModal(info) {
       pendingProjectTopInfo = info;
@@ -6907,6 +6957,7 @@
       if (info.days !== null && info.days > 0) chips.push(chip(info.days, info.days === 1 ? 'Tag' : 'Tage'));
       document.getElementById('ptm-stats').innerHTML = chips.join('');
       openModal('project-top-modal');
+      celebrateWithConfetti();
     }
 
     function startProjectInsightEntry() {
@@ -6923,8 +6974,16 @@
       c.focus();
     }
 
+    // Status-Karte in der Routenansicht gewählt
+    function setMriStatus(v) {
+      document.getElementById('mri-status').value = v;
+      onMriStatusChange();
+    }
+
     function onMriStatusChange() {
       const status = document.getElementById('mri-status').value;
+      // Karten an den (evtl. per Code gesetzten) Status angleichen
+      document.querySelectorAll('input.mri-status-radio').forEach(el => { el.checked = el.value === status; });
       const wrap = document.getElementById('mri-attempts-wrap');
       const input = document.getElementById('mri-attempts');
       const hint = document.getElementById('mri-attempts-hint');
