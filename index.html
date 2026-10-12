@@ -3121,12 +3121,10 @@
       root.querySelectorAll('.partner-icon:empty').forEach(el => { el.innerHTML = PARTNER_ICON_SVG; });
       root.querySelectorAll('.community-icon:empty').forEach(el => { el.innerHTML = COMMUNITY_ICON_SVG; });
     }
-    // <option>-Liste der Hallen: Community-Hallen in eigener Gruppe (Symbole sind in Auswahllisten nicht möglich)
+    // <option>-Liste der Hallen: alle Hallen in einer Liste – wie bei Partnerhallen kennzeichnet das Symbol
+    // neben der Auswahl bzw. am Hallen-Button die gewählte Halle (Symbole sind in Auswahllisten nicht möglich)
     function gymOptionsHtml(keys = Object.keys(scales)) {
-      const opt = g => `<option value="${escapeHtmlText(g)}">${escapeHtmlText(g)}</option>`;
-      const comm = keys.filter(g => scales[g]?.isCommunity);
-      const rest = keys.filter(g => !scales[g]?.isCommunity);
-      return rest.map(opt).join('') + (comm.length ? `<optgroup label="Community-Hallen">${comm.map(opt).join('')}</optgroup>` : '');
+      return keys.map(g => `<option value="${escapeHtmlText(g)}">${escapeHtmlText(g)}</option>`).join('');
     }
     let projects = loadStorage('boulder_projects', []);
     let sessions = loadStorage('boulder_sessions', []);
@@ -4626,12 +4624,37 @@
       return { w, h, P };
     }
 
-    // Zuschnitt des Fensters: Abstände (px) der vier Kanten gegenüber dem Standardfenster (positiv = größer, negativ = beschnitten)
+    // Lage der eingepassten Karte im Standardfenster (px) – wie in getMapFit
+    function mapContentBox(D, gym) {
+      const aspect = getStageAspect(gym || getMapGymName()) || 0.75;
+      const Sw = D.w, Sh = D.w / aspect;
+      const k0 = Math.min(D.w / Sw, D.h / Sh);
+      const w = Sw * k0, h = Sh * k0;
+      return { x: (D.w - w) / 2, y: (D.h - h) / 2, w, h };
+    }
+
+    // Zuschnitt des Fensters: Abstände (px) der vier Kanten gegenüber dem Standardfenster (positiv = größer, negativ = beschnitten).
+    // Gespeichert wird er relativ zur Karte selbst (viewport.c = [links, rechts, oben, unten] als Anteil der Kartenbreite/-höhe),
+    // damit jedes Gerät – egal welches Seitenverhältnis – denselben Kartenausschnitt zeigt.
+    // Ältere Zuschnitte (viewport.l/r/t/b relativ zum Standardfenster) werden weiter gelesen und beim nächsten Speichern umgewandelt.
     function getMapFrameInsets(gym) {
       const D = getDefaultMapWin();
       const L = builderActive ? builderLayout : mapLayouts[gym || getMapGymName()];
       const v = (L && L.viewport) || {};
+      if (Array.isArray(v.c) && v.c.length === 4 && D.w) {
+        const C = mapContentBox(D, gym);
+        const left = C.x + v.c[0] * C.w, right = C.x + v.c[1] * C.w, top = C.y + v.c[2] * C.h, bottom = C.y + v.c[3] * C.h;
+        return clampFrameInsets({ l: -left, r: right - D.w, t: -top, b: bottom - D.h }, D);
+      }
       return { l: (v.l || 0) * D.w, r: (v.r || 0) * D.w, t: (v.t || 0) * D.h, b: (v.b || 0) * D.h };
+    }
+
+    // Abstände (px) -> gespeicherter Zuschnitt relativ zur Karte; null = Standardfenster
+    function viewportFromInsets(f, D, gym) {
+      if ([f.l, f.r, f.t, f.b].every(x => Math.abs(x) < 0.5)) return null;
+      const C = mapContentBox(D, gym);
+      const r4 = x => Math.round(x * 10000) / 10000;
+      return { c: [r4((-f.l - C.x) / C.w), r4((D.w + f.r - C.x) / C.w), r4((-f.t - C.y) / C.h), r4((D.h + f.b - C.y) / C.h)] };
     }
 
     function frameLimits(D) {
@@ -4656,13 +4679,15 @@
       if (!builderLayout) return;
       const D = getDefaultMapWin();
       f = clampFrameInsets({ ...f }, D);
-      const r3 = v => Math.round(v * 1000) / 1000;
-      builderLayout.viewport = { l: r3(f.l / D.w), r: r3(f.r / D.w), t: r3(f.t / D.h), b: r3(f.b / D.h) };
+      const vp = viewportFromInsets(f, D);
+      if (vp) builderLayout.viewport = vp; else delete builderLayout.viewport;
       refreshMapFrame();
     }
 
     function viewportIsDefault(v) {
-      return !v || (!v.l && !v.r && !v.t && !v.b);
+      if (!v) return true;
+      if (Array.isArray(v.c)) return false;
+      return !v.l && !v.r && !v.t && !v.b;
     }
 
     // Größe/Position des Containers setzen (Zuschnittmaske)
@@ -5466,6 +5491,12 @@
       builderDraft = null;
       const L = builderLayout;
       const changed = JSON.stringify(L) !== builderOriginal;
+      // Älteren Zuschnitt (relativ zum Standardfenster) in das geräteunabhängige Format umwandeln – so wie er hier gerade aussieht
+      if (L.viewport && !Array.isArray(L.viewport.c)) {
+        const D = getDefaultMapWin();
+        const vp = viewportFromInsets(getMapFrameInsets(gym), D);
+        if (vp) L.viewport = vp; else delete L.viewport;
+      }
       L.mats.forEach(m => { m.type = matType(m); });
       L.sectors.forEach(sc => { sc.discipline = sectorDiscipline(L, sc); });
       const stamp = new Date().toISOString();
@@ -8867,14 +8898,23 @@
     }
 
     // ---------- Community-Feed: Routen gesetzt, Umbau, Hallenkarte (supabase_community.sql) ----------
-    // Aktivität protokollieren – nur in Community-Hallen; ein Fehler blockiert nie die eigentliche Aktion
+    // Aktivität protokollieren – nur in Community-Hallen; ein Fehler blockiert nie die eigentliche Aktion,
+    // wird aber einmal pro Sitzung kurz angezeigt (sonst bliebe ein leerer Community-Feed unerklärt)
+    let communityLogWarned = false;
     async function logCommunityActivity(gymName, type, detail = null, status = null) {
       const sc = scales[gymName];
       if (!currentAuthUser || !sc?.isCommunity || !sc.db_id) return;
+      let message = null;
       try {
         const { error } = await supabaseClient.rpc('community_log_activity', { p_gym_id: sc.db_id, p_type: type, p_detail: detail, p_status: status, p_count: 1 });
-        if (error) console.warn('Community-Feed konnte nicht aktualisiert werden:', error.message);
-      } catch (err) { console.warn('Community-Feed konnte nicht aktualisiert werden:', err?.message || err); }
+        if (error) message = error.message;
+      } catch (err) { message = err?.message || String(err); }
+      if (!message) return;
+      console.warn('Community-Feed konnte nicht aktualisiert werden:', message);
+      if (!communityLogWarned) {
+        communityLogWarned = true;
+        showAppToast(`Community-Feed nicht aktualisiert: ${message}`);
+      }
     }
 
     async function loadCommunityFeed(render = true) {
