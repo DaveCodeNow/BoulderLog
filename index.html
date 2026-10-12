@@ -505,6 +505,9 @@
     .gl-logo path, .gl-logo polygon, .gl-logo rect, .gl-logo circle { fill: var(--logo-fg); }
     .gl-logo .gl-grey { fill: var(--logo-grey); }
     .gl-logo .gl-accent { fill: var(--accent); }
+    /* Hallenkarte oben rechts, eigene Halle: BoulderLog-Zeichen frei stehend wie im Homebereich (ohne Kachel) */
+    #map-partner-logo.is-app { width: 2.75rem; height: 2.75rem; max-width: none; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; align-items: center; justify-content: center; margin-top: -.125rem; }   /* Mitte auf Höhe der FABs oben links */
+    #map-partner-logo .map-app-logo { height: 100%; width: 100%; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden auth-pending">
@@ -4337,16 +4340,41 @@
     }
 
     // Logo der Partnerhalle oben rechts: nur zusammen mit den FABs oben links (also auf der Hallenkarte), nicht im Baumodus
+    // Eigene (von Nutzer*innen angelegte) Hallen: an derselben Stelle das BoulderLog-Zeichen. Es ist ein Klon des
+    // Website-Logos (ohne Schriftzug) und folgt deshalb automatisch Akzentfarbe und Hell-/Dunkelmodus.
+    function mapAppLogoEl(box) {
+      let el = box.querySelector('.map-app-logo');
+      if (el) return el;
+      const src = document.querySelector('main .gl-logo');
+      if (!src) return null;
+      el = src.cloneNode(true);
+      el.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));   // IDs im Dokument eindeutig halten
+      el.classList.add('map-app-logo');
+      el.setAttribute('viewBox', '108 36 376 376');   // nur das Zeichen, wie beim Tab-Icon
+      el.setAttribute('aria-label', 'BoulderLog');
+      box.appendChild(el);
+      return el;
+    }
+
     function updateMapPartnerLogo() {
       const box = document.getElementById('map-partner-logo');
       if (!box) return;
       const gym = getMapGymName();
+      const isPartner = !!scales[gym]?.isPartner;
       const logo = partnerProfileFor(gym)?.logo || null;
       const fabsShown = !document.getElementById('map-fab-top')?.classList.contains('hidden');
       const img = box.querySelector('img');
       // Kachel erst zeigen, wenn das Bild wirklich geladen ist – kein leerer Kasten ohne Logo oder bei kaputtem Bild
       const setVisible = on => { box.classList.toggle('hidden', !on); box.classList.toggle('flex', on); };
-      if (!logo || !fabsShown || builderActive) { setVisible(false); return; }
+      const appMode = !!gym && !!scales[gym] && !isPartner;
+      box.classList.toggle('is-app', appMode);
+      const appLogo = appMode ? mapAppLogoEl(box) : box.querySelector('.map-app-logo');
+      if (appLogo) appLogo.style.display = appMode ? '' : 'none';
+      img.style.display = appMode ? 'none' : '';
+      if (!fabsShown || builderActive) { setVisible(false); return; }
+      if (appMode) { setVisible(!!appLogo); return; }
+      // Partnerhalle: nur mit hinterlegtem Logo; ohne Logo bleibt die Stelle leer
+      if (!logo) { setVisible(false); return; }
       img.alt = `Logo ${gym}`;
       if (img.getAttribute('src') === logo) { setVisible(img.complete && img.naturalWidth > 0); return; }
       setVisible(false);
