@@ -126,6 +126,8 @@
        overflow-x: clip: nichts darf breiter als der Bildschirm sein – sonst lässt iOS die Seite herauszoomen. */
     html, body { touch-action: pan-x pan-y; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: clip; }
     #map-container, #map-container * { touch-action: none; }
+    /* Kein Weichzeichner im Kartenfenster: sonst wird die Karte als Bitmap skaliert und ist beim Zoomen unscharf */
+    #map-container * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
   </style>
   <style>
     /* ===== THEME-SYSTEM =====
@@ -818,7 +820,9 @@
           </div>
 
           <!-- Zoom Overlay Controls -->
-          <div data-map-ui class="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-700/80 rounded-lg px-2 py-1 text-[10px] text-slate-300 flex items-center gap-2 pointer-events-auto backdrop-blur shadow-lg z-10">
+          <!-- Bewusst OHNE backdrop-blur: ein Weichzeichner im Kartenfenster macht das ganze Fenster zu einer Bitmap-Ebene,
+               die beim Zoomen nur hochskaliert wird (unscharf, v. a. auf älteren iPhones). -->
+          <div data-map-ui class="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-700/80 rounded-lg px-2 py-1 text-[10px] text-slate-300 flex items-center gap-2 pointer-events-auto shadow-lg z-10">
             <button onclick="event.stopPropagation(); zoomMap(-0.3)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded font-bold text-center">-</button>
             <span id="map-zoom-level-display" class="font-mono text-emerald-400 font-bold">100%</span>
             <button onclick="event.stopPropagation(); zoomMap(0.3)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded font-bold text-center">+</button>
