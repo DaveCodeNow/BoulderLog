@@ -312,6 +312,7 @@
     .guide-item ol { margin: 0; padding: 0 1rem .9rem 2.4rem; list-style: decimal; display: grid; gap: .4rem; font-size: .78rem; line-height: 1.45; color: rgb(var(--s-300)); }
     .guide-item ol li::marker { color: var(--accent); font-weight: 700; }
     .guide-item b { color: rgb(var(--s-100)); font-weight: 600; }
+    html[lang="en"] .guide-item [data-guide-lang="de"], html:not([lang="en"]) .guide-item [data-guide-lang="en"] { display: none; }
 
     /* Startseite für nicht angemeldete Nutzer*innen. auth-pending = Sitzung wird noch geprüft (nur Logo als Splash) */
     #landing { display: none; }
@@ -1301,21 +1302,42 @@
         </details>
         <details class="guide-item">
           <summary><span>🏗️ Hallenkarte bauen</span><span class="gc-chevron" aria-hidden="true">›</span></summary>
-          <ol>
-            <li>Öffne die <b>Hallenkarte</b>, tippe auf <b>✏️</b> und wähle <b>„Hallenkarte bauen“</b>.</li>
-            <li>Zeichne zuerst die Wände mit <b>◩ Sektor</b>: Eckpunkte antippen und mit <b>✓ Abschließen</b> bestätigen. Mit „Plan als Vorlage“ zeichnest du über deinen Hallenplan – oder baue frei aus dem Kopf.</li>
-            <li>Lege danach mit <b>▭ Matte</b> die Mattenbereiche bzw. den Untergrund an.</li>
-            <li>Schneide mit <b>⤢ Fenster</b> den sichtbaren Kartenausschnitt zu.</li>
-            <li>Auf <b>Fertig</b> tippen – deine Halle steht!</li>
+          <ol data-guide-lang="de" data-i18n-skip>
+            <li><b>Hallenplan hinterlegen:</b> Lade unter <b>Einstellungen › Hallenprofil</b> einen Plan deiner Halle hoch – damit zeichnest du die Halle viel leichter. Schneide das Bild vorher am besten auf ein Rechteck zu, das außen mit den Hallenwänden abschließt, und richte es hochkant aus, damit es den Smartphone-Bildschirm gut ausnutzt. Ohne Plan kannst du andere Vorlagen nutzen oder die Wände grob nach Schätzung einzeichnen.</li>
+            <li><b>Sektoren zeichnen:</b> Tippe in der <b>Hallenkarte</b> auf <b>✏️</b> und wähle <b>„Hallenkarte bauen“</b>. Dein Hallenplan wird automatisch als Vorlage angezeigt; über <b>🏗️ Bauen</b> blendest du das Baumenü ein und aus. Wähle <b>◩ Sektor</b>, tippe die Eckpunkte einer Wand nacheinander an und bestätige mit <b>✓</b>. Mit <b>✎ Ecken</b> kannst du Eckpunkte jederzeit noch verschieben.</li>
+            <li><b>Sektor benennen (optional):</b> Gib dem Sektor einen Namen und eine Wandneigung. Den Namen kannst du neu vergeben oder einen der Sektornamen aus dem Hallenprofil übernehmen – standardmäßig „Sektor A“ bis „Sektor F“.</li>
+            <li><b>Mattenbereiche anlegen:</b> Zeichne mit <b>▭ Matte</b> die Mattenbereiche bzw. den Untergrund ein und lege fest, ob es ein <b>Boulder-</b> oder <b>Kletterbereich</b> ist. Danach richtet sich, ob an den Sektoren auf dieser Matte Boulder oder Kletterrouten angelegt werden.</li>
+            <li><b>Ausschnitt anpassen:</b> Bleiben am Rand schwarze Balken, schneide sie mit <b>⤢ Fenster</b> weg, indem du die Ränder des Kartenfensters verschiebst.</li>
+            <li><b>Speichern:</b> Tippe oben rechts auf <b>„Fertig“</b> – deine Hallenkarte steht und kann mit Routen besetzt werden!</li>
+          </ol>
+          <ol data-guide-lang="en" data-i18n-skip>
+            <li><b>Add a gym plan:</b> Upload a plan of your gym under <b>Settings › Gym profile</b> – it makes drawing the gym much easier. Ideally crop the image beforehand to a rectangle bounded by the outer gym walls, and turn it to portrait so it makes good use of your phone screen. If your gym has no plan, use other references or sketch the walls roughly by eye.</li>
+            <li><b>Draw sectors:</b> On the <b>Gym map</b>, tap <b>✏️</b> and choose <b>“Build gym map”</b>. Your gym plan is shown automatically as a template; <b>🏗️ Build</b> shows or hides the build menu. Choose <b>◩ Sector</b>, tap the corners of a wall one after another and confirm with <b>✓</b>. With <b>✎ Corners</b> you can move corner points at any time.</li>
+            <li><b>Name the sector (optional):</b> Give the sector a name and a wall angle. You can enter a new name or use one of the sector names from your gym profile – “Sektor A” to “Sektor F” by default.</li>
+            <li><b>Add mat areas:</b> Draw the mat areas or floor with <b>▭ Mat</b> and set whether it is a <b>bouldering</b> or <b>climbing area</b>. This decides whether boulders or rope routes are created on the sectors on that mat.</li>
+            <li><b>Adjust the view:</b> If black bars remain at the edges, crop them away with <b>⤢ Window</b> by dragging the edges of the map window.</li>
+            <li><b>Save:</b> Tap <b>“Done”</b> at the top right – your gym map is ready to be filled with routes!</li>
           </ol>
         </details>
         <details class="guide-item">
           <summary><span>📍 Routen setzen</span><span class="gc-chevron" aria-hidden="true">›</span></summary>
-          <ol>
-            <li>Tippe in der <b>Hallenkarte</b> auf <b>✏️</b> und wähle <b>„Routen setzen“</b>.</li>
-            <li>Tippe in die Nähe einer Wand – die Route rastet automatisch an der nächsten Sektorwand ein.</li>
-            <li>Fülle die Routenkarte aus: <b>Level und Grifffarbe sind Pflicht</b>, Name, Neigung, Stile und Grifftypen optional.</li>
-            <li><b>Speichern</b> – die Route erscheint auf der Karte!</li>
+          <ol data-guide-lang="de" data-i18n-skip>
+            <li><b>Routen-Modus öffnen:</b> Tippe in der <b>Hallenkarte</b> auf <b>✏️</b> und wähle <b>„Routen setzen“</b>. Die Karte bekommt einen grünen Rahmen und das Symbol wechselt zu <b>📍</b>. Ein Tipp auf <b>📍</b> beendet den Modus wieder.</li>
+            <li><b>Route platzieren:</b> Tippe in die Nähe der Wand, an der die Route hängt – sie rastet automatisch an der nächsten Sektorwand ein. Im Boulderbereich entsteht ein Boulder, im Kletterbereich eine Kletterroute; das siehst du oben in der Routenkarte.</li>
+            <li><b>Routenkarte ausfüllen:</b> Pflicht sind nur <b>Schwierigkeitsgrad</b> und <b>Grifffarbe</b>. Fehlt eine Farbe, legst du über <b>„+“</b> eine eigene an (auch zweifarbig) – sie gilt für dieses Hallenprofil. Optional: Name, Schraubdatum (standardmäßig heute), Wandbereich und Neigung (beides aus dem Sektor übernommen), Grad-Einschätzung, Kletterstile und Grifftypen. Bei Kletterrouten kommen Sicherungsart, Wandhöhe, Exen, Mindestseillänge (Vorschlag: doppelte Wandhöhe) und Umlenker dazu.</li>
+            <li><b>Speichern</b> – die Route erscheint sofort auf der Karte!</li>
+            <li><b>Verschieben &amp; bearbeiten:</b> Ziehe eine Route mit dem Finger an die richtige Stelle – sie rastet wieder an der Wand ein und übernimmt den neuen Sektor. Ein kurzer Tipp öffnet die Routenkarte zum Bearbeiten.</li>
+            <li><b>Routen abschrauben:</b> Einzeln über <b>🗑️ Löschen</b> in der Routenkarte. Mehrere: lange auf eine Route drücken, um sie zu markieren, weitere antippen und mit <b>🗑️</b> unten rechts alle auf einmal entfernen (<b>✕ Auswahl aufheben</b> bricht ab) – das geht auch in der Routenliste. Ganze Wand: lange auf eine freie Stelle des Sektors drücken. Du wählst jeweils, ob die Routen <b>in der Statistik bleiben</b> oder <b>komplett gelöscht</b> werden.</li>
+            <li><b>Sektorstatus (optional):</b> Über <b>✏️ › Sektorstatus</b> markierst du Wände als <b>„wird umgeschraubt“</b> – Nutzer*innen sehen dort dann keine Routen – oder als <b>„diese Woche neu“</b>; diese Markierung verschwindet nach 7 Tagen automatisch.</li>
+          </ol>
+          <ol data-guide-lang="en" data-i18n-skip>
+            <li><b>Open route mode:</b> On the <b>Gym map</b>, tap <b>✏️</b> and choose <b>“Set routes”</b>. The map gets a green frame and the button changes to <b>📍</b>. Tap <b>📍</b> again to leave route mode.</li>
+            <li><b>Place a route:</b> Tap near the wall the route is on – it snaps automatically to the nearest sector wall. In a bouldering area you create a boulder, in a climbing area a rope route; the top of the route card shows which one.</li>
+            <li><b>Fill in the route card:</b> Only <b>difficulty grade</b> and <b>hold colour</b> are required. If a colour is missing, add your own with <b>“+”</b> (two-tone works too) – it applies to this gym profile. Optional: name, set date (today by default), wall area and angle (both taken from the sector), grade opinion, climbing styles and hold types. Rope routes also have belay type, wall height, quickdraws, minimum rope length (suggested: twice the wall height) and anchor.</li>
+            <li><b>Save</b> – the route appears on the map right away!</li>
+            <li><b>Move &amp; edit:</b> Drag a route with your finger to the right spot – it snaps back onto the wall and takes on the new sector. A short tap opens the route card for editing.</li>
+            <li><b>Strip routes:</b> One at a time via <b>🗑️ Delete</b> in the route card. Several: long-press a route to select it, tap more routes and remove them all at once with <b>🗑️</b> at the bottom right (<b>✕ Clear selection</b> cancels) – this also works in the route list. A whole wall: long-press an empty spot in the sector. Each time you choose whether the routes are <b>kept in statistics</b> or <b>deleted completely</b>.</li>
+            <li><b>Sector status (optional):</b> Via <b>✏️ › Sector status</b> you mark walls as <b>“Being reset”</b> – users then see no routes there – or as <b>“New this week”</b>; this tag disappears automatically after 7 days.</li>
           </ol>
         </details>
         <details class="guide-item">
