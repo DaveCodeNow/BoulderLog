@@ -58,9 +58,11 @@
       }
     })();
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <!-- Schrift „Share Tech Mono“ lokal aus fonts/ (SIL Open Font License, siehe fonts/OFL.txt) – keine Anfrage an Google-Server -->
+  <link rel="preload" href="fonts/share-tech-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    @font-face { font-family: 'Share Tech Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('fonts/share-tech-mono-latin.woff2') format('woff2'); }
+  </style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     /* Farben laufen über CSS-Variablen (siehe :root unten) -> Dark/Light + Akzentfarbe ohne Umbau der Klassen */
@@ -85,8 +87,8 @@
       } } };
     })();
   </script>
-  <!-- Chart.js für Diagramm-Darstellung -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js für Diagramm-Darstellung (feste Version, damit Updates nichts unbemerkt verändern) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
   <!-- Mobile App Meta-Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -99,8 +101,8 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <!-- Tab-Icon: eigenes SVG (nur das Logo-Zeichen, ohne Hintergrund, kräftige Linien; hell/dunkel je nach Browser-Theme). Quelle: assets/favicon.svg -->
   <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjEwOCAzNiAzNzYgMzc2Ij48c3R5bGU+Lnd7ZmlsbDojZWRlZGYwO3N0cm9rZTojZWRlZGYwO3N0cm9rZS13aWR0aDoxMjtzdHJva2UtbGluZWpvaW46cm91bmR9LmF7ZmlsbDojMTBiOTgxO3N0cm9rZTojMTBiOTgxO3N0cm9rZS13aWR0aDo4O3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbGluZWNhcDpyb3VuZH1AbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOmxpZ2h0KXsud3tmaWxsOiMyYjJhMjc7c3Ryb2tlOiMyYjJhMjd9LmF7ZmlsbDojMGY4YTYzO3N0cm9rZTojMGY4YTYzfX08L3N0eWxlPjxwb2x5Z29uIGNsYXNzPSJ3IiBwb2ludHM9IjE2NC41NCAzMzUuOTYgMTE3LjM0IDI3Mi4zIDE3OS43MyAxMzUuNzMgMzA3LjgyIDczLjQxIDM5Mi44NyAxMTguMDIgNDExLjM3IDE0MS4zOCA0MDQuMDcgMTQ3LjE2IDM4Ni44IDEyNS4zNSAzMDcuNjcgODMuODQgMTg2LjgxIDE0Mi42NCAxMjguMDggMjcxLjE3IDE3Mi4wMiAzMzAuNDIgMTY0LjU0IDMzNS45NiIvPjxwb2x5Z29uIGNsYXNzPSJ3IiBwb2ludHM9IjM3NC44NSAzNzUuMyAxOTMuNzEgMzc1LjMgMTc4Ljc3IDM1NS4xNCAxODYuMjQgMzQ5LjYgMTk4LjQgMzY1Ljk5IDM3MS4xNyAzNjUuOTkgNDYzLjk4IDI3OS4wMiA0MzkuNDMgMTkxLjggNDIwLjU0IDE2Ny45NSA0MjcuODQgMTYyLjE3IDQ0Ny44OSAxODcuNDkgNDc0LjQ3IDI4MS45NCAzNzQuODUgMzc1LjMiLz48cG9seWdvbiBjbGFzcz0idyIgcG9pbnRzPSIxMzAuNCAyNzUuMzEgMTI0LjQ0IDI2OC4xNiAyNDAuOTkgMTcxLjAzIDMwMy44NiA3Ni4wNiAzMTEuNjIgODEuMTkgMjQ4IDE3Ny4zMSAxMzAuNCAyNzUuMzEiLz48cG9seWdvbiBjbGFzcz0idyIgcG9pbnRzPSIyNDQuMDUgMTc5LjI4IDE4MC45NiAxNDMuMjIgMTg1LjU4IDEzNS4xNCAyNDQuOTQgMTY5LjA2IDM4OC4yNSAxMTcuMzEgMzkxLjQxIDEyNi4wNiAyNDQuMDUgMTc5LjI4Ii8+PHJlY3QgY2xhc3M9InciIHg9IjI0OC4zNiIgeT0iMTcyLjQ1IiB3aWR0aD0iOS4zMSIgaGVpZ2h0PSI0NC4wMyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTU1LjU0IDExMy4wNykgcm90YXRlKC0yMi43NykiLz48cG9seWdvbiBjbGFzcz0idyIgcG9pbnRzPSIzMTUuNzkgMzMyLjA0IDIzNS44NCAzMDkuMDcgMjM4LjQxIDMwMC4xMyAyOTkuNjkgMzE3Ljc0IDI3NS45NiAyNjEuMTkgMjg0LjU1IDI1Ny41OCAzMTUuNzkgMzMyLjA0Ii8+PHJlY3QgY2xhc3M9InciIHg9IjE1My41NyIgeT0iMjQ0Ljk5IiB3aWR0aD0iOS4zMSIgaGVpZ2h0PSI3My45IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTU2LjQ0IDM1Ni4xNikgcm90YXRlKC03My45NykiLz48cG9seWdvbiBjbGFzcz0idyIgcG9pbnRzPSIxOTcuODEgMzc0Ljk1IDE5NC4yOSAzNjYuMzMgMzA1LjU5IDMyMC43NCAzOTkuMTEgMjYxLjA1IDQzOS41OCAxODcuNCA0NDcuNzQgMTkxLjg4IDQwNi4xMiAyNjcuNjIgMzA5LjUxIDMyOS4yIDE5Ny44MSAzNzQuOTUiLz48cG9seWdvbiBjbGFzcz0idyIgcG9pbnRzPSIzNzQuNzggMzc0LjggMzA1LjE4IDMyOC43NyAzMTAuMzEgMzIxLjAxIDM2OS41IDM2MC4xNSAzOTkuOTUgMjU5LjcgNDcwLjI3IDI3NS45NSA0NjguMTggMjg1LjAxIDQwNi4zMyAyNzAuNzMgMzc0Ljc4IDM3NC44Ii8+PHJlY3QgY2xhc3M9ImEiIHg9IjM1MC44NiIgeT0iMTQ1LjUyIiB3aWR0aD0iMTQxLjI0IiBoZWlnaHQ9IjQuNjUiIHRyYW5zZm9ybT0ibWF0cml4KDAuNjYsIC0wLjc1LCAwLjc1LCAwLjY2LCAzMi40NywgMzY3LjMzKSIvPjxwYXRoIGNsYXNzPSJhIiBkPSJNMTU4LjIyLDM2NC40MWEyLjMyLDIuMzIsMCwwLDEtMS43MzAtMy44NzBsMTEzLjQ1LTEyNyw1My44LDIxLjU4LDQ5LjQyLTU1Ljc4YTIuMzMsMi4zMywwLDAsMSwzLjQ5LDMuMDlsLTUxLjYsNTguMjMtNTMuODEtMjEuNTlMMTYwLDM2My42NEEyLjM0LDIuMzQsMCwwLDEsMTU4LjIyLDM2NC40MVoiLz48Y2lyY2xlIGNsYXNzPSJhIiBjeD0iMjE0LjcyIiBjeT0iMjk4Ljg2IiByPSIxNSIvPjxjaXJjbGUgY2xhc3M9ImEiIGN4PSIyNjkuODUiIGN5PSIyMzguNTkiIHI9IjE1Ii8+PGNpcmNsZSBjbGFzcz0iYSIgY3g9IjMyNC4xIiBjeT0iMjU3LjM5IiByPSIxNSIvPjxjaXJjbGUgY2xhc3M9ImEiIGN4PSIzNzQuOSIgY3k9IjIwMC45NCIgcj0iMTUiLz48cG9seWdvbiBjbGFzcz0iYSIgcG9pbnRzPSI0NDYuNTYgMTE5LjI3IDQyMS40OCAxMDMuMDIgNDc2Ljg4IDg1LjMxIDQ2Ni4xNiAxNDMuMDkgNDQ2LjU2IDExOS4yNyIvPjwvc3ZnPg==">
-  <!-- Supabase JS Library -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS Library (feste Version) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 
   <script>
     const SUPABASE_URL = 'https://bjsaavuuxdzmldtaswft.supabase.co';
