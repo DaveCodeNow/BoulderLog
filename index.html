@@ -13917,12 +13917,18 @@
       });
       return idx;
     }
+    // Mindest-Überschneidung: Eine Route zählt erst, wenn sie mindestens 7 Tage deiner aktiven Zeit überschneidet –
+    // bzw. ihre ganze Hängezeit, falls sie kürzer hing (sonst fehlten frisch geschraubte Routen eine Woche lang).
+    // Beispiel: 7,5 Wochen während einer Pause, nur 3 Tage nach der Rückkehr -> zählt erst ab dem 7. Tag.
+    const ACTIVE_MIN_OVERLAP_DAYS = 7;
     function routeInActiveTime(r, idx) {
       const iv = idx.get(r.gymName);
       if (!iv || !iv.length) return false;
       const from = routeHangStartTs(r) || -Infinity;
       const to = r.archivedAt ? Date.parse(r.archivedAt) : Date.now();
-      return iv.some(([a, b]) => from <= b && to >= a);
+      if (!(to > from)) return iv.some(([a, b]) => from <= b && to >= a);   // ohne messbare Hängezeit: Berührung genügt
+      const overlap = iv.reduce((sum, [a, b]) => sum + Math.max(0, Math.min(b, to) - Math.max(a, from)), 0);
+      return overlap >= Math.min(ACTIVE_MIN_OVERLAP_DAYS * DAY_MS, to - from);
     }
 
     // Pause-Einstellungen sichern (lokal + Profil in der Datenbank, wie das Startdatum des Aktivitätsresets)
@@ -15471,7 +15477,7 @@
 
       const basisNote = sc.live ? `${word}, die gerade in der Halle hängen.`
         : (sc.range.mode === 'ALL' ? `Alle bekannten ${word} (aktuell und abgebaut)` : `${word}, die im Zeitraum hingen (Schraub- bis Abbaudatum)`)
-          + `, aus deinen aktiven Zeiten (±${ACTIVE_WINDOW_DAYS} Tage um deine Besuche, ohne Pausen) · Tops ${sc.range.mode === 'ALL' ? 'gesamt' : 'im Zeitraum'}.`;
+          + `, aus deinen aktiven Zeiten (±${ACTIVE_WINDOW_DAYS} Tage um deine Besuche, ohne Pausen; mind. ${ACTIVE_MIN_OVERLAP_DAYS} Tage Überschneidung) · Tops ${sc.range.mode === 'ALL' ? 'gesamt' : 'im Zeitraum'}.`;
       const gymIcon = g => scales[g]?.isPartner ? partnerIconHtml() : scales[g]?.isCommunity ? communityIconHtml() : '';
       const cell = 'w-12 text-right tabular-nums flex-shrink-0';
       const split = 'hidden sm:block w-24 text-right tabular-nums flex-shrink-0';
