@@ -317,7 +317,7 @@
 
     /* Startseite für nicht angemeldete Nutzer*innen. auth-pending = Sitzung wird noch geprüft (nur Logo als Splash) */
     #landing { display: none; }
-    body.guest-mode > :not(#landing):not(#impressum-modal):not(#privacy-modal):not(#terms-modal), body.auth-pending > :not(#landing):not(#impressum-modal):not(#privacy-modal):not(#terms-modal) { display: none !important; }
+    body.guest-mode > :not(#landing):not(#impressum-modal):not(#privacy-modal):not(#terms-modal):not(#partner-terms-modal), body.auth-pending > :not(#landing):not(#impressum-modal):not(#privacy-modal):not(#terms-modal):not(#partner-terms-modal) { display: none !important; }
     body.guest-mode #landing, body.auth-pending #landing { display: block; flex: 1; }
 
     /* Split-Screen: links ein vollflächiges Marken-Panel in der Akzentfarbe, rechts eine ruhige Fläche mit der Anmeldung.
@@ -1132,6 +1132,8 @@
           <li><b class="text-slate-200">3.</b> Bis zu 5 Routesetter per E-Mail-Link einladen</li>
           <li><b class="text-slate-200">4.</b> Zugangscode an Nutzer*innen weitergeben</li>
         </ol>
+
+        <p class="text-[11px] text-slate-500" data-i18n-skip><span class="only-de">Mit dem Anlegen oder Umwandeln einer Partnerhalle nimmt die Halle die <button type="button" onclick="openPartnerTerms()" class="underline underline-offset-2 hover:text-slate-300">Partnerbedingungen</button> einschließlich Auftragsverarbeitungsvertrag an.</span><span class="only-en">By creating or converting a partner gym, the gym accepts the <button type="button" onclick="openPartnerTerms()" class="underline underline-offset-2 hover:text-slate-300">Partner Terms</button> including the data processing agreement.</span></p>
 
         <p id="partner-admin-code-result" class="hidden break-words rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-200" role="status"></p>
 
@@ -17520,6 +17522,114 @@
 })();
 </script>
 
+<!-- PARTNERBEDINGUNGEN (mit AVV) -->
+<div id="partner-terms-modal" class="hidden fixed inset-0 z-[95] bg-black/70 items-center justify-center p-4" onclick="if(event.target===this)closePartnerTerms()" role="dialog" aria-modal="true">
+  <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-5 text-xs text-slate-300 leading-relaxed relative">
+    <button type="button" onclick="closePartnerTerms()" class="sticky top-0 float-right text-slate-400 hover:text-slate-100 font-bold text-lg" aria-label="Schließen">✕</button>
+    <div data-imp="de"><h2 class="text-xl font-bold text-slate-100 mb-3">Partnerbedingungen für Hallen</h2>
+<p class="mb-3 text-slate-400">Stand: Oktober 2026 · mit Auftragsverarbeitungsvertrag (Anhang)</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">1. Vertragspartner und Geltung</h3>
+<p class="mb-3">Diese Bedingungen gelten zwischen David Leander Terhalle, Milchgasse 3, 44135 Dortmund („Anbieter“) und dem Unternehmen, das eine Halle als Partnerhalle in BoulderLog nutzt („Halle“). Sie gelten zusätzlich zu den Nutzungsregeln. Mit dem Anlegen einer Partnerhalle oder dem Umwandeln eines Hallenprofils in eine Partnerhalle nimmt die Halle diese Bedingungen einschließlich des Auftragsverarbeitungsvertrags an.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">2. Leistungen</h3>
+<p class="mb-3">Der Anbieter stellt die Partnerhallen-Funktionen kostenlos bereit, derzeit: Hallenprofil und Hallenkarte, Zugangscodes für Nutzer*innen, Sektorstatus, ein Team aus bis zu fünf Routesetter*innen, Schraubplan und Statistiken zum Routenbestand. Ein Anspruch auf bestimmte Funktionen oder eine ständige Verfügbarkeit besteht nicht; Funktionen können sich ändern. Kostenpflichtige Leistungen gibt es nur nach vorheriger Ankündigung und ausdrücklicher Zustimmung der Halle.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">3. Admin-Konto und Team</h3>
+<p class="mb-3">Wer eine Partnerhalle anlegt, handelt für die Halle und versichert, dazu berechtigt zu sein. Die Halle gibt die Zugangsdaten des Admin-Kontos nicht weiter, lädt nur Personen ins Team ein, die für sie tätig sind, und entfernt sie, wenn das nicht mehr der Fall ist.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">4. Inhalte, Name und Logo</h3>
+<p class="mb-3">Die Halle ist für ihre Inhalte verantwortlich, etwa Hallenpläne, Fotos, Logo, Routen, Sektorstatus und Hinweise. Sie räumt dem Anbieter für die Dauer der Partnerschaft das einfache, kostenlose Recht ein, ihren Namen, ihr Logo und diese Inhalte in BoulderLog anzuzeigen und sie dort als Partnerhalle zu bezeichnen. Außerhalb der App, z. B. in Social Media, nennt der Anbieter die Halle nur mit ihrer Zustimmung.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">5. Daten der Nutzer*innen</h3>
+<p class="mb-3">Die Halle erhält keine personenbezogenen Daten von Nutzer*innen, abgesehen von den Benutzernamen ihres eigenen Teams. Statistiken erhält sie nur zusammengefasst und ohne Bezug zu einzelnen Personen. Die Halle versucht nicht, einzelne Personen aus Statistiken zu identifizieren.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">6. Haftung</h3>
+<p class="mb-3">Der Anbieter haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit sowie bei Verletzung von Leben, Körper oder Gesundheit. Im Übrigen ist die Haftung ausgeschlossen, soweit gesetzlich zulässig. Die Haftung nach Art. 82 DSGVO bleibt unberührt.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">7. Laufzeit und Ende</h3>
+<p class="mb-3">Die Partnerschaft läuft unbefristet. Die Halle kann sie jederzeit per E-Mail an <a href="mailto:davidterhallebusiness@gmail.com" class="underline underline-offset-2 hover:text-slate-100">davidterhallebusiness@gmail.com</a> beenden, der Anbieter mit einer Frist von 30 Tagen, bei schweren Verstößen sofort. Nach dem Ende verliert die Halle den Partnerstatus. Team-Daten (Einladungen, Rollen, Schraubplan) löscht der Anbieter spätestens 30 Tage nach dem Ende; das Hallenprofil löscht er auf Wunsch der Halle.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">8. Schlussbestimmungen</h3>
+<p class="mb-3">Änderungen dieser Bedingungen kündigt der Anbieter der Halle mindestens 30 Tage vorher per E-Mail oder in der App an; die Halle kann bis dahin widersprechen und die Partnerschaft beenden. Es gilt deutsches Recht. Gerichtsstand ist, soweit zulässig, Dortmund.</p>
+
+<h3 class="font-bold text-slate-200 mt-5 mb-1">Anhang: Auftragsverarbeitungsvertrag (Art. 28 DSGVO)</h3>
+<p class="mb-3">Die Halle ist Verantwortliche, der Anbieter Auftragsverarbeiter.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 1 Gegenstand, Dauer, Art und Zweck</h4>
+<p class="mb-3">Der Anbieter verarbeitet personenbezogene Daten im Auftrag der Halle, soweit sie die Team-Funktionen der Partnerhalle nutzt: Speichern und Anzeigen von Einladungen, Rollen, Schraubplan und Wünschen sowie Versand von Einladungs-E-Mails, zur Organisation des Hallenteams. Der Vertrag gilt für die Dauer der Partnerschaft.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 2 Datenarten und betroffene Personen</h4>
+<ul class="list-disc pl-5 mb-3 space-y-1"><li>Datenarten: E-Mail-Adressen eingeladener Personen, Benutzernamen und Konto-Kennungen, Rollen im Team, Einteilungen im Schraubplan (Tag, Sektor, eingeteilte Personen), Wünsche und Notizen, Zeitpunkte von Einladungen und Änderungen.</li>
+<li>Betroffene: Personen, die für die Halle tätig sind, insbesondere Routesetter*innen und Thekenpersonal, sowie die Admin-Person.</li>
+<li>Nicht umfasst sind die eigenen BoulderLog-Daten dieser Personen (Logbuch, Sessions usw.); dafür ist der Anbieter selbst verantwortlich.</li></ul>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 3 Weisungen</h4>
+<p class="mb-3">Der Anbieter verarbeitet die Daten nur auf dokumentierte Weisung der Halle. Die Weisungen ergeben sich aus diesem Vertrag und der Bedienung der App durch die Halle; weitere Weisungen erteilt die Halle per E-Mail. Hält der Anbieter eine Weisung für rechtswidrig, weist er die Halle unverzüglich darauf hin.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 4 Vertraulichkeit und Sicherheit</h4>
+<p class="mb-3">Zugriff auf die Daten hat beim Anbieter nur der Anbieter selbst; er ist zur Vertraulichkeit verpflichtet. Er trifft geeignete technische und organisatorische Maßnahmen (Art. 32 DSGVO), insbesondere:</p>
+<ul class="list-disc pl-5 mb-3 space-y-1"><li>verschlüsselte Übertragung (HTTPS)</li>
+<li>Zugriffsregeln in der Datenbank (Row Level Security): Team-Daten sehen nur Admin und Team der jeweiligen Halle</li>
+<li>Passwörter nur als Hash gespeichert</li>
+<li>Speicherung in der EU (Supabase, Region eu-west-1, Irland)</li>
+<li>Verwaltungszugänge des Anbieters mit starken Passwörtern und Zwei-Faktor-Anmeldung</li></ul>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 5 Unterauftragsverarbeiter</h4>
+<p class="mb-3">Die Halle stimmt dem Einsatz folgender Unterauftragsverarbeiter zu:</p>
+<ul class="list-disc pl-5 mb-3 space-y-1"><li>Supabase Inc., 970 Toa Payoh North #07-04, Singapore 318992 – Datenbank und Anmeldung, Speicherung in der EU (Irland)</li>
+<li>Sendinblue SAS (Brevo), 17 rue de Salneuve, 75017 Paris, Frankreich – Versand von E-Mails</li></ul>
+<p class="mb-3">Neue oder geänderte Unterauftragsverarbeiter kündigt der Anbieter mindestens 30 Tage vorher per E-Mail an. Die Halle kann widersprechen und die Partnerschaft beenden. Der Anbieter verpflichtet Unterauftragsverarbeiter vertraglich auf ein gleichwertiges Datenschutzniveau.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 6 Unterstützung und Meldepflichten</h4>
+<p class="mb-3">Der Anbieter unterstützt die Halle bei Anfragen betroffener Personen und bei ihren Pflichten nach Art. 32 bis 36 DSGVO. Verletzungen des Schutzes personenbezogener Daten meldet er der Halle unverzüglich, möglichst innerhalb von 48 Stunden nach Kenntnis.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 7 Löschung und Rückgabe</h4>
+<p class="mb-3">Nach dem Ende der Partnerschaft löscht der Anbieter die Daten innerhalb von 30 Tagen, sofern keine gesetzliche Pflicht zur Aufbewahrung besteht. Auf Wunsch übergibt er sie vorher als Datei.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 8 Nachweise und Kontrollen</h4>
+<p class="mb-3">Der Anbieter stellt der Halle die Informationen zur Verfügung, die zum Nachweis der Einhaltung dieses Vertrags nötig sind, und ermöglicht Überprüfungen nach vorheriger Absprache.</p>
+</div>
+    <div data-imp="en" class="hidden"><h2 class="text-xl font-bold text-slate-100 mb-3">Partner Terms for Gyms</h2>
+<p class="mb-3 text-slate-400">Last updated: October 2026 · including data processing agreement (annex). The German version is legally binding.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">1. Parties and scope</h3>
+<p class="mb-3">These terms apply between David Leander Terhalle, Milchgasse 3, 44135 Dortmund, Germany (“Provider”) and the business that uses a gym as a partner gym in BoulderLog (“Gym”). They apply in addition to the Terms of Use. By creating a partner gym or converting a gym profile into a partner gym, the Gym accepts these terms including the data processing agreement.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">2. Services</h3>
+<p class="mb-3">The Provider makes the partner gym features available free of charge, currently: gym profile and gym map, access codes for users, sector status, a team of up to five route setters, setting schedule and statistics on the route stock. There is no entitlement to particular features or constant availability; features may change. Paid services will only be introduced after prior notice and with the Gym’s express consent.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">3. Admin account and team</h3>
+<p class="mb-3">Whoever creates a partner gym acts on behalf of the Gym and confirms they are authorised to do so. The Gym does not share the admin account’s credentials, only invites people who work for it to the team, and removes them when this is no longer the case.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">4. Content, name and logo</h3>
+<p class="mb-3">The Gym is responsible for its content, such as floor plans, photos, logo, routes, sector status and notices. For the duration of the partnership it grants the Provider the non-exclusive, free right to display its name, logo and this content in BoulderLog and to refer to it there as a partner gym. Outside the app, e.g. on social media, the Provider only names the Gym with its consent.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">5. User data</h3>
+<p class="mb-3">The Gym does not receive any personal data of users other than the usernames of its own team. It only receives statistics in aggregated form without reference to individual people. The Gym does not attempt to identify individuals from statistics.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">6. Liability</h3>
+<p class="mb-3">The Provider is liable without limitation for intent and gross negligence and for injury to life, body or health. Otherwise liability is excluded to the extent permitted by law. Liability under Art. 82 GDPR remains unaffected.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">7. Term and termination</h3>
+<p class="mb-3">The partnership runs for an indefinite period. The Gym can end it at any time by email to <a href="mailto:davidterhallebusiness@gmail.com" class="underline underline-offset-2 hover:text-slate-100">davidterhallebusiness@gmail.com</a>; the Provider with 30 days’ notice, or immediately in the event of serious violations. When it ends, the Gym loses partner status. The Provider deletes team data (invitations, roles, setting schedule) no later than 30 days after the end; it deletes the gym profile at the Gym’s request.</p>
+<h3 class="font-bold text-slate-200 mt-5 mb-1">8. Final provisions</h3>
+<p class="mb-3">The Provider will announce changes to these terms to the Gym at least 30 days in advance by email or in the app; until then the Gym can object and end the partnership. German law applies. Place of jurisdiction is Dortmund, to the extent permitted.</p>
+
+<h3 class="font-bold text-slate-200 mt-5 mb-1">Annex: Data processing agreement (Art. 28 GDPR)</h3>
+<p class="mb-3">The Gym is the controller, the Provider the processor.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 1 Subject matter, duration, nature and purpose</h4>
+<p class="mb-3">The Provider processes personal data on behalf of the Gym to the extent the Gym uses the team features of the partner gym: storing and displaying invitations, roles, setting schedule and wishes, and sending invitation emails, in order to organise the gym team. The agreement applies for the duration of the partnership.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 2 Types of data and data subjects</h4>
+<ul class="list-disc pl-5 mb-3 space-y-1"><li>Types of data: email addresses of invited people, usernames and account identifiers, team roles, assignments in the setting schedule (day, sector, assigned people), wishes and notes, times of invitations and changes.</li>
+<li>Data subjects: people working for the Gym, in particular route setters and counter staff, and the admin.</li>
+<li>Not included is these people’s own BoulderLog data (logbook, sessions etc.), for which the Provider is the controller.</li></ul>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 3 Instructions</h4>
+<p class="mb-3">The Provider only processes the data on the Gym’s documented instructions. The instructions follow from this agreement and the Gym’s use of the app; the Gym gives further instructions by email. If the Provider considers an instruction unlawful, it will inform the Gym without delay.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 4 Confidentiality and security</h4>
+<p class="mb-3">At the Provider, only the Provider personally has access to the data and is bound to confidentiality. The Provider takes appropriate technical and organisational measures (Art. 32 GDPR), in particular:</p>
+<ul class="list-disc pl-5 mb-3 space-y-1"><li>encrypted transmission (HTTPS)</li>
+<li>access rules in the database (row level security): team data is only visible to the admin and team of the respective gym</li>
+<li>passwords stored only as hashes</li>
+<li>storage in the EU (Supabase, region eu-west-1, Ireland)</li>
+<li>the Provider’s administrative accounts protected by strong passwords and two-factor authentication</li></ul>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 5 Sub-processors</h4>
+<p class="mb-3">The Gym consents to the use of the following sub-processors:</p>
+<ul class="list-disc pl-5 mb-3 space-y-1"><li>Supabase Inc., 970 Toa Payoh North #07-04, Singapore 318992 – database and sign-in, storage in the EU (Ireland)</li>
+<li>Sendinblue SAS (Brevo), 17 rue de Salneuve, 75017 Paris, France – sending emails</li></ul>
+<p class="mb-3">The Provider will announce new or changed sub-processors at least 30 days in advance by email. The Gym can object and end the partnership. The Provider contractually binds sub-processors to an equivalent level of data protection.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 6 Assistance and notification</h4>
+<p class="mb-3">The Provider assists the Gym with requests from data subjects and with its obligations under Art. 32 to 36 GDPR. It notifies the Gym of personal data breaches without undue delay, if possible within 48 hours of becoming aware of them.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 7 Deletion and return</h4>
+<p class="mb-3">After the partnership ends, the Provider deletes the data within 30 days unless there is a legal obligation to retain it. On request, it hands the data over as a file beforehand.</p>
+<h4 class="font-bold text-slate-300 mt-3 mb-1">§ 8 Evidence and audits</h4>
+<p class="mb-3">The Provider makes available to the Gym the information necessary to demonstrate compliance with this agreement and allows audits by prior arrangement.</p>
+</div>
+  </div>
+</div>
+<script>
+function openPartnerTerms(){var m=document.getElementById('partner-terms-modal');var l=(window.getLang&&getLang())||'de';m.querySelectorAll('[data-imp]').forEach(function(d){d.classList.toggle('hidden',d.getAttribute('data-imp')!==l);});m.classList.remove('hidden');m.classList.add('flex');m.firstElementChild.scrollTop=0;}
+function closePartnerTerms(){var m=document.getElementById('partner-terms-modal');m.classList.add('hidden');m.classList.remove('flex');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closePartnerTerms();});
+</script>
+
 <!-- NUTZUNGSREGELN -->
 <div id="terms-modal" class="hidden fixed inset-0 z-[95] bg-black/70 items-center justify-center p-4" onclick="if(event.target===this)closeTerms()" role="dialog" aria-modal="true">
   <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-5 text-xs text-slate-300 leading-relaxed relative">
@@ -17534,7 +17644,7 @@
 <h3 class="font-bold text-slate-200 mt-5 mb-1">3. Deine Inhalte</h3>
 <p class="mb-3">Was du in BoulderLog einstellst (z. B. Hallenkarten, Hallenpläne, Routen, Profilbild, Kommentare, Feed-Beiträge, Video-Links), bleibt deins. Du erlaubst uns nur, diese Inhalte zu speichern und den Personen anzuzeigen, mit denen du sie teilst – so lange, bis du sie oder dein Konto löschst. Lade nur Inhalte hoch, an denen du die nötigen Rechte hast, z. B. eigene Fotos oder einen Hallenplan, den die Halle freigegeben hat.</p>
 <h3 class="font-bold text-slate-200 mt-5 mb-1">4. Hallen und Hausordnung</h3>
-<p class="mb-3">Hallenprofile, die Nutzer*innen anlegen, sind keine offiziellen Angebote der jeweiligen Halle. Vom Hallenteam gepflegt werden nur Hallen, die in der App als Partnerhalle gekennzeichnet sind. Den Namen einer Halle darfst du verwenden, um sie zu bezeichnen. Hallenpläne, Fotos und Logos der Halle lädst du nur mit ihrem Einverständnis hoch. Beachte in der Halle die Hausordnung, z. B. Regeln zum Fotografieren und Filmen, und nimm andere Personen nicht ohne ihr Einverständnis auf.</p>
+<p class="mb-3">Hallenprofile, die Nutzer*innen anlegen, sind keine offiziellen Angebote der jeweiligen Halle. Vom Hallenteam gepflegt werden nur Hallen, die in der App als Partnerhalle gekennzeichnet sind. Den Namen einer Halle darfst du verwenden, um sie zu bezeichnen. Hallenpläne, Fotos und Logos der Halle lädst du nur mit ihrem Einverständnis hoch. Beachte in der Halle die Hausordnung, z. B. Regeln zum Fotografieren und Filmen, und nimm andere Personen nicht ohne ihr Einverständnis auf. Für Hallen, die BoulderLog als Partnerhalle nutzen, gelten zusätzlich die <button type="button" onclick="closeTerms();openPartnerTerms()" class="underline underline-offset-2 hover:text-slate-100">Partnerbedingungen</button>.</p>
 <h3 class="font-bold text-slate-200 mt-5 mb-1">5. Was nicht erlaubt ist</h3>
 <ul class="list-disc pl-5 mb-3 space-y-1"><li>rechtswidrige Inhalte jeder Art</li>
 <li>Beleidigungen, Hetze, Bedrohungen, Belästigung oder Diskriminierung</li>
@@ -17568,7 +17678,7 @@
 <h3 class="font-bold text-slate-200 mt-5 mb-1">3. Your content</h3>
 <p class="mb-3">Whatever you add to BoulderLog (e.g. gym maps, floor plans, routes, profile picture, comments, feed posts, video links) remains yours. You only allow us to store this content and show it to the people you share it with – until you delete it or your account. Only upload content you have the necessary rights to, e.g. your own photos or a floor plan the gym has approved.</p>
 <h3 class="font-bold text-slate-200 mt-5 mb-1">4. Gyms and house rules</h3>
-<p class="mb-3">Gym profiles created by users are not official offerings of the respective gym. Only gyms marked as partner gyms in the app are maintained by the gym team. You may use a gym’s name to refer to it. Only upload floor plans, photos and logos of a gym with its consent. Follow the gym’s house rules, e.g. on taking photos and filming, and do not record other people without their consent.</p>
+<p class="mb-3">Gym profiles created by users are not official offerings of the respective gym. Only gyms marked as partner gyms in the app are maintained by the gym team. You may use a gym’s name to refer to it. Only upload floor plans, photos and logos of a gym with its consent. Follow the gym’s house rules, e.g. on taking photos and filming, and do not record other people without their consent. Gyms that use BoulderLog as a partner gym are additionally subject to the <button type="button" onclick="closeTerms();openPartnerTerms()" class="underline underline-offset-2 hover:text-slate-100">Partner Terms</button>.</p>
 <h3 class="font-bold text-slate-200 mt-5 mb-1">5. What is not allowed</h3>
 <ul class="list-disc pl-5 mb-3 space-y-1"><li>illegal content of any kind</li>
 <li>insults, hate speech, threats, harassment or discrimination</li>
@@ -17629,6 +17739,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeTerms()
 <li>Sessions (Halle, Datum, Uhrzeit, Dauer, Bewertung, Anzahl Boulder, Kommentar), Logbucheinträge, Projekte und Links zu Projekt-Videos</li>
 <li>Freundschaften und -anfragen, Feed-Beiträge, Challenges und Teilnahmen, Communities, Einladungen und Nachrichten im Postfach</li></ul>
 <p class="mb-3">Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der von dir genutzten Funktionen). Die Daten werden gespeichert, solange dein Konto besteht; Einträge, die du löschst, werden sofort aus der Datenbank entfernt.</p>
+<p class="mb-3"><b>Teams von Partnerhallen:</b> Nutzt eine Halle BoulderLog als Partnerhalle, verarbeiten wir zusätzlich die E-Mail-Adressen eingeladener Routesetter*innen (die Einladung verschicken wir per E-Mail), Rollen im Hallenteam sowie Einträge im Schraubplan (Tag, Sektor, eingeteilte Personen mit Benutzernamen) und Wünsche. Diese Daten verarbeiten wir im Auftrag der jeweiligen Halle (Art. 28 DSGVO); verantwortlich ist insoweit die Halle. Fragen dazu richtest du am besten an deine Halle, wir leiten sie aber auch weiter.</p>
 <p class="mb-3">Datenschutzhinweise von Supabase: <a href="https://supabase.com/privacy" target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-slate-100">supabase.com/privacy</a></p>
 <h3 class="font-bold text-slate-200 mt-5 mb-1">6. E-Mails (Brevo)</h3>
 <p class="mb-3">Für E-Mails zur Bestätigung deiner Registrierung und zum Zurücksetzen des Passworts nutzen wir den Versanddienst <b>Brevo</b> (Sendinblue SAS, 17 rue de Salneuve, 75017 Paris, Frankreich). Dabei werden deine E-Mail-Adresse und der Inhalt der E-Mail verarbeitet. Mit Brevo besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO (Bestandteil der Brevo-Nutzungsbedingungen). Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
@@ -17691,6 +17802,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeTerms()
 <li>Sessions (gym, date, time, duration, rating, number of boulders, comment), logbook entries, projects and links to project videos</li>
 <li>Friendships and friend requests, feed posts, challenges and participations, communities, invitations and inbox messages</li></ul>
 <p class="mb-3">The legal basis is Art. 6(1)(b) GDPR (providing the features you use). The data is stored for as long as your account exists; entries you delete are removed from the database immediately.</p>
+<p class="mb-3"><b>Partner gym teams:</b> If a gym uses BoulderLog as a partner gym, we also process the email addresses of invited route setters (we send the invitation by email), team roles, and setting schedule entries (day, sector, assigned people with usernames) and wishes. We process this data on behalf of the respective gym (Art. 28 GDPR); the gym is the controller in this respect. Questions about this are best addressed to your gym, but we will also pass them on.</p>
 <p class="mb-3">Supabase privacy policy: <a href="https://supabase.com/privacy" target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-slate-100">supabase.com/privacy</a></p>
 <h3 class="font-bold text-slate-200 mt-5 mb-1">6. Emails (Brevo)</h3>
 <p class="mb-3">We use the email service <b>Brevo</b> (Sendinblue SAS, 17 rue de Salneuve, 75017 Paris, France) for emails confirming your registration and resetting your password. Your email address and the content of the email are processed. A data processing agreement pursuant to Art. 28 GDPR is in place with Brevo (part of the Brevo terms of use). Legal basis: Art. 6(1)(b) GDPR.</p>
