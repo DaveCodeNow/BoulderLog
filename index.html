@@ -10034,17 +10034,20 @@
       const c = myCommunities.find(x => x.id === cid);
       const m = (c?.members || []).find(x => String(x.user_id) === userId);
       const pending = m?.status === 'pending';
-      if (!confirm(pending ? `Einladung an ${m?.username || 'diese Person'} zurückziehen?` : `${m?.username || 'Diese Person'} aus „${c?.name || 'der Community'}“ entfernen?\n\n${m?.username || 'Die Person'} bekommt von jeder gemeinsamen Halle eine eigene Kopie mit ihrem Fortschritt.`)) return;
+      if (!confirm(pending ? `Einladung an ${m?.username || 'diese Person'} zurückziehen?` : `${m?.username || 'Diese Person'} aus „${c?.name || 'der Community'}“ entfernen?\n\n${m?.username || 'Die Person'} bekommt von jeder gemeinsamen Halle eine eigene Kopie mit ihrem Fortschritt. Hallen, die sie eingebracht hat, bleiben in der Community und gehen an die Ersteller*in über.`)) return;
       cmRun(() => cmRpc('community_remove_member', { p_cid: cid, p_user_id: userId }));
     }
 
     function cmLeave(cid) {
       const c = myCommunities.find(x => x.id === cid);
       const alone = (c?.members || []).filter(m => m.status === 'accepted').length <= 1;
-      const owner = String(c?.owner_id || c?.created_by || '') === String(currentAuthUser?.id || '');
+      const me = String(currentAuthUser?.id || '');
+      const owner = String(c?.owner_id || c?.created_by || '') === me;
+      const myGyms = (c?.gyms || []).filter(g => String(g.owner_id) === me).map(g => `„${g.name}“`);
       const q = alone
         ? `Du bist das letzte Mitglied von „${c?.name}“. Beim Verlassen wird die Community aufgelöst; die Hallen fallen an die Personen zurück, die sie eingebracht haben. Von Hallen anderer bekommst du eine eigene Kopie mit deinem Fortschritt.\n\nVerlassen?`
-        : `„${c?.name}“ verlassen? Von jeder gemeinsamen Halle, die nicht dir gehört, bekommst du eine eigene Kopie mit deinem Fortschritt.`
+        : `„${c?.name}“ verlassen? Von jeder gemeinsamen Halle bekommst du eine eigene Kopie mit deinem Fortschritt.`
+          + (myGyms.length ? `\n\nVon dir eingebracht: ${myGyms.join(', ')}. ${myGyms.length === 1 ? 'Sie bleibt' : 'Sie bleiben'} in der Community, damit die anderen weitermachen können, und ${myGyms.length === 1 ? 'geht' : 'gehen'} an die Ersteller*in über. Willst du sie stattdessen mitnehmen, löse sie vorher über „Lösen“.` : '')
           + (owner ? '\n\nDu bist Ersteller*in – die Rolle geht an die Admin-Person, die am längsten dabei ist. Mit ⇄ neben einem Mitglied kannst du sie vorher gezielt übertragen.' : '');
       if (!confirm(q)) return;
       cmRun(() => cmRpc('community_leave', { p_cid: cid }), { full: true, ok: 'Community verlassen.' });
