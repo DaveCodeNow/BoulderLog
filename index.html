@@ -5953,7 +5953,9 @@
       if (tool === 'viewport') { builderSel = null; builderSelVertex = null; resetMapZoom(); }
       if (tool === 'view') { builderSel = null; builderSelVertex = null; }   // Ansicht: Zoom bleibt, wie er ist
       builderHintOpen = false;
-      builderPanelOpen = false;       // Werkzeug gewählt: Menü einklappen, Zeichenfläche frei
+      // Werkzeug gewählt: Menü einklappen, Zeichenfläche frei – außer bei „Ansicht“,
+      // deren Schieberegler im Menü selbst liegen
+      builderPanelOpen = tool === 'view';
       updateBuilderPanelUI();
       renderMapVector();
       renderBuilderOverlay();
