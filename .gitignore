@@ -11,3 +11,7 @@
 !fonts/
 !fonts/*.woff2
 !fonts/OFL.txt
+# Lokal eingebundene Bibliotheken (statt CDNs) samt Lizenzhinweis
+!vendor/
+!vendor/*.js
+!vendor/LICENSES.txt
