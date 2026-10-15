@@ -4,5 +4,7 @@ tailwind-3.4.17.js            Tailwind CSS Play CDN 3.4.17   MIT License   https
 chart-4.5.1.umd.min.js        Chart.js 4.5.1                 MIT License   https://github.com/chartjs/Chart.js
 supabase-js-2.117.3.min.js    supabase-js 2.117.3            MIT License   https://github.com/supabase/supabase-js
 canvas-confetti-1.9.3.min.js  canvas-confetti 1.9.3          ISC License   https://github.com/catdad/canvas-confetti
+jsqr-1.4.0.min.js             jsQR 1.4.0 (jsDelivr-minified) Apache-2.0    https://github.com/cozmo/jsQR
+qrcode-generator-1.4.4.min.js qrcode-generator 1.4.4 (jsDelivr-minified) MIT License https://github.com/kazuhikoarase/qrcode-generator
 
 Die vollständigen Lizenztexte stehen in den jeweiligen Repositories.
