@@ -13693,7 +13693,7 @@
         .qr{width:340px;height:340px;margin:28px auto}.code{font:700 26px ui-monospace,monospace;letter-spacing:.18em}.small{color:#555;font-size:13px}</style></head>
         <body><h1>${escapeHtmlText(gymName)}</h1><p>${escapeHtmlText(t('Scanne den Code mit deiner Kamera, um die Halle in BoulderLog freizuschalten.'))}</p>
         <div class="qr">${svg}</div><p class="small">${escapeHtmlText(t('Oder gib in BoulderLog diesen Code ein:'))}</p><p class="code">${escapeHtmlText(d.code)}</p>
-        ${until ? `<p class="small">${escapeHtmlText(t('Gültig bis'))} ${escapeHtmlText(until)}</p>` : ''}</body></html>`;
+        ${until ? `<p class="small">${escapeHtmlText(t('Gültig bis'))} ${escapeHtmlText(until)}</p>` : ''}<\/body><\/html>`;   // „<\/“: Live Server u. Ä. halten das sonst für das Seitenende
       openModal('partner-qr-modal');
     }
     // Drucken über einen unsichtbaren Rahmen (funktioniert auch in der App vom Startbildschirm)
