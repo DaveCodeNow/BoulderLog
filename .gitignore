@@ -5,6 +5,9 @@
 !index.html
 # Web-App (Homescreen): Manifest und App-Icons
 !manifest.webmanifest
+# Service Worker (Installierbarkeit) + Offline-Seite
+!sw.js
+!offline.html
 !icons/
 !icons/*.png
 # Lokal eingebundene Schrift (statt Google Fonts) samt Lizenz

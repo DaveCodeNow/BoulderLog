@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1c1e">
+  <title>Boulderlytics – Keine Verbindung</title>
+  <!-- Wird vom Service Worker (sw.js) angezeigt, wenn die App ohne Internet geöffnet wird. Eigenständig: keine externen Dateien außer dem Icon. -->
+  <style>
+    html, body { margin: 0; height: 100%; }
+    body { background: #121214; color: #ededf0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      display: flex; align-items: center; justify-content: center; padding: 1.5rem; box-sizing: border-box; text-align: center; }
+    .box { max-width: 22rem; }
+    img { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 1.25rem; }
+    h1 { font-size: 1.3rem; margin: 0 0 .5rem; }
+    p { font-size: .9rem; color: #a1a1aa; line-height: 1.5; margin: 0 0 1.5rem; }
+    button { background: #059669; color: #fff; border: 0; border-radius: .6rem; padding: .7rem 1.4rem; font-weight: 700; font-size: .9rem; cursor: pointer; }
+    button:hover { background: #10b981; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <img src="icons/icon-192.png" alt="">
+    <h1 id="t">Keine Verbindung</h1>
+    <p id="d">Boulderlytics braucht Internet, um deine Daten zu laden. Sobald du wieder online bist, geht es automatisch weiter.</p>
+    <button id="b" type="button" onclick="location.reload()">Erneut versuchen</button>
+  </div>
+  <script>
+    (function () {
+      var l = 'de';
+      try { l = localStorage.getItem('boulder_lang') || ((navigator.language || 'de').toLowerCase().indexOf('de') === 0 ? 'de' : 'en'); } catch (e) {}
+      if (l === 'en') {
+        document.documentElement.lang = 'en';
+        document.title = 'Boulderlytics – No connection';
+        document.getElementById('t').textContent = 'No connection';
+        document.getElementById('d').textContent = 'Boulderlytics needs the internet to load your data. It continues automatically once you are back online.';
+        document.getElementById('b').textContent = 'Try again';
+      }
+      window.addEventListener('online', function () { location.reload(); });
+    })();
+  </script>
+</body>
+</html>
