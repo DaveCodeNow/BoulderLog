@@ -1,6 +1,6 @@
 {
-  "name": "BoulderLog",
-  "short_name": "BoulderLog",
+  "name": "Boulderlytics",
+  "short_name": "Boulderlytics",
   "description": "Dein Boulder-Logbuch: Projekte, Sessions, Hallenkarte und Challenges.",
   "lang": "de",
   "start_url": "./",
