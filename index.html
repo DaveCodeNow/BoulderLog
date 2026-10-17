@@ -13644,7 +13644,9 @@
     function pendingFriendInviteToken() {
       try { return localStorage.getItem(PENDING_FRIEND_INVITE_KEY) || null; } catch (e) { return null; }
     }
-    function friendInviteUrl(token) { return location.origin + location.pathname + '?invite=' + encodeURIComponent(token); }
+    // Geteilte Links zeigen immer auf die öffentliche App – auch wenn lokal (Live Server, 127.0.0.1/index.html) erzeugt
+    const APP_PUBLIC_URL = 'https://boulderlytics.de/';
+    function friendInviteUrl(token) { return APP_PUBLIC_URL + '?invite=' + encodeURIComponent(token); }
     let friendInviteToken = null;   // eigener Link
     async function openFriendInviteModal(renew) {
       const loading = document.getElementById('fi-loading'), body = document.getElementById('fi-body'), err = document.getElementById('fi-error');
@@ -13687,7 +13689,7 @@
       if (!friendInviteToken) return;
       const url = friendInviteUrl(friendInviteToken), btn = document.getElementById('fi-copy');
       let ok = false;
-      try { await navigator.clipboard.writeText(friendInviteShareText() + ' ' + url); ok = true; }
+      try { await navigator.clipboard.writeText(friendInviteShareText() + '\n' + url); ok = true; }
       catch (e) { const inp = document.getElementById('fi-link'); inp.select(); try { ok = document.execCommand('copy'); } catch (e2) { /* egal */ } }
       btn.textContent = ok ? t('✓ Kopiert') : t('Bitte Link markieren und kopieren');
       setTimeout(() => { btn.textContent = t('Link kopieren'); }, 2500);
@@ -13761,7 +13763,7 @@
       await loadFriendsAndSocialFeed();
       setTimeout(closeFriendInviteAccept, 1400);
     }
-    function partnerQrUrl(code) { return location.origin + location.pathname + '?partner_code=' + encodeURIComponent(code); }
+    function partnerQrUrl(code) { return APP_PUBLIC_URL + '?partner_code=' + encodeURIComponent(code); }
     // Code aus dem gescannten Text: Link mit partner_code oder der nackte Code
     function partnerCodeFromText(text) {
       const t = String(text || '').trim();
