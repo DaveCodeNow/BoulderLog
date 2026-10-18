@@ -2028,11 +2028,6 @@
             <span class="adv-chevron text-slate-500" aria-hidden="true">▾</span>
           </summary>
           <div class="space-y-3 px-3 pb-3 pt-1">
-        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-700/80 text-xs flex justify-between items-center">
-          <span class="text-slate-400">Position relativ auf der Karte:</span>
-          <span id="mr-coords-display" class="font-mono text-emerald-400 font-bold">X: 0%, Y: 0%</span>
-        </div>
-
         <div>
           <label class="block text-xs text-slate-400 mb-1">Routenname (optional)</label>
           <input type="text" id="mr-name" placeholder="z. B. Überhang-Sprung" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-100">
@@ -7652,7 +7647,6 @@
         tempMapDiscipline = routeIsClimb(editRoute) ? 'climb' : 'boulder';
       }
 
-      document.getElementById('mr-coords-display').innerText = `X: ${tempMapCoords.x}%, Y: ${tempMapCoords.y}%`;
 
       initClimbFieldPlaceholders();
       const isClimb = tempMapDiscipline === 'climb';
