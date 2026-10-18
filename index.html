@@ -29,12 +29,12 @@
         if (e.touches && e.touches.length > 1) e.preventDefault();
       }, { passive: false });
       // Double-Tap-Zoom (Fallback für ältere iOS-Versionen).
-      // Ausnahme: Chips im Kartenfilter – dort ist Doppeltippen eine Funktion (Merkmal ausblenden) und braucht den zweiten Klick.
-      // Zoom bleibt trotzdem aus (touch-action auf html/body und den Chips).
+      // Ausnahmen: Chips im Kartenfilter (Doppeltippen = Merkmal ausblenden) und Merkmal-Chips beim Routesetzen
+      // (Doppeltippen = Crux) – beide brauchen den zweiten Klick. Zoom bleibt trotzdem aus (touch-action auf html/body und den Chips).
       var lastTouchEnd = 0;
       document.addEventListener('touchend', function (e) {
         var now = Date.now();
-        if (now - lastTouchEnd < 300 && !(e.target.closest && e.target.closest('input, textarea, select, #map-filter-drawer label, .rt-star'))) e.preventDefault();
+        if (now - lastTouchEnd < 300 && !(e.target.closest && e.target.closest('input, textarea, select, #map-filter-drawer label, #map-route-modal label, .rt-star'))) e.preventDefault();
         lastTouchEnd = now;
       }, { passive: false });
       // Strg + Mausrad / Trackpad-Pinch zoomt nicht die Seite
