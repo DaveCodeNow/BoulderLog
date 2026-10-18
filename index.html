@@ -17,7 +17,7 @@
       d.setAttribute('data-dark', shade);
     })();
   </script>
-  <script>
+  <script>S
     /* Browser-Zoom komplett unterbinden (iOS Safari ignoriert user-scalable=no) */
     (function () {
       var stop = function (e) { e.preventDefault(); };
@@ -2873,9 +2873,15 @@
   <!-- MODAL: FREUND*INNEN PER LINK EINLADEN (fester persönlicher Link, erneuerbar) -->
   <div id="friend-invite-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center p-4 z-[70]" onclick="if (event.target === this) closeModal('friend-invite-modal')">
     <div class="w-full max-w-sm space-y-4 rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-2xl">
-      <div>
+      <div class="fi-friend">
         <h3 class="text-lg font-bold text-slate-100">Freund*innen einladen</h3>
         <p class="text-xs text-slate-400">Schick deinen persönlichen Link. Wer ihn öffnet und sich anmeldet, ist nach einer kurzen Bestätigung direkt mit dir vernetzt.</p>
+      </div>
+      <!-- Community-Link (openCommunityLinkModal): gleicher Dialog, anderer Text -->
+      <div class="fi-community hidden">
+        <h3 class="text-lg font-bold text-slate-100">Per Link in die Community einladen</h3>
+        <p id="fi-cname" class="text-sm font-semibold text-emerald-300 break-words" data-i18n-skip></p>
+        <p class="mt-1 text-xs text-slate-400">Wer den Link öffnet und sich anmeldet, ist nach einer kurzen Bestätigung Mitglied der Community und mit dir vernetzt. Ohne Konto wird man zuerst zur Registrierung geführt.</p>
       </div>
       <p id="fi-loading" class="text-xs text-slate-400">Link wird geladen …</p>
       <div id="fi-body" class="hidden space-y-4">
@@ -2886,6 +2892,7 @@
           <button type="button" onclick="shareFriendInvite()" id="fi-share" class="hidden flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 py-2.5 text-sm font-bold text-white transition">Teilen</button>
         </div>
         <p class="text-[11px] text-slate-500">Der Link gilt für beliebig viele Personen, auch in Gruppen. <button type="button" onclick="renewFriendInvite()" class="underline underline-offset-2 hover:text-slate-300">Neuen Link erzeugen</button> – der bisherige funktioniert dann nicht mehr.</p>
+        <p class="fi-community hidden text-[11px] text-slate-500">Neue Mitglieder kommen ohne Admin-Rechte dazu. Der Link gilt, solange du Admin der Community bist.</p>
       </div>
       <p id="fi-error" class="hidden text-xs text-red-300"></p>
       <button type="button" onclick="closeModal('friend-invite-modal')" class="w-full rounded-xl border border-slate-600 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700/50 transition">Schließen</button>
@@ -2904,6 +2911,26 @@
       <div id="fia-actions" class="flex gap-2">
         <button type="button" onclick="closeFriendInviteAccept()" class="flex-1 rounded-xl bg-slate-700 hover:bg-slate-600 py-2.5 text-sm font-semibold text-slate-200 transition">Nicht jetzt</button>
         <button type="button" onclick="confirmFriendInvite()" id="fia-ok" class="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 py-2.5 text-sm font-bold text-white transition">Vernetzen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: COMMUNITY-LINK EINLÖSEN (nach dem Öffnen eines Community-Links und dem Anmelden) -->
+  <div id="community-link-accept-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center p-4 z-[75]">
+    <div class="w-full max-w-sm space-y-4 rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-2xl text-center">
+      <div class="text-4xl" aria-hidden="true">👋</div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-100" data-i18n-skip><span class="only-de"><span class="cla-name"></span> lädt dich ein</span><span class="only-en"><span class="cla-name"></span> invited you</span></h3>
+        <p id="cla-community" class="mt-1 text-sm font-semibold text-emerald-300 break-words" data-i18n-skip></p>
+        <p id="cla-gyms" class="mt-1 text-[11px] text-slate-400 break-words" data-i18n-skip></p>
+        <p class="cla-join-friend mt-2 text-xs text-slate-400">Tritt der Community bei – ihr seid dann auch miteinander vernetzt und könnt euch z. B. zu Challenges einladen.</p>
+        <p class="cla-join mt-2 text-xs text-slate-400">Tritt der Community bei, um die gemeinsamen Hallen zu nutzen.</p>
+        <p class="cla-friend mt-2 text-xs text-slate-400">Du bist schon Mitglied der Community. Wollt ihr euch auch vernetzen?</p>
+      </div>
+      <p id="cla-status" class="hidden text-xs"></p>
+      <div id="cla-actions" class="flex gap-2">
+        <button type="button" onclick="closeCommunityLinkAccept()" class="flex-1 rounded-xl bg-slate-700 hover:bg-slate-600 py-2.5 text-sm font-semibold text-slate-200 transition">Nicht jetzt</button>
+        <button type="button" onclick="confirmCommunityLink()" id="cla-ok" class="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 py-2.5 text-sm font-bold text-white transition"><span class="cla-ok-join">Beitreten</span><span class="cla-ok-friend">Vernetzen</span></button>
       </div>
     </div>
   </div>
@@ -3084,6 +3111,12 @@
           <button id="auth-tab-register-btn" onclick="switchAuthTab('register')" class="text-sm font-bold text-slate-400 hover:text-slate-200 pb-1">Registrieren</button>
         </div>
         <button id="auth-close-btn" onclick="closeModal('auth-modal')" class="text-slate-400 hover:text-slate-100 font-bold text-sm" aria-label="Schließen">✕</button>
+      </div>
+      <!-- Mit Einladungslink gekommen (Freundes- oder Community-Link), siehe showAuthInviteHint() -->
+      <div id="auth-invite-hint" class="hidden rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100 leading-snug">
+        <p class="font-bold">📩 Du wurdest eingeladen!</p>
+        <p class="aih-community">Erstelle ein Konto – danach bist du direkt in der Community und mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.</p>
+        <p class="aih-friend">Erstelle ein Konto – danach bist du direkt mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.</p>
       </div>
       <!-- Fehler & Hinweise beim Anmelden (ersetzt Browser-Popups), siehe showAuthNotice() -->
       <div id="auth-notice" class="auth-notice hidden" role="alert" aria-live="polite"></div>
@@ -4731,7 +4764,8 @@
       }
 
       renderAllViews();
-      if (!(await handlePendingPartnerCode()) && !(await handlePendingFriendInvite())) maybeShowWelcome();   // per QR-Link mitgebrachter Code bzw. Einladung zuerst
+      // per QR-Link mitgebrachter Code bzw. Einladung zuerst (Community-Link vor Freundes-Link; der kommt beim nächsten Laden)
+      if (!(await handlePendingPartnerCode()) && !(await handlePendingCommunityLink()) && !(await handlePendingFriendInvite())) maybeShowWelcome();
     }
 
     async function loadFriendsAndSocialFeed() {
@@ -9640,6 +9674,19 @@
         // Nicht mitten in "Passwort vergessen" o. Ä. zurückspringen; neues Passwort gibt es nur angemeldet
         if (!document.getElementById('auth-reset-form').classList.contains('hidden')) switchAuthTab('login');
       }
+      showAuthInviteHint(on);
+    }
+    // Mit Einladungslink, aber ohne Anmeldung: Hinweis zeigen und einmal gleich die Registrierung öffnen
+    let authInviteTabShown = false;
+    function showAuthInviteHint(on) {
+      const hint = document.getElementById('auth-invite-hint');
+      if (!hint) return;
+      const community = !!pendingCommunityLinkToken(), friend = !!pendingFriendInviteToken();
+      const show = !!on && (community || friend);
+      hint.classList.toggle('hidden', !show);
+      hint.querySelector('.aih-community').classList.toggle('hidden', !community);
+      hint.querySelector('.aih-friend').classList.toggle('hidden', community);
+      if (show && !authInviteTabShown) { authInviteTabShown = true; switchAuthTab('register'); }
     }
 
     // Bewegte Elemente der Startseite – laufen beim Öffnen genau einmal und kommen dann zur Ruhe:
@@ -9983,7 +10030,9 @@
       const { data, error } = await supabaseClient.auth.signUp({
         email,
         password,
-        options: { data: Object.assign({ username, is_adult: isAdult }, pendingFriendInviteToken() ? { invite_token: pendingFriendInviteToken() } : {}), emailRedirectTo: authRedirectUrl() }
+        options: { data: Object.assign({ username, is_adult: isAdult },
+          pendingFriendInviteToken() ? { invite_token: pendingFriendInviteToken() } : {},
+          pendingCommunityLinkToken() ? { community_link_token: pendingCommunityLinkToken() } : {}), emailRedirectTo: authRedirectUrl() }
       });
       btn.disabled = false;
 
@@ -11010,6 +11059,7 @@
               <div>${head('Mitglieder')}<div class="divide-y divide-slate-700/50">${memberRows}</div></div>
               <div class="gc-actions">
                 ${isAdmin ? `<button type="button" onclick="cmShow('invite', '${c.id}')" class="gc-btn primary">＋ Einladen</button>
+                  <button type="button" onclick="openCommunityLinkModal('${c.id}')" class="gc-btn">🔗 Per Link einladen</button>
                   <button type="button" onclick="cmRename('${c.id}')" class="gc-btn">✏️ Umbenennen</button>` : ''}
                 <button type="button" onclick="cmLeave('${c.id}')" class="gc-btn danger">Verlassen</button>
                 ${iAmOwner ? `<button type="button" onclick="cmDelete('${c.id}')" class="gc-btn danger">🗑️ Löschen</button>` : ''}
@@ -14329,13 +14379,18 @@
     // Braucht supabase/basis/supabase_friend_invites.sql.
     const PENDING_FRIEND_INVITE_KEY = 'boulder_pending_friend_invite';
     const DONE_FRIEND_INVITE_KEY = 'boulder_done_friend_invite';
+    // Community-Link …/?join=TOKEN (siehe unten „Community per Link“)
+    const PENDING_COMMUNITY_LINK_KEY = 'boulder_pending_community_link';
+    const DONE_COMMUNITY_LINK_KEY = 'boulder_done_community_link';
     (function captureFriendInviteFromUrl() {
       try {
         const params = new URLSearchParams(location.search);
-        const token = params.get('invite');
-        if (!token) return;
-        localStorage.setItem(PENDING_FRIEND_INVITE_KEY, token.trim());
+        const token = params.get('invite'), join = params.get('join');
+        if (!token && !join) return;
+        if (token) localStorage.setItem(PENDING_FRIEND_INVITE_KEY, token.trim());
+        if (join) localStorage.setItem(PENDING_COMMUNITY_LINK_KEY, join.trim());
         params.delete('invite');
+        params.delete('join');
         const query = params.toString();
         history.replaceState(null, '', location.pathname + (query ? `?${query}` : '') + location.hash);
       } catch (e) { /* Speicher nicht verfügbar */ }
@@ -14343,20 +14398,40 @@
     function pendingFriendInviteToken() {
       try { return localStorage.getItem(PENDING_FRIEND_INVITE_KEY) || null; } catch (e) { return null; }
     }
+    function pendingCommunityLinkToken() {
+      try { return localStorage.getItem(PENDING_COMMUNITY_LINK_KEY) || null; } catch (e) { return null; }
+    }
     // Geteilte Links zeigen immer auf die öffentliche App – auch wenn lokal (Live Server, 127.0.0.1/index.html) erzeugt
     const APP_PUBLIC_URL = 'https://boulderlytics.de/';
-    function friendInviteUrl(token) { return APP_PUBLIC_URL + '?invite=' + encodeURIComponent(token); }
-    let friendInviteToken = null;   // eigener Link
-    async function openFriendInviteModal(renew) {
+    function friendInviteUrl(token) {
+      return APP_PUBLIC_URL + (inviteLinkCommunity ? '?join=' : '?invite=') + encodeURIComponent(token);
+    }
+    let friendInviteToken = null;   // eigener Link (Freund*innen bzw. die gerade gezeigte Community)
+    let inviteLinkCommunity = null; // null = Freundes-Link, sonst { cid, name } (Community-Link, nur Admins)
+    function openFriendInviteModal() { inviteLinkCommunity = null; return loadInviteLink(false); }
+    function openCommunityLinkModal(cid) {
+      const c = myCommunities.find(x => x.id === cid);
+      inviteLinkCommunity = { cid, name: c?.name || '' };
+      return loadInviteLink(false);
+    }
+    async function loadInviteLink(renew) {
       const loading = document.getElementById('fi-loading'), body = document.getElementById('fi-body'), err = document.getElementById('fi-error');
+      const comm = inviteLinkCommunity;
+      document.querySelectorAll('#friend-invite-modal .fi-friend').forEach(el => el.classList.toggle('hidden', !!comm));
+      document.querySelectorAll('#friend-invite-modal .fi-community').forEach(el => el.classList.toggle('hidden', !comm));
+      document.getElementById('fi-cname').textContent = comm ? `„${comm.name}“` : '';
       loading.classList.remove('hidden'); body.classList.add('hidden'); err.classList.add('hidden');
       openModal('friend-invite-modal');
       if (!currentAuthUser) { loading.classList.add('hidden'); err.textContent = t('Bitte melde dich an, um Freund*innen einzuladen.'); err.classList.remove('hidden'); return; }
-      const { data, error } = await supabaseClient.rpc('my_friend_invite', { p_renew: !!renew });
+      const { data, error } = comm
+        ? await supabaseClient.rpc('my_community_link', { p_cid: comm.cid, p_renew: !!renew })
+        : await supabaseClient.rpc('my_friend_invite', { p_renew: !!renew });
       loading.classList.add('hidden');
       if (error || !data) {
         console.error('Einladungslink:', error);
-        err.textContent = t('Der Einladungslink konnte nicht geladen werden. Bitte versuche es später erneut.');
+        err.textContent = comm && error && /my_community_link/.test(String(error.message || ''))
+          ? t('Community-Links sind noch nicht eingerichtet (supabase_community_links.sql fehlt).')
+          : t('Der Einladungslink konnte nicht geladen werden. Bitte versuche es später erneut.');
         err.classList.remove('hidden');
         return;
       }
@@ -14373,9 +14448,10 @@
     }
     async function renewFriendInvite() {
       if (!await uiConfirm('Neuen Einladungslink erzeugen? Der bisherige Link funktioniert dann nicht mehr – auch dort, wo du ihn schon geteilt hast.')) return;
-      await openFriendInviteModal(true);
+      await loadInviteLink(true);
     }
     function friendInviteShareText() {
+      if (inviteLinkCommunity) return `${t('Komm in unsere Boulderlytics-Community')} „${inviteLinkCommunity.name}“! ${t('Über diesen Link bist du direkt dabei und mit mir vernetzt:')}`;
       return t('Komm zu Boulderlytics, meinem Boulder-Logbuch! Über diesen Link sind wir direkt vernetzt:');
     }
     async function shareFriendInvite() {
@@ -14461,6 +14537,105 @@
       status.className = 'text-sm font-semibold text-emerald-400';
       await loadFriendsAndSocialFeed();
       setTimeout(closeFriendInviteAccept, 1400);
+    }
+
+    // ---------- Community per Link ----------
+    // Link …/?join=TOKEN – jede Admin-Person hat pro Community einen festen, erneuerbaren Link (my_community_link).
+    // Nach dem Anmelden (bzw. Registrieren) eine Rückfrage, dann: Mitglied der Community und mit der einladenden Person
+    // vernetzt (accept_community_link). Schon befreundet: einfache Einladung in die Community. Schon Mitglied, aber nicht
+    // befreundet: nur vernetzen. Token liegt bei der Registrierung zusätzlich in user_metadata.community_link_token.
+    // Braucht supabase/community/supabase_community_links.sql.
+    let communityLinkAccept = null;   // { token, info }
+    async function handlePendingCommunityLink() {
+      if (!currentAuthUser) return false;
+      let token = null, done = null;
+      try {
+        token = localStorage.getItem(PENDING_COMMUNITY_LINK_KEY);
+        localStorage.removeItem(PENDING_COMMUNITY_LINK_KEY);
+        done = localStorage.getItem(DONE_COMMUNITY_LINK_KEY);
+      } catch (e) { /* egal */ }
+      const metaToken = currentAuthUser.user_metadata && currentAuthUser.user_metadata.community_link_token;
+      if (!token && metaToken && metaToken !== done) token = metaToken;
+      if (!token) return false;
+      try { localStorage.setItem(DONE_COMMUNITY_LINK_KEY, token); } catch (e) { /* egal */ }
+      const { data, error } = await supabaseClient.rpc('community_link_info', { p_token: token });
+      if (error) { console.error('Community-Link prüfen:', error); return false; }
+      const info = Array.isArray(data) ? data[0] : data;
+      if (!info || info.status === 'self') return false;
+      if (info.status === 'member' && info.friends) {
+        showAppToast(`${t('Du bist bereits Mitglied von')} „${info.community_name}“.`);
+        return false;
+      }
+      const modal = document.getElementById('community-link-accept-modal');
+      const invalid = info.status === 'invalid', full = info.status === 'full';
+      const friendOnly = info.status === 'member';   // schon Mitglied, aber noch nicht vernetzt
+      modal.querySelectorAll('.cla-name').forEach(el => { el.textContent = invalid ? t('Jemand') : (info.inviter_name || t('Jemand')); });
+      document.getElementById('cla-community').textContent = invalid ? '' : `„${info.community_name || ''}“`;
+      const gyms = Array.isArray(info.gyms) ? info.gyms : [];
+      document.getElementById('cla-gyms').textContent = !invalid && !friendOnly && gyms.length ? `🏢 ${gyms.join(', ')}` : '';
+      modal.querySelector('.cla-join-friend').classList.toggle('hidden', invalid || full || friendOnly || !!info.friends);
+      modal.querySelector('.cla-join').classList.toggle('hidden', invalid || full || friendOnly || !info.friends);
+      modal.querySelector('.cla-friend').classList.toggle('hidden', !friendOnly);
+      modal.querySelector('.cla-ok-join').classList.toggle('hidden', friendOnly);
+      modal.querySelector('.cla-ok-friend').classList.toggle('hidden', !friendOnly);
+      const status = document.getElementById('cla-status'), okBtn = document.getElementById('cla-ok');
+      status.classList.add('hidden');
+      document.getElementById('cla-actions').classList.remove('hidden');
+      okBtn.disabled = false;
+      okBtn.classList.toggle('hidden', invalid || full);
+      if (invalid || full) {
+        status.textContent = invalid
+          ? t('Dieser Community-Link ist nicht mehr gültig. Bitte lass dir einen neuen schicken.')
+          : t('Die Community ist voll (höchstens 300 Mitglieder).');
+        status.className = 'text-xs text-amber-300';
+      }
+      communityLinkAccept = { token, info };
+      openModal('community-link-accept-modal');
+      return true;
+    }
+    function closeCommunityLinkAccept() {
+      communityLinkAccept = null;
+      closeModal('community-link-accept-modal');
+      maybeShowWelcome();   // neue Konten ohne Halle: danach wie gewohnt die Begrüßung
+    }
+    async function confirmCommunityLink() {
+      const ctx = communityLinkAccept, okBtn = document.getElementById('cla-ok'), status = document.getElementById('cla-status');
+      if (!ctx || !currentAuthUser) return;
+      okBtn.disabled = true;
+      const { data, error } = await supabaseClient.rpc('accept_community_link', { p_token: ctx.token });
+      const res = data || {};
+      if (error || (res.status !== 'ok' && res.status !== 'member')) {
+        okBtn.disabled = false;
+        status.textContent = res.status === 'invalid' ? t('Dieser Community-Link ist nicht mehr gültig. Bitte lass dir einen neuen schicken.')
+          : res.status === 'full' ? t('Die Community ist voll (höchstens 300 Mitglieder).')
+          : t('Das hat nicht geklappt. Bitte versuche es erneut.');
+        status.className = 'text-xs text-red-300';
+        status.classList.remove('hidden');
+        if (error) console.error('Community-Link einlösen:', error);
+        return;
+      }
+      const inviterName = ctx.info.inviter_name || '';
+      if (res.befriended) {
+        const myName = getActiveUserName();
+        await supabaseClient.from('social_feed').insert({
+          user_id: currentAuthUser.id, username: myName, type: 'friendship', title: 'Neue Verbindung',
+          text: `${myName} und ${inviterName} sind jetzt miteinander vernetzt.`, date: todayLocalIso()
+        });
+      }
+      document.getElementById('cla-actions').classList.add('hidden');
+      status.textContent = res.status === 'member' ? t('✓ Ihr seid jetzt vernetzt!') : t('✓ Willkommen in der Community!');
+      status.className = 'text-sm font-semibold text-emerald-400';
+      status.classList.remove('hidden');
+      communityLinkAccept = null;
+      setTimeout(async () => {
+        closeModal('community-link-accept-modal');
+        await fetchAllUserDataFromSupabase();   // Community, gemeinsame Hallen und Freund*innen neu laden
+        if (res.status !== 'ok') return;
+        const merge = communityMergeOffers.some(o => o.community_name === res.community_name);
+        showAppToast(merge
+          ? `Willkommen in „${res.community_name || 'der Community'}“! Du hast schon eine eigene Fassung dieser Halle – im Postfach kannst du deinen Fortschritt übernehmen.`
+          : `Willkommen in „${res.community_name || 'der Community'}“! Die gemeinsame Halle findest du in der Hallenkarte.`);
+      }, 1400);
     }
     function partnerQrUrl(code) { return APP_PUBLIC_URL + '?partner_code=' + encodeURIComponent(code); }
     // Code aus dem gescannten Text: Link mit partner_code oder der nackte Code
@@ -21297,6 +21472,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImpress
   Object.assign(I18N_EN, {"Session starten": "Start session", "Starten": "Start", "Startzeit und Dauer werden automatisch erfasst.": "Start time and duration are recorded automatically.", "In welcher Halle bist du?": "Which gym are you at?", "+ Session nachtragen": "+ Log past session", "Session verwerfen": "Discard session", "Session beenden": "End session", "Pausiert": "Paused", "Session läuft": "Session running", "Laufende Session verwerfen?": "Discard running session?", "Die erfasste Zeit wird nicht gespeichert.": "The tracked time won't be saved.", "Startzeit": "Start time", "Endzeit": "End time", "Endzeit = Startzeit": "End time = start time", "Endzeit und Startzeit sind gleich.": "End time and start time are the same.", "Bitte gib an, wann die Session geendet hat.": "Please enter when the session ended.", "(nur für dich)": "(only for you)", "Erweiterte Einstellungen": "Advanced settings", "Durchstiegen am": "Topped on", "Geflasht am": "Flashed on", "Ein Versuch weniger": "One attempt less", "Ein Versuch mehr": "One attempt more", "Dein Status für die Route konnte nicht gespeichert werden:": "Your status for the route couldn't be saved:", "So funktioniert die Hallenkarte": "How the gym map works", "Die Karte hat drei Modi.": "The map has three modes.", "Ansehen": "View", "– Route antippen, um deinen Status, Versuche und deine Bewertung einzutragen.": "– tap a route to log your status, attempts and rating.", "– über den Stift ✏️ unten: auf die Wand tippen, um eine neue Route anzulegen.": "– via the pencil ✏️ below: tap a wall to add a new route.", "– über den Stift ✏️ unten: Wände, Sektoren und Ebenen deiner Halle zeichnen.": "– via the pencil ✏️ below: draw your gym's walls, sectors and levels.", "Zur ausführlichen Anleitung": "Open the full guide", "Hinweis „Anleitung“ auf der Karte nicht mehr anzeigen": "Don't show the “Guide” hint on the map anymore", "Hinweis auf der Hallenkarte": "Hint on the gym map", "„📖 Anleitung“ unter dem Hallenlogo ist ausgeblendet.": "“📖 Guide” below the gym logo is hidden.", "Wieder anzeigen": "Show again", "Erweiterte Informationen": "More details", "Einschätzung": "Grade feel", "Entspricht": "Equivalent", "Neigung, Stil & Grifftyp": "Angle, style & hold type", "Für diese Route sind noch keine Neigung, Stile oder Grifftypen hinterlegt.": "No angle, styles or hold types have been added for this route yet."});
   Object.assign(I18N_EN, {"Wiederholt": "Repeated", "Du hast die Route ein weiteres Mal geschafft.": "You've sent the route once more.", "Doppelt hält besser": "Twice Is Nice", "Wie viel Prozent deiner Tops willst du wiederholt haben? Für jeden Grad der Levelspanne einzeln – erfüllt, wenn jeder Grad mit Tops den Zielwert erreicht. Es zählen nur aktuell hängende Boulder.": "What share of your tops do you want to have repeated? Counted per grade in the range – met when every grade with tops reaches the target. Only boulders currently on the wall count.", "Levelspanne": "Grade range", "Von Level": "From grade", "Bis Level": "To grade", "Anteil wiederholter Tops (je Grad)": "Share of repeated tops (per grade)", "Noch keine Tops an hängenden Bouldern in dieser Spanne.": "No tops on current boulders in this range yet.", "Durchschnitt (alle Grade zusammen)": "Average (all grades combined)", "Meine Ziele": "My goals", "Zeigt die Routen, mit denen du dem Ziel näherkommst. Mehrere Ziele: Routen, die zu mindestens einem passen.": "Shows the routes that get you closer to the goal. Several goals: routes matching at least one.", "Für diese Halle hast du gerade kein aktives Ziel mit Routen. Ziele setzt du im Logbuch.": "You have no active route goal for this gym right now. Set goals in the logbook.", "noch nicht getoppt": "not topped yet", "noch unversucht": "not tried yet", "getoppt, noch nicht wiederholt": "topped, not repeated yet", "Tippen: nur wiederholte · Doppeltippen: wiederholte ausblenden": "Tap: repeated only · Double-tap: hide repeated", "Ziel startet erst später.": "goal starts later.", "Ziele starten erst später.": "goals start later.", "Geschraubt": "Set", "Diese Woche": "This week", "Letzte Woche": "Last week", "Vor 2 Wochen": "2 weeks ago", "Vor 3 Wochen": "3 weeks ago", "Früher …": "Earlier …", "Frühere Schraubwoche": "Earlier setting week", "Schraubdatum unbekannt": "Setting date unknown", "Hängt voraussichtlich noch ca. 1 Woche": "Expected to stay up for about 1 more week", "Wird voraussichtlich diese Woche umgeschraubt": "Probably being reset this week", "diese Woche": "this week", "letzte Woche": "last week", "Doppeltippen = 🔥 Crux": "Double-tap = 🔥 Crux", "Doppeltippen =": "Double-tap =", "Grifftyp & Stil nach Crux": "Hold type & style by crux", "Grifftyp und Stil nach der Crux der Route": "hold type and style by the route's crux", "Ein Boulder zählt nur im Grifftyp seiner Crux.": "A boulder only counts in the hold type of its crux.", "Ein Boulder zählt nur im Kletterstil seiner Crux.": "A boulder only counts in the style of its crux.", "Eine Route zählt nur im Grifftyp ihrer Crux.": "A route only counts in the hold type of its crux.", "Eine Route zählt nur im Kletterstil ihrer Crux.": "A route only counts in the style of its crux.", "Die Crux trägst du beim Routesetzen ein.": "You add the crux when setting the route.", "Pkt.": "pts", "vs. Erwartung": "vs. expected", "wenig Daten": "little data", "Prozentpunkte über bzw. unter der Erwartung bei gleichem Grad.": "Percentage points above or below expectation at the same grade.", "Wie oft du je Kategorie toppst – verglichen mit deiner Abschlussquote im jeweiligen Grad (Nullring = wie erwartet)": "How often you top each category – compared with your send rate at the same grade (zero ring = as expected)", "„vs. Erwartung“ = Prozentpunkte über bzw. unter deiner Abschlussquote bei gleichem Grad, danach sortiert (Stärken oben)": "“vs. expected” = percentage points above or below your send rate at the same grade, sorted by it (strengths on top)", "Abschlussquote = durchstiegene ÷ gezählte Boulder der Kategorie": "Send rate = topped ÷ counted boulders of the category", "Abschlussquote = durchstiegene ÷ gezählte Routen der Kategorie": "Send rate = topped ÷ counted routes of the category", "Für dieses Ziel fehlt noch eine Erweiterung der Datenbank. Bitte supabase_route_repeats.sql im Supabase SQL-Editor ausführen.": "This goal needs a database update first. Please run supabase_route_repeats.sql in the Supabase SQL editor."});
   I18N_PAT.push(["^Doppelt hält besser (\\d+) % · (.+)$", "Twice Is Nice $1 % · $2", false], ["^(.+): (\\d+) von (\\d+) wiederholt$", "$1: $2 of $3 repeated", false], ["^(.+): noch keine Tops$", "$1: no tops yet", false], ["^Weitere Ziele in: (.+)$", "More goals in: $1", true], ["^Geschraubt: diese Woche \\((.+)\\)$", "Set: this week ($1)", false], ["^Geschraubt: letzte Woche \\((.+)\\)$", "Set: last week ($1)", false], ["^Geschraubt: vor (\\d+) Wochen \\((.+)\\)$", "Set: $1 weeks ago ($2)", false], ["^Geschraubt am (.+)$", "Set on $1", false], ["^Hängt voraussichtlich noch ca\\. (\\d+) Wochen$", "Expected to stay up for about $1 more weeks", false], ["^Crux bei (\\d+) von (\\d+) (?:Bouldern|Routen)$", "Crux on $1 of $2 routes", false], ["^grau = weniger als (\\d+) (?:Boulder|Routen)$", "grey = fewer than $1 routes", false], ["^Offene (?:Boulder|Routen) zählen ab (.+) \\(dein Ø-Top-Grad\\)$", "Open routes count from $1 (your average top grade)", false], ["^Für das Radar braucht es mindestens 3 Kategorien mit Durchstiegen \\(aktuell (\\d+)\\)\\. Trage beim Setzen die Neigung und die 🔥 Crux ein\\.$", "The radar needs at least 3 categories with tops (currently $1). Add the angle and the 🔥 crux when setting routes.", false], ["^Keine (?:Boulder|Routen) mit 🔥 Crux im (Grifftyp|Kletterstil) im gewählten Filter\\. Die Crux trägst du beim Routesetzen ein\\.$", "No routes with a 🔥 crux in $1 in the selected filter. You add the crux when setting the route.", false]);
+  /* Community-Link */
+  Object.assign(I18N_EN, {"Per Link in die Community einladen": "Invite to the community via link", "Wer den Link öffnet und sich anmeldet, ist nach einer kurzen Bestätigung Mitglied der Community und mit dir vernetzt. Ohne Konto wird man zuerst zur Registrierung geführt.": "Whoever opens the link and signs in joins the community after a quick confirmation and is connected with you. People without an account are taken to sign-up first.", "Neue Mitglieder kommen ohne Admin-Rechte dazu. Der Link gilt, solange du Admin der Community bist.": "New members join without admin rights. The link works as long as you're an admin of the community.", "Tritt der Community bei – ihr seid dann auch miteinander vernetzt und könnt euch z. B. zu Challenges einladen.": "Join the community – you'll also be connected and can, for example, invite each other to challenges.", "Tritt der Community bei, um die gemeinsamen Hallen zu nutzen.": "Join the community to use its shared gyms.", "Du bist schon Mitglied der Community. Wollt ihr euch auch vernetzen?": "You're already a member of the community. Do you also want to connect?", "Beitreten": "Join", "📩 Du wurdest eingeladen!": "📩 You've been invited!", "Erstelle ein Konto – danach bist du direkt in der Community und mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be in the community right away and connected with the person who invited you. Already have an account? Just sign in.", "Erstelle ein Konto – danach bist du direkt mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be connected right away with the person who invited you. Already have an account? Just sign in.", "Community-Links sind noch nicht eingerichtet (supabase_community_links.sql fehlt).": "Community links aren't set up yet (supabase_community_links.sql is missing).", "Komm in unsere Boulderlytics-Community": "Join our Boulderlytics community", "Über diesen Link bist du direkt dabei und mit mir vernetzt:": "With this link you're in right away and connected with me:", "Du bist bereits Mitglied von": "You're already a member of", "Dieser Community-Link ist nicht mehr gültig. Bitte lass dir einen neuen schicken.": "This community link is no longer valid. Please ask for a new one.", "Die Community ist voll (höchstens 300 Mitglieder).": "The community is full (300 members at most).", "✓ Willkommen in der Community!": "✓ Welcome to the community!"});
   I18N_PAT.push(["^seit (\\d{1,2}:\\d{2}) Uhr$", "since $1", false], ["^\\(abzüglich (\\d+) Min Pause\\)$", "(minus $1 min break)", false]);
   window.I18N_EN = I18N_EN; window.I18N_X = I18N_X;
   var LANG_KEY='boulder_lang', lang='de';
