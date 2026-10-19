@@ -2808,6 +2808,25 @@
     </div>
   </div>
 
+  <!-- NÄCHSTE SCHRITTE: Ziel, Session, Projekt – muss aktiv weggeklickt werden (kein ✕, kein Klick daneben) -->
+  <div id="next-steps-modal" role="dialog" aria-modal="true" aria-labelledby="next-steps-title" class="fixed inset-0 z-[95] hidden items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
+    <div class="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-slate-700 bg-slate-800 shadow-2xl">
+      <div aria-hidden="true" class="pointer-events-none absolute -top-28 left-1/2 -translate-x-1/2 w-96 h-64 rounded-full" style="background: radial-gradient(closest-side, rgb(var(--ac-500) / .24), transparent);"></div>
+      <div class="relative px-5 sm:px-6 pt-7 space-y-4" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));">
+        <div class="text-center space-y-2">
+          <span class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-3xl" style="background: rgb(var(--ac-500) / .14);">🧭</span>
+          <h2 id="next-steps-title" class="text-xl font-bold text-slate-100">Schon entdeckt?</h2>
+          <p class="text-sm text-slate-400">Deine Hallenkarte steht. Mit diesen drei Funktionen holst du noch mehr aus deinen Sessions heraus.</p>
+        </div>
+        <ul id="next-steps-list" class="divide-y divide-slate-700/50 rounded-2xl border border-slate-700 bg-slate-900/40 px-3.5"></ul>
+        <div class="space-y-1">
+          <button type="button" onclick="nextStepsLater()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold py-3 rounded-xl text-sm transition">Später nochmal fragen</button>
+          <button type="button" onclick="nextStepsNever()" class="w-full text-[11px] text-slate-500 hover:text-slate-400 py-2 transition">Nicht mehr fragen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: COMMUNITY BEITRETEN (Willkommen › Weg 2) – Freundschaftsanfrage per Benutzername -->
   <div id="crew-join-modal" role="dialog" aria-modal="true" aria-labelledby="cj-title" class="fixed inset-0 z-[95] hidden items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4" onclick="if (event.target === this) closeModal('crew-join-modal')">
     <div class="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-slate-700 bg-slate-800 shadow-2xl">
@@ -4648,6 +4667,7 @@
               id: r.id,
               gymId: r.gym_id,
               gymName: gymObj ? Object.keys(scales).find(k => scales[k].db_id === r.gym_id) : Object.keys(scales)[0],
+              createdBy: r.created_by || null,
               posX: parseFloat(r.pos_x),
               posY: parseFloat(r.pos_y),
               grade: r.grade,
@@ -4766,6 +4786,7 @@
       renderAllViews();
       // per QR-Link mitgebrachter Code bzw. Einladung zuerst (Community-Link vor Freundes-Link; der kommt beim nächsten Laden)
       if (!(await handlePendingPartnerCode()) && !(await handlePendingCommunityLink()) && !(await handlePendingFriendInvite())) maybeShowWelcome();
+      maybeShowNextStepsPrompt();
     }
 
     async function loadFriendsAndSocialFeed() {
@@ -5447,6 +5468,7 @@
       updateMapOnboarding();
       bTutRender();
       ptTipRender();
+      expTipRender();
     }
 
     // Logo der Partnerhalle oben rechts: nur zusammen mit den FABs oben links (also auf der Hallenkarte), nicht im Baumodus
@@ -9174,7 +9196,8 @@
         disableRequests: document.getElementById('priv-disable-requests').checked,
         statsSince: privacySettings.statsSince || {},   // Startdaten des Aktivitätsresets (Meine Aktivitätsdaten)
         statsPauses: privacySettings.statsPauses || {},   // Pausen je Halle (aktive Zeiten der Statistik)
-        welcome: privacySettings.welcome || null          // Antwort im Willkommens-Fenster (einmal pro Konto)
+        welcome: privacySettings.welcome || null,         // Antwort im Willkommens-Fenster (einmal pro Konto)
+        nextSteps: privacySettings.nextSteps || null      // Fenster „Nächste Schritte“: später fragen bzw. nicht mehr fragen
       };
 
       saveStorage('boulder_privacy', privacySettings);
@@ -11833,10 +11856,15 @@
         { key: 'profile', label: 'Hallenprofil angelegt', done: true },
         { key: 'plan', label: 'Hallenplan als Vorlage hochladen', done: hasPlan || built, btn: 'Hochladen', optional: true },
         { key: 'build', label: 'Halle nachbauen – Matten & Sektoren', done: built, btn: 'Jetzt bauen' },
-        { key: 'route', label: 'Erste Route setzen', done: mapRoutes.concat(archivedRoutes).some(r => r.gymName === gym), btn: 'Route setzen' }
+        { key: 'route', label: 'Erste Route setzen', done: onbRouteSetAnywhere() || mapRoutes.concat(archivedRoutes).some(r => r.gymName === gym), btn: 'Route setzen' }
       ];
       if (onbCanShare(gym) || sc.isCommunity) steps.push({ key: 'share', label: 'Mit deiner Crew teilen', done: !!sc.isCommunity || !!onboardingState.shared[gym], btn: 'Teilen' });
       return steps;
+    }
+    // „Erste Route setzen“ soll das Vorgehen vermitteln: zählt für alle Hallen, sobald man irgendwo selbst eine Route gesetzt hat (als Gast: jede lokale Route)
+    function onbRouteSetAnywhere() {
+      const me = currentAuthUser?.id;
+      return mapRoutes.concat(archivedRoutes).some(r => me ? r.createdBy === me : true);
     }
     function onbCanShare(gym) { const sc = scales[gym]; return !!(currentAuthUser && sc?.db_id && sc.isOwner && !sc.isPartner && !sc.isCommunity); }
     // Halle braucht noch Einrichtung: selbst baubar, nicht ausgeblendet, Nachbauen oder erste Route fehlt
@@ -12418,6 +12446,7 @@
       else {
         const gym = onbHomeGym();
         if (gym) html = `<div class="rounded-2xl border p-4" style="border-color: rgb(var(--ac-500) / .4); background: rgb(var(--ac-500) / .06);">${onbChecklistHtml(gym)}</div>`;
+        else if (expVisible()) html = expHtml();
       }
       box.innerHTML = html;
       box.classList.toggle('hidden', !html);
@@ -12517,6 +12546,145 @@
     function onbBuiltAction(key) {
       closeModal('onb-built-modal');
       if (onbBuiltGym) onbAction(key, onbBuiltGym);
+    }
+
+    // ---------- NÄCHSTE SCHRITTE: Ziel, Session, Projekt ----------
+    // Für alle mit einer nutzbaren Hallenkarte (selbst gebaut, Community oder Partnerhalle), sobald keine Einrichtungs-Checkliste mehr offen ist.
+    // Fortschritt aus den Daten; lokal gemerkt werden nur gesehen, letzter Stand, ausgeblendet und abgeschlossen.
+    // Klappt beim ersten Mal und nach jedem neu erledigten Schritt von selbst auf.
+    let expOpen = false;
+    let expTip = false;   // Hinweis „Projekt starten“ auf der Hallenkarte
+    function expState() { return onboardingState.explore || (onboardingState.explore = {}); }
+    // Halle mit Karte und Routen – bevorzugt Heimhalle bzw. die gerade gewählte
+    function expGym() {
+      const ok = g => g && scales[g] && layoutHasShapes(mapLayouts[g]) && mapRoutes.some(r => r.gymName === g && !r.archivedAt);
+      return [homeGym, getMapGymName(), ...Object.keys(scales)].find(ok) || null;
+    }
+    function expSteps() {
+      return [
+        { key: 'goal', label: 'Ziel festlegen', btn: 'Ziel setzen', done: goals.length > 0,
+          text: 'Nächster Grad, Flash-Quote oder regelmäßig bouldern – im Logbuch siehst du, wie nah du dran bist.' },
+        { key: 'session', label: 'Session anlegen', btn: 'Starten', done: sessions.length > 0 || !!loadActiveSession(),
+          text: 'Starte die Session beim Hallenbesuch – Startzeit und Dauer laufen automatisch mit.',
+          extra: `<button type="button" onclick="event.stopPropagation(); FN('session-log')" class="mt-1 text-[11px] font-semibold transition hover:opacity-80" style="color: var(--accent)">Vergangene Session nachtragen ›</button>` },
+        { key: 'project', label: 'Projekt starten', btn: 'Zur Karte',
+          done: projects.length > 0 || mapRoutes.concat(archivedRoutes).some(r => r.interaction?.status === 'project' || r.interaction?.projectAt),
+          text: 'Eine Route, an der du dranbleiben willst? Setz sie auf der Hallenkarte auf „🎯 Projekt“ – Versuche und Tage zählen mit.' }
+      ];
+    }
+    function expVisible() {
+      const st = expState();
+      if (partnerUiRole !== 'user' || st.dismissed || st.finished || !expGym()) return false;
+      // Wer alles schon kennt und die Liste nie gesehen hat (ältere Konten), bekommt sie gar nicht erst
+      return st.seen || expSteps().some(s => !s.done);
+    }
+    function expHtml() {
+      const st = expState(), steps = expSteps();
+      const done = steps.filter(s => s.done).length, next = steps.find(s => !s.done);
+      if (!st.seen || (st.lastDone ?? done) < done) expOpen = true;
+      if (!st.seen || st.lastDone !== done) { st.seen = true; st.lastDone = done; saveOnboarding(); }
+      const box = inner => `<div class="rounded-2xl border bg-slate-800/70 shadow-lg" style="border-color: rgb(var(--ac-500) / .4);">${inner}</div>`;
+      if (!next) return box(`<div class="p-4 space-y-2">
+          <p class="text-sm font-bold text-slate-100">Alles ausprobiert! 🎉</p>
+          <p class="text-xs text-slate-400 leading-relaxed">Ziele, Sessions und Projekte findest du jederzeit im Logbuch.</p>
+          <div class="flex justify-end"><button type="button" onclick="expFinish()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">Schließen</button></div>
+        </div>`);
+      const rows = expRowsHtml(steps);
+      return box(`<button type="button" onclick="expToggle()" aria-expanded="${expOpen}" class="w-full flex items-center gap-2.5 px-4 py-3 text-left">
+          <span class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base" style="background: rgb(var(--ac-500) / .14);">🧭</span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-sm font-bold text-slate-100 leading-tight">Nächste Schritte</span>
+            ${expOpen ? '' : `<span class="block text-[11px] text-slate-400 leading-snug mt-0.5">${next.label}</span>`}
+          </span>
+          <span class="text-[11px] font-semibold text-emerald-400 tabular-nums flex-shrink-0">${done}/${steps.length}</span>
+          <span class="flex-shrink-0 text-slate-500 transition-transform ${expOpen ? 'rotate-180' : ''}">${onbIcon('chevron', 16)}</span>
+        </button>
+        ${expOpen ? `<div class="px-4 pb-3 space-y-1">
+          <div class="h-1.5 rounded-full bg-slate-700/70"><div class="h-full rounded-full" style="width:${(done / steps.length * 100).toFixed(0)}%;background:var(--accent)"></div></div>
+          <ul class="divide-y divide-slate-700/40">${rows}</ul>
+          <div class="flex justify-end pt-1"><button type="button" onclick="event.stopPropagation(); expDismiss()" class="text-[11px] text-slate-500 hover:text-slate-300 transition">Ausblenden</button></div>
+        </div>` : ''}`);
+    }
+    // Zeilen der Liste – Karte (expAction) und Fenster (nextStepsAction) teilen sich dasselbe Markup
+    function expRowsHtml(steps, fn = 'expAction') {
+      const next = steps.find(s => !s.done);
+      return steps.map(s => `<li class="flex items-start gap-2.5 py-2.5">
+          <span class="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${s.done ? 'bg-emerald-600 text-white' : 'border-2 border-slate-600'}">${s.done ? ONB_CHECK_SVG : ''}</span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-xs font-semibold leading-snug ${s.done ? 'text-slate-500 line-through' : 'text-slate-200'}">${s.label}</span>
+            ${s.done ? '' : `<span class="block text-[11px] text-slate-400 leading-snug mt-0.5">${s.text}</span>${(s.extra || '').replace('FN(', fn + '(')}`}
+          </span>
+          ${s.done ? '' : `<button type="button" onclick="event.stopPropagation(); ${fn}('${s.key}')"
+              class="flex-shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${s === next ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}">${s.btn}</button>`}
+        </li>`).join('');
+    }
+
+    // Fenster „Nächste Schritte“: einmal pro App-Start, bis alles erledigt ist; „Später“ = frühestens morgen wieder,
+    // „Nicht mehr fragen“ = nie wieder (beides im Konto gemerkt, privacySettings.nextSteps). Die Karte auf der Startseite bleibt davon unberührt.
+    let nextStepsShownThisSession = false;
+    function maybeShowNextStepsPrompt() {
+      if (!currentAuthUser || nextStepsShownThisSession || partnerUiRole !== 'user') return;
+      const ns = privacySettings?.nextSteps || {};
+      if (ns.never || (ns.snoozeUntil && Date.parse(ns.snoozeUntil) > Date.now())) return;
+      if (csTut || bTut || tutPaused() || onbHomeGym() || !expVisible() || expSteps().every(s => s.done)) return;
+      if (document.querySelector('[id$="-modal"].flex')) return;   // kein Fenster über ein anderes legen (z. B. Begrüßung, Einladung)
+      nextStepsShownThisSession = true;
+      document.getElementById('next-steps-list').innerHTML = expRowsHtml(expSteps(), 'nextStepsAction');
+      openModal('next-steps-modal');
+    }
+    function nextStepsSave(patch) {
+      privacySettings = { ...privacySettings, nextSteps: { ...(privacySettings.nextSteps || {}), ...patch } };
+      persistPrivacySettings();
+    }
+    function nextStepsLater() {
+      const t = new Date(); t.setHours(0, 0, 0, 0); t.setDate(t.getDate() + 1);   // frühestens morgen
+      closeModal('next-steps-modal');
+      nextStepsSave({ snoozeUntil: t.toISOString() });
+    }
+    function nextStepsNever() {
+      closeModal('next-steps-modal');
+      nextStepsSave({ never: true });
+    }
+    // Direkt loslegen zählt wie „später“: heute nicht noch einmal fragen
+    function nextStepsAction(key) {
+      nextStepsLater();
+      expAction(key);
+    }
+
+    function expToggle() { expOpen = !expOpen; renderHomeOnboarding(); }
+    function expDismiss() { expState().dismissed = true; saveOnboarding(); expOpen = false; renderHomeOnboarding(); }
+    function expFinish() { expState().finished = true; saveOnboarding(); renderHomeOnboarding(); }
+    function expAction(key) {
+      if (key === 'goal') { openLogbook('goals'); openGoalModal(); }
+      else if (key === 'session') openSessionStart();
+      else if (key === 'session-log') openSessionModal();
+      else if (key === 'project') {
+        const gym = expGym();
+        if (!gym) return;
+        expTip = true;
+        onbGoToGym(gym);
+        expTipRender();
+      }
+    }
+    function expTipRender() {
+      let box = document.getElementById('exptip');
+      if (expTip && expSteps()[2].done) expTip = false;
+      if (!expTip || currentTab !== 'map' || builderActive || mapEditMode || ptTip) { box?.remove(); return; }
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'exptip';
+        box.className = 'fixed z-[46] left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-[26rem]';
+        box.style.top = 'calc(0.75rem + env(safe-area-inset-top, 0px))';
+        box.setAttribute('data-map-ui', '');
+        document.body.appendChild(box);
+      }
+      box.innerHTML = `<div class="rounded-2xl border bg-slate-800/95 backdrop-blur p-3.5 space-y-1.5 shadow-2xl" style="border-color: rgb(var(--ac-500) / .5);">
+          <p class="text-sm font-semibold text-slate-100">Projekt starten</p>
+          <p class="text-xs text-slate-300 leading-relaxed">Tippe auf eine Route, an der du dranbleiben willst, und wähle als Status „🎯 Projekt“. Deine Projekte findest du danach im Logbuch.</p>
+          <div class="flex justify-end pt-1.5">
+            <button type="button" onclick="expTip = false; expTipRender()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">Verstanden</button>
+          </div>
+        </div>`;
     }
 
     function renderHome() {
@@ -15850,6 +16018,7 @@
       if (a) saveStorage(ACTIVE_SESSION_KEY, a);
       else { try { localStorage.removeItem(ACTIVE_SESSION_KEY); } catch (e) { /* ignore */ } }
       renderActiveSession();
+      renderHomeOnboarding();   // Nächste Schritte: „Session anlegen“
     }
     function clearActiveSession() { saveActiveSession(null); }
     const activeSessionMs = a => Math.max(0, (a.pausedAt || Date.now()) - a.startedAt - (a.pausedMs || 0));
@@ -20299,6 +20468,7 @@
       goalsOpenId = String(g.id);
       closeModal('goal-modal');
       renderLogbookGoals();
+      renderHomeOnboarding();   // Nächste Schritte: „Ziel festlegen“
     }
     async function endGoal(id) {
       const g = goals.find(x => String(x.id) === String(id));
@@ -21472,6 +21642,10 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImpress
   Object.assign(I18N_EN, {"Session starten": "Start session", "Starten": "Start", "Startzeit und Dauer werden automatisch erfasst.": "Start time and duration are recorded automatically.", "In welcher Halle bist du?": "Which gym are you at?", "+ Session nachtragen": "+ Log past session", "Session verwerfen": "Discard session", "Session beenden": "End session", "Pausiert": "Paused", "Session läuft": "Session running", "Laufende Session verwerfen?": "Discard running session?", "Die erfasste Zeit wird nicht gespeichert.": "The tracked time won't be saved.", "Startzeit": "Start time", "Endzeit": "End time", "Endzeit = Startzeit": "End time = start time", "Endzeit und Startzeit sind gleich.": "End time and start time are the same.", "Bitte gib an, wann die Session geendet hat.": "Please enter when the session ended.", "(nur für dich)": "(only for you)", "Erweiterte Einstellungen": "Advanced settings", "Durchstiegen am": "Topped on", "Geflasht am": "Flashed on", "Ein Versuch weniger": "One attempt less", "Ein Versuch mehr": "One attempt more", "Dein Status für die Route konnte nicht gespeichert werden:": "Your status for the route couldn't be saved:", "So funktioniert die Hallenkarte": "How the gym map works", "Die Karte hat drei Modi.": "The map has three modes.", "Ansehen": "View", "– Route antippen, um deinen Status, Versuche und deine Bewertung einzutragen.": "– tap a route to log your status, attempts and rating.", "– über den Stift ✏️ unten: auf die Wand tippen, um eine neue Route anzulegen.": "– via the pencil ✏️ below: tap a wall to add a new route.", "– über den Stift ✏️ unten: Wände, Sektoren und Ebenen deiner Halle zeichnen.": "– via the pencil ✏️ below: draw your gym's walls, sectors and levels.", "Zur ausführlichen Anleitung": "Open the full guide", "Hinweis „Anleitung“ auf der Karte nicht mehr anzeigen": "Don't show the “Guide” hint on the map anymore", "Hinweis auf der Hallenkarte": "Hint on the gym map", "„📖 Anleitung“ unter dem Hallenlogo ist ausgeblendet.": "“📖 Guide” below the gym logo is hidden.", "Wieder anzeigen": "Show again", "Erweiterte Informationen": "More details", "Einschätzung": "Grade feel", "Entspricht": "Equivalent", "Neigung, Stil & Grifftyp": "Angle, style & hold type", "Für diese Route sind noch keine Neigung, Stile oder Grifftypen hinterlegt.": "No angle, styles or hold types have been added for this route yet."});
   Object.assign(I18N_EN, {"Wiederholt": "Repeated", "Du hast die Route ein weiteres Mal geschafft.": "You've sent the route once more.", "Doppelt hält besser": "Twice Is Nice", "Wie viel Prozent deiner Tops willst du wiederholt haben? Für jeden Grad der Levelspanne einzeln – erfüllt, wenn jeder Grad mit Tops den Zielwert erreicht. Es zählen nur aktuell hängende Boulder.": "What share of your tops do you want to have repeated? Counted per grade in the range – met when every grade with tops reaches the target. Only boulders currently on the wall count.", "Levelspanne": "Grade range", "Von Level": "From grade", "Bis Level": "To grade", "Anteil wiederholter Tops (je Grad)": "Share of repeated tops (per grade)", "Noch keine Tops an hängenden Bouldern in dieser Spanne.": "No tops on current boulders in this range yet.", "Durchschnitt (alle Grade zusammen)": "Average (all grades combined)", "Meine Ziele": "My goals", "Zeigt die Routen, mit denen du dem Ziel näherkommst. Mehrere Ziele: Routen, die zu mindestens einem passen.": "Shows the routes that get you closer to the goal. Several goals: routes matching at least one.", "Für diese Halle hast du gerade kein aktives Ziel mit Routen. Ziele setzt du im Logbuch.": "You have no active route goal for this gym right now. Set goals in the logbook.", "noch nicht getoppt": "not topped yet", "noch unversucht": "not tried yet", "getoppt, noch nicht wiederholt": "topped, not repeated yet", "Tippen: nur wiederholte · Doppeltippen: wiederholte ausblenden": "Tap: repeated only · Double-tap: hide repeated", "Ziel startet erst später.": "goal starts later.", "Ziele starten erst später.": "goals start later.", "Geschraubt": "Set", "Diese Woche": "This week", "Letzte Woche": "Last week", "Vor 2 Wochen": "2 weeks ago", "Vor 3 Wochen": "3 weeks ago", "Früher …": "Earlier …", "Frühere Schraubwoche": "Earlier setting week", "Schraubdatum unbekannt": "Setting date unknown", "Hängt voraussichtlich noch ca. 1 Woche": "Expected to stay up for about 1 more week", "Wird voraussichtlich diese Woche umgeschraubt": "Probably being reset this week", "diese Woche": "this week", "letzte Woche": "last week", "Doppeltippen = 🔥 Crux": "Double-tap = 🔥 Crux", "Doppeltippen =": "Double-tap =", "Grifftyp & Stil nach Crux": "Hold type & style by crux", "Grifftyp und Stil nach der Crux der Route": "hold type and style by the route's crux", "Ein Boulder zählt nur im Grifftyp seiner Crux.": "A boulder only counts in the hold type of its crux.", "Ein Boulder zählt nur im Kletterstil seiner Crux.": "A boulder only counts in the style of its crux.", "Eine Route zählt nur im Grifftyp ihrer Crux.": "A route only counts in the hold type of its crux.", "Eine Route zählt nur im Kletterstil ihrer Crux.": "A route only counts in the style of its crux.", "Die Crux trägst du beim Routesetzen ein.": "You add the crux when setting the route.", "Pkt.": "pts", "vs. Erwartung": "vs. expected", "wenig Daten": "little data", "Prozentpunkte über bzw. unter der Erwartung bei gleichem Grad.": "Percentage points above or below expectation at the same grade.", "Wie oft du je Kategorie toppst – verglichen mit deiner Abschlussquote im jeweiligen Grad (Nullring = wie erwartet)": "How often you top each category – compared with your send rate at the same grade (zero ring = as expected)", "„vs. Erwartung“ = Prozentpunkte über bzw. unter deiner Abschlussquote bei gleichem Grad, danach sortiert (Stärken oben)": "“vs. expected” = percentage points above or below your send rate at the same grade, sorted by it (strengths on top)", "Abschlussquote = durchstiegene ÷ gezählte Boulder der Kategorie": "Send rate = topped ÷ counted boulders of the category", "Abschlussquote = durchstiegene ÷ gezählte Routen der Kategorie": "Send rate = topped ÷ counted routes of the category", "Für dieses Ziel fehlt noch eine Erweiterung der Datenbank. Bitte supabase_route_repeats.sql im Supabase SQL-Editor ausführen.": "This goal needs a database update first. Please run supabase_route_repeats.sql in the Supabase SQL editor."});
   I18N_PAT.push(["^Doppelt hält besser (\\d+) % · (.+)$", "Twice Is Nice $1 % · $2", false], ["^(.+): (\\d+) von (\\d+) wiederholt$", "$1: $2 of $3 repeated", false], ["^(.+): noch keine Tops$", "$1: no tops yet", false], ["^Weitere Ziele in: (.+)$", "More goals in: $1", true], ["^Geschraubt: diese Woche \\((.+)\\)$", "Set: this week ($1)", false], ["^Geschraubt: letzte Woche \\((.+)\\)$", "Set: last week ($1)", false], ["^Geschraubt: vor (\\d+) Wochen \\((.+)\\)$", "Set: $1 weeks ago ($2)", false], ["^Geschraubt am (.+)$", "Set on $1", false], ["^Hängt voraussichtlich noch ca\\. (\\d+) Wochen$", "Expected to stay up for about $1 more weeks", false], ["^Crux bei (\\d+) von (\\d+) (?:Bouldern|Routen)$", "Crux on $1 of $2 routes", false], ["^grau = weniger als (\\d+) (?:Boulder|Routen)$", "grey = fewer than $1 routes", false], ["^Offene (?:Boulder|Routen) zählen ab (.+) \\(dein Ø-Top-Grad\\)$", "Open routes count from $1 (your average top grade)", false], ["^Für das Radar braucht es mindestens 3 Kategorien mit Durchstiegen \\(aktuell (\\d+)\\)\\. Trage beim Setzen die Neigung und die 🔥 Crux ein\\.$", "The radar needs at least 3 categories with tops (currently $1). Add the angle and the 🔥 crux when setting routes.", false], ["^Keine (?:Boulder|Routen) mit 🔥 Crux im (Grifftyp|Kletterstil) im gewählten Filter\\. Die Crux trägst du beim Routesetzen ein\\.$", "No routes with a 🔥 crux in $1 in the selected filter. You add the crux when setting the route.", false]);
+  /* Nächste Schritte (Ziel, Session, Projekt) */
+  Object.assign(I18N_X, {"Nächste Schritte": "Next steps", "Ziel festlegen": "Set a goal", "Session anlegen": "Log a session", "Projekt starten": "Start a project", "Alles ausprobiert!": "All tried out!", "Ausblenden": "Hide", "Schon entdeckt?": "Discovered these yet?", "Später nochmal fragen": "Ask me later", "Nicht mehr fragen": "Don't ask again"});
+  Object.assign(I18N_EN, {"Deine Hallenkarte steht. Mit diesen drei Funktionen holst du noch mehr aus deinen Sessions heraus.": "Your gym map is ready. These three features help you get even more out of your sessions."});
+  Object.assign(I18N_EN, {"Nächster Grad, Flash-Quote oder regelmäßig bouldern – im Logbuch siehst du, wie nah du dran bist.": "Next grade, flash rate or climbing regularly – the logbook shows how close you are.", "Starte die Session beim Hallenbesuch – Startzeit und Dauer laufen automatisch mit.": "Start the session when you're at the gym – start time and duration are tracked automatically.", "Vergangene Session nachtragen ›": "Log a past session ›", "Eine Route, an der du dranbleiben willst? Setz sie auf der Hallenkarte auf „🎯 Projekt“ – Versuche und Tage zählen mit.": "A route you want to keep working on? Set it to “🎯 Project” on the gym map – attempts and days are counted.", "Tippe auf eine Route, an der du dranbleiben willst, und wähle als Status „🎯 Projekt“. Deine Projekte findest du danach im Logbuch.": "Tap a route you want to keep working on and choose “🎯 Project” as its status. You'll then find your projects in the logbook.", "Ziele, Sessions und Projekte findest du jederzeit im Logbuch.": "You'll always find goals, sessions and projects in the logbook."});
   /* Community-Link */
   Object.assign(I18N_EN, {"Per Link in die Community einladen": "Invite to the community via link", "Wer den Link öffnet und sich anmeldet, ist nach einer kurzen Bestätigung Mitglied der Community und mit dir vernetzt. Ohne Konto wird man zuerst zur Registrierung geführt.": "Whoever opens the link and signs in joins the community after a quick confirmation and is connected with you. People without an account are taken to sign-up first.", "Neue Mitglieder kommen ohne Admin-Rechte dazu. Der Link gilt, solange du Admin der Community bist.": "New members join without admin rights. The link works as long as you're an admin of the community.", "Tritt der Community bei – ihr seid dann auch miteinander vernetzt und könnt euch z. B. zu Challenges einladen.": "Join the community – you'll also be connected and can, for example, invite each other to challenges.", "Tritt der Community bei, um die gemeinsamen Hallen zu nutzen.": "Join the community to use its shared gyms.", "Du bist schon Mitglied der Community. Wollt ihr euch auch vernetzen?": "You're already a member of the community. Do you also want to connect?", "Beitreten": "Join", "📩 Du wurdest eingeladen!": "📩 You've been invited!", "Erstelle ein Konto – danach bist du direkt in der Community und mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be in the community right away and connected with the person who invited you. Already have an account? Just sign in.", "Erstelle ein Konto – danach bist du direkt mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be connected right away with the person who invited you. Already have an account? Just sign in.", "Community-Links sind noch nicht eingerichtet (supabase_community_links.sql fehlt).": "Community links aren't set up yet (supabase_community_links.sql is missing).", "Komm in unsere Boulderlytics-Community": "Join our Boulderlytics community", "Über diesen Link bist du direkt dabei und mit mir vernetzt:": "With this link you're in right away and connected with me:", "Du bist bereits Mitglied von": "You're already a member of", "Dieser Community-Link ist nicht mehr gültig. Bitte lass dir einen neuen schicken.": "This community link is no longer valid. Please ask for a new one.", "Die Community ist voll (höchstens 300 Mitglieder).": "The community is full (300 members at most).", "✓ Willkommen in der Community!": "✓ Welcome to the community!"});
   I18N_PAT.push(["^seit (\\d{1,2}:\\d{2}) Uhr$", "since $1", false], ["^\\(abzüglich (\\d+) Min Pause\\)$", "(minus $1 min break)", false]);
