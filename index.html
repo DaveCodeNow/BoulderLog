@@ -3912,11 +3912,11 @@
       next_level: { icon: '🚀', name: 'Next Level', desc: 'Lege den nächsten Grad fest, den du in einer Halle schaffen willst. Beim ersten Top in diesem Grad (oder höher) gibt es eine Gratulation.' },
       any_percent: { icon: '📊', name: 'Any Percent', desc: 'Wie viel Prozent der aktuell hängenden Boulder eines Grades willst du getoppt haben? Abgeschraubte Boulder fallen mitsamt ihren Tops heraus.' },
       flash: { icon: '⚡', name: 'Flash', desc: 'Welchen Anteil deiner Begehungen in einem Grad willst du flashen? Es zählen alle Begehungen ab dem Startdatum, auch an inzwischen abgeschraubten Bouldern.' },
-      regular: { icon: '📅', name: 'Regular', desc: 'Wie oft willst du im Schnitt pro Woche bouldern gehen? Es zählen die Sessions aus allen Hallen.' },
+      regular: { icon: '📅', name: 'Regular', desc: 'Wie oft willst du pro Woche bouldern gehen? Jede Woche (Mo–So) zählt für sich: Mit der letzten nötigen Session der Woche ist das Ziel erfüllt. Nach 4 Wochen in Folge gibt es eine Extra-Gratulation. Es zählen die Sessions aus allen Hallen.' },
       repeat: { icon: '🔁', name: 'Doppelt hält besser', desc: 'Wie viel Prozent deiner Tops willst du wiederholt haben? Für jeden Grad der Levelspanne einzeln – erfüllt, wenn jeder Grad mit Tops den Zielwert erreicht. Es zählen nur aktuell hängende Boulder.' }
     };
     const GOAL_FLASH_MIN = 5;          // Flash-Quote wird erst ab so vielen Begehungen bewertet
-    const GOAL_REGULAR_WINDOW = 28;    // Regular: aktueller Stand = Schnitt der letzten 4 Wochen
+    const GOAL_REGULAR_STREAK = 4;     // Regular: Extra-Gratulation je 4 erfüllte Wochen in Folge; Ø über so viele Wochen
     const GOAL_PERIODS = { '4w': ['4 Wochen', 28], '3m': ['3 Monate', 91], '12m': ['12 Monate', 365], all: ['Seit Start', null] };
     const GOAL_DB_MISSING_MSG = 'Die Tabelle für Ziele fehlt noch in der Datenbank. Bitte supabase_goals.sql im Supabase SQL-Editor ausführen.';
     let goalsDbMissing = false;        // angemeldet, aber Tabelle goals fehlt (Skript noch nicht ausgeführt)
@@ -20219,13 +20219,34 @@
         const pct = tops.length ? done / tops.length * 100 : null;
         return { total: tops.length, done, pct, met: tops.length >= GOAL_FLASH_MIN && pct >= g.target };
       }
-      // Regular: Schnitt der letzten 4 Wochen (bzw. seit dem Start); in der ersten Woche zählt sie als ganze Woche
-      const today = goalDay(Date.now());
-      const from = Math.max(goalDay(goalStartMs(g) || today), goalAddDays(today, -(GOAL_REGULAR_WINDOW - 1)));
-      const days = Math.max(1, Math.round((today - from) / DAY_MS) + 1);
-      const n = goalSessionsBetween(from, goalAddDays(today, 1) - 1).length;
-      const avg = n / (Math.max(days, 7) / 7);
-      return { n, days, avg, met: avg >= g.target };
+      // Regular: die laufende Woche zählt für sich; dazu Serie und Ø der letzten 4 Wochen
+      const monday = weekStartOf(Date.now()).getTime();
+      const n = goalRegularWeek(g, monday), met = n >= g.target;
+      const weeks = goalRegularWeeks(g, goalAddDays(monday, -7 * (GOAL_REGULAR_STREAK - 1)), monday);
+      return { n, met, streak: goalRegularStreak(g, met ? monday : goalAddDays(monday, -7)),
+        avg: weeks.length ? weeks.reduce((a, b) => a + b, 0) / weeks.length : null, weeks: weeks.length };
+    }
+    // Regular: Sessions einer Kalenderwoche (Mo–So, `monday` = Wochenbeginn), erst ab dem Startdatum
+    function goalRegularWeek(g, monday) {
+      return goalSessionsBetween(Math.max(monday, goalStartMs(g)), goalAddDays(monday, 7) - 1).length;
+    }
+    // Sessions je Woche von der Woche von `from` bis zur Woche von `to`; die laufende Woche erst, wenn sie erfüllt ist
+    // (sonst zöge eine halbe Woche den Schnitt herunter)
+    function goalRegularWeeks(g, from, to) {
+      const thisWeek = weekStartOf(Date.now()).getTime(), out = [];
+      for (let w = weekStartOf(Math.max(from, goalStartMs(g))).getTime(); w <= to; w = goalAddDays(w, 7)) {
+        const n = goalRegularWeek(g, w);
+        if (w === thisWeek && n < g.target) continue;
+        out.push(n);
+      }
+      return out;
+    }
+    // Erfüllte Wochen in Folge bis einschließlich der Woche `monday`
+    function goalRegularStreak(g, monday) {
+      const first = weekStartOf(goalStartMs(g) || Date.now()).getTime();
+      let k = 0;
+      for (let w = monday; w >= first && goalRegularWeek(g, w) >= g.target; w = goalAddDays(w, -7)) k++;
+      return k;
     }
 
     // Any Percent rückblickend: Anteil an Tag d = getoppt bis d ÷ an d hängend (Schraubdatum ≤ d < Abbaudatum)
@@ -20315,15 +20336,12 @@
           if (tops.length < GOAL_FLASH_MIN) lines.push(`Wertung ab ${GOAL_FLASH_MIN} Begehungen`);
         }
       } else if (g.type === 'regular') {
-        const days = Math.round((to - from) / DAY_MS) + 1;
-        const n = goalSessionsBetween(from, goalAddDays(to, 1) - 1).length;
-        lines.push(`Durchschnitt: ${goalNum(n / (Math.max(days, 7) / 7), 1)} pro Woche`);
-        // Ganze 7-Tage-Blöcke rückwärts ab heute
-        const weeks = [];
-        for (let end = to; goalAddDays(end, -6) >= from; end = goalAddDays(end, -7)) {
-          weeks.unshift(goalSessionsBetween(goalAddDays(end, -6), goalAddDays(end, 1) - 1).length);
-        }
-        if (weeks.length) {
+        // Kalenderwochen: 4 Wochen = die laufende und die 3 davor
+        const monday = weekStartOf(to).getTime();
+        const weeks = goalRegularWeeks(g, len ? goalAddDays(monday, -7 * (Math.round(len / 7) - 1)) : start, monday);
+        if (!weeks.length) lines.push('Noch keine abgeschlossene Woche');
+        else {
+          lines.push(`Durchschnitt: ${goalNum(weeks.reduce((a, b) => a + b, 0) / weeks.length, 1)} pro Woche`);
           lines.push(`Erfüllt in ${weeks.filter(c => c >= g.target).length} von ${weeks.length} Wochen`);
           spark = goalSparkHtml(weeks, g.target, Math.max(g.target * 1.5, ...weeks));
         }
@@ -20340,7 +20358,7 @@
       else if (g.type === 'next_level' && g.achievedAt) { label = '🏆 Erreicht'; cls = 'text-emerald-400'; }
       else if (goalNotStarted(g)) { label = `Ab ${new Date(goalStartMs(g)).toLocaleDateString(uiLocale(), { day: '2-digit', month: '2-digit' })}`; cls = 'text-slate-400'; }
       else if (g.type === 'next_level') { label = 'Offen'; cls = 'text-sky-400'; }
-      else if (ev.met) { label = '✓ Erfüllt'; cls = 'text-emerald-400'; }
+      else if (ev.met) { label = g.type === 'regular' ? '✓ Woche erfüllt' : '✓ Erfüllt'; cls = 'text-emerald-400'; }
       else { label = 'Noch nicht erfüllt'; cls = 'text-slate-400'; }
       return `<span class="text-[11px] font-semibold flex-shrink-0 max-w-[6.5rem] text-right leading-tight ${cls}">${label}</span>`;
     }
@@ -20372,8 +20390,10 @@
         const sub = ev.total < GOAL_FLASH_MIN ? `Wertung ab ${GOAL_FLASH_MIN} Begehungen` : `Geflasht: ${ev.done} von ${ev.total}`;
         return row(sub, ev.pct == null ? '–' : `${goalNum(ev.pct)} %`, `${goalNum(g.target)} %`) + bar(ev.pct || 0, g.target, ev.met);
       }
-      const sub = ev.days >= GOAL_REGULAR_WINDOW ? `Sessions in den letzten ${GOAL_REGULAR_WINDOW} Tagen: ${ev.n}` : `Sessions seit dem Start: ${ev.n}`;
-      return row(sub, `Ø ${goalNum(ev.avg, 1)}`, goalNum(g.target, 1), 'pro Woche') + bar(ev.avg / g.target * 100, null, ev.met);
+      const extra = [ev.streak >= 2 ? `🔥 ${ev.streak} Wochen in Folge erfüllt` : '',
+        ev.avg != null ? `Ø ${goalNum(ev.avg, 1)} pro Woche über ${ev.weeks} ${ev.weeks === 1 ? 'Woche' : 'Wochen'}` : ''].filter(Boolean);
+      return row('Diese Woche', goalNum(ev.n), goalNum(g.target, 1), 'Sessions') + bar(ev.n / g.target * 100, null, ev.met)
+        + (extra.length ? `<p class="text-[11px] text-slate-400">${escapeHtmlText(extra.join(' · '))}</p>` : '');
     }
 
     function goalCardHtml(g) {
@@ -20454,7 +20474,7 @@
               <ul class="space-y-1.5 text-[11px] text-slate-400">
                 <li class="flex gap-2"><span>${GOAL_TYPES.next_level.icon}</span><span><b class="text-slate-200">Next Level:</b> deinen ersten Boulder im nächsten Grad toppen</span></li>
                 <li class="flex gap-2"><span>${GOAL_TYPES.any_percent.icon}</span><span><b class="text-slate-200">Any Percent:</b> 70 % der hängenden Boulder eines Grades getoppt haben</span></li>
-                <li class="flex gap-2"><span>${GOAL_TYPES.regular.icon}</span><span><b class="text-slate-200">Regular:</b> im Schnitt 2-mal pro Woche bouldern gehen</span></li>
+                <li class="flex gap-2"><span>${GOAL_TYPES.regular.icon}</span><span><b class="text-slate-200">Regular:</b> jede Woche 2-mal bouldern gehen</span></li>
               </ul>
               <button type="button" onclick="openGoalModal()" class="${btn} bg-emerald-600 hover:bg-emerald-500 text-white">🎯 Ziel setzen</button>
             </div>`
@@ -20504,6 +20524,7 @@
     function goalFromRow(row) {
       const p = row.params || {};
       return { id: row.id, type: row.type, gym: row.gym || null, grade: p.grade || null, gradeTo: p.gradeTo || null, target: p.target != null ? Number(p.target) : null,
+        weekDone: p.weekDone || null,   // Regular: Montag der zuletzt gefeierten Woche
         startDate: row.start_date, achievedAt: row.achieved_at || null, endedAt: row.ended_at || null, createdAt: row.created_at || null };
     }
     // Angemeldet: in die Datenbank; als Gast nur auf diesem Gerät (saveGoalsLocal)
@@ -20514,7 +20535,8 @@
       }
       const row = {
         user_id: currentAuthUser.id, type: g.type, gym: g.gym || null,
-        params: { grade: g.grade || null, target: g.target ?? null, ...(g.type === 'repeat' ? { gradeTo: g.gradeTo || g.grade || null } : {}) },
+        params: { grade: g.grade || null, target: g.target ?? null, ...(g.type === 'repeat' ? { gradeTo: g.gradeTo || g.grade || null } : {}),
+          ...(g.type === 'regular' && g.weekDone ? { weekDone: g.weekDone } : {}) },
         start_date: g.startDate, achieved_at: g.achievedAt || null, ended_at: g.endedAt || null
       };
       if (g.id) row.id = g.id;
@@ -20667,6 +20689,7 @@
         g.achievedAt = null;
         // Schon beim Anlegen erfüllt: still als erreicht vermerken – gefeiert wird nur, was eine neue Aktivität erreicht
         if (!goalNotStarted(g) && goalEval(g).met) g.achievedAt = new Date().toISOString();
+        if (g.type === 'regular') g.weekDone = g.achievedAt ? weekStartIso(Date.now()) : null;   // laufende Woche ebenso still
       }
       if (!await goalPersist(g)) return;
       if (prev) goals[goals.indexOf(prev)] = g; else goals.push(g);
@@ -20699,20 +20722,31 @@
     }
 
     // ---------- Erreicht: Gratulation & Feed ----------
-    // Nach einem Top bzw. einer Session: Ziele, die jetzt zum ersten Mal erfüllt sind (kontinuierliche nur einmal)
+    // Nach einem Top bzw. einer Session: Ziele, die jetzt zum ersten Mal erfüllt sind (kontinuierliche nur einmal).
+    // Regular: jede Woche, in der das Ziel erfüllt wird (weekDone), mit Serie für die Gratulation; Feed nur beim ersten Mal.
     async function goalsCheckReached() {
       const reached = [];
       for (const g of goals) {
-        if (g.endedAt || g.achievedAt || goalNotStarted(g) || !goalEval(g).met) continue;
+        if (g.endedAt || goalNotStarted(g)) continue;
+        if (g.type === 'regular') {
+          const ev = goalEval(g), wk = weekStartIso(Date.now());
+          if (!ev.met || g.weekDone === wk) continue;
+          const upd = { ...g, weekDone: wk, achievedAt: g.achievedAt || new Date().toISOString() };
+          if (!await goalPersist(upd, true)) continue;
+          goals[goals.indexOf(g)] = upd;
+          reached.push({ ...upd, first: !g.achievedAt, streak: ev.streak });
+          continue;
+        }
+        if (g.achievedAt || !goalEval(g).met) continue;
         const upd = { ...g, achievedAt: new Date().toISOString() };
         if (!await goalPersist(upd, true)) continue;
         goals[goals.indexOf(g)] = upd;
-        reached.push(upd);
+        reached.push({ ...upd, first: true });
       }
       if (!reached.length) return reached;
       saveGoalsLocal();
       const me = getActiveUserName();
-      for (const g of reached) {
+      for (const g of reached.filter(x => x.first)) {
         await postFeedEvent('goal', 'Ziel erreicht', `${me} hat das Ziel „${goalTitle(g)}“${g.gym ? ` in ${g.gym}` : ''} erreicht! 🎯`);
       }
       renderLogbookGoals();
@@ -20720,15 +20754,20 @@
     }
     function goalReachedListHtml(list) {
       return list.map(g => `<div><p class="text-sm font-bold" style="color: var(--accent)"><span>${GOAL_TYPES[g.type]?.icon || '🎯'}</span> ${escapeHtmlText(goalTitle(g))}</p>
-        <p class="text-[11px] text-slate-500">${escapeHtmlText(g.gym || 'Alle Hallen')}</p></div>`).join('');
+        <p class="text-[11px] text-slate-500">${escapeHtmlText(goalRegularMilestone(g) ? `🔥 ${g.streak} Wochen in Folge geschafft!` : g.type === 'regular' && g.streak ? 'Wochenziel geschafft' : (g.gym || 'Alle Hallen'))}</p></div>`).join('');
     }
+    // Regular: Serie erreicht eine volle Runde (4, 8, 12 … Wochen in Folge)
+    const goalRegularMilestone = g => g.type === 'regular' && g.streak >= GOAL_REGULAR_STREAK && g.streak % GOAL_REGULAR_STREAK === 0;
     function showGoalReachedModal(list) {
       pendingGoalReached = list;
       const nl = list.find(g => g.type === 'next_level');
       document.getElementById('grm-list').innerHTML = goalReachedListHtml(list);
+      const streak = list.find(goalRegularMilestone);
       document.getElementById('grm-text').innerText = nl
         ? 'Du hast den nächsten Grad geschafft. Was hat den Unterschied gemacht? Halte es im Logbuch fest – dein Ich von morgen sagt danke.'
-        : 'Du hast dein Ziel zum ersten Mal erfüllt – jetzt heißt es dranbleiben! 💪';
+        : streak ? `${streak.streak} Wochen am Stück dein Wochenziel – so wird Bouldern zur Gewohnheit! 🔥`
+        : list.every(g => g.first) ? 'Du hast dein Ziel zum ersten Mal erfüllt – jetzt heißt es dranbleiben! 💪'
+        : 'Wochenziel erfüllt – weiter so! 💪';
       document.getElementById('grm-log').classList.toggle('hidden', !nl);
       openModal('goal-reached-modal');
       celebrateWithConfetti();
@@ -21857,6 +21896,9 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImpress
   Object.assign(I18N_EN, {"vor deinem Community-Beitritt abgebaut": "removed before you joined the community"});
   Object.assign(I18N_EN, {"Noch keine aktiven Ziele": "No active goals yet", "Lege jetzt Ziele für deinen Kletterfortschritt an – die App verfolgt sie automatisch mit deinen Routen und Sessions. Zum Beispiel:": "Set goals for your climbing progress now – the app tracks them automatically from your routes and sessions. For example:", "deinen ersten Boulder im nächsten Grad toppen": "top your first boulder in the next grade", "70 % der hängenden Boulder eines Grades getoppt haben": "have topped 70% of the current boulders in a grade", "im Schnitt 2-mal pro Woche bouldern gehen": "go bouldering twice a week on average", "+ Ziel setzen": "+ Set goal", "Im Logbuch verwalten": "Manage in logbook"});
   I18N_PAT.push(["^(\\d+) aktiv$", "$1 active", false], ["^(\\d+) erfüllt$", "$1 met", false]);
+  Object.assign(I18N_EN, {"Wie oft willst du pro Woche bouldern gehen? Jede Woche (Mo–So) zählt für sich: Mit der letzten nötigen Session der Woche ist das Ziel erfüllt. Nach 4 Wochen in Folge gibt es eine Extra-Gratulation. Es zählen die Sessions aus allen Hallen.": "How often do you want to go bouldering per week? Every week (Mon–Sun) counts on its own: the goal is met with the last session you need that week. After 4 weeks in a row there's an extra congratulation. Sessions from all gyms count.", "jede Woche 2-mal bouldern gehen": "go bouldering twice every week", "Noch keine abgeschlossene Woche": "No completed week yet", "✓ Woche erfüllt": "✓ Week met", "Wochenziel geschafft": "Weekly goal reached", "Wochenziel erfüllt – weiter so!": "Weekly goal met – keep it up!"});
+  I18N_PAT.push(["^(\\d+) Wochen in Folge erfüllt$", "$1 weeks in a row", false], ["^Ø (.+) pro Woche über (\\d+) Wochen?$", "Ø $1 per week over $2 weeks", false],
+    ["^(\\d+) Wochen in Folge geschafft!$", "$1 weeks in a row!", false], ["^(\\d+) Wochen am Stück dein Wochenziel – so wird Bouldern zur Gewohnheit!$", "Your weekly goal $1 weeks straight – that's how bouldering becomes a habit!", false]);
   I18N_PAT.push(["^seit (\\d{1,2}:\\d{2}) Uhr$", "since $1", false], ["^\\(abzüglich (\\d+) Min Pause\\)$", "(minus $1 min break)", false]);
   window.I18N_EN = I18N_EN; window.I18N_X = I18N_X;
   var LANG_KEY='boulder_lang', lang='de';
