@@ -1104,9 +1104,6 @@
         <div id="pas-body" class="space-y-4"></div>
       </section>
 
-      <!-- Eigene Ziele aus dem Logbuch: aufklappbar (renderStatsGoals) -->
-      <section id="stats-goals" class="rounded-2xl border border-slate-700/60 bg-slate-800/40"></section>
-
       <!-- GLOBALE FILTER: kleben oben und steuern alle Sektionen -->
       <section id="gs-panel" class="sticky z-30 rounded-2xl border border-emerald-500/30 bg-slate-900/90 backdrop-blur shadow-lg shadow-black/30" style="top: calc(0.5rem + env(safe-area-inset-top, 0px));">
         <button id="gs-head" type="button" onclick="gsToggleCollapse()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-left" aria-controls="gs-body">
@@ -18961,7 +18958,9 @@
       if (!el) return;
       const pd = gsProgressionData(sc);
       el.innerHTML = gsSectionHead(1, 'Schnellüberblick & Progression', 'Deine Eckdaten und wie sich dein Niveau entwickelt')
+        + '<section id="stats-goals" class="bg-slate-800/40 border border-slate-700/50 rounded-2xl"></section>'   // eigene Ziele (renderStatsGoals)
         + gsKpiHtml(sc) + gsProgressionShell(pd.gran);
+      renderStatsGoals();
       gsDrawProgression(pd);
     }
 
@@ -19237,7 +19236,6 @@
     function renderStatsAll() {
       if (typeof currentTab === 'undefined' || currentTab !== 'stats') return;
       destroyStatCharts();
-      renderStatsGoals();
       renderStatsOverview();
       if (partnerUiRole === 'hall_admin') renderPartnerAdminStats();
     }
@@ -20432,7 +20430,8 @@
       const section = (title, list) => list.length ? `<div class="space-y-2"><h4 class="text-[11px] uppercase font-bold text-slate-400">${title} · ${list.length}</h4>${list.map(goalCardHtml).join('')}</div>` : '';
       box.innerHTML = hint + section('Aktive Ziele', active) + section('Erreicht & beendet', done);
     }
-    // Statistik: aktive Ziele als aufklappbare Kurzübersicht oben auf der Seite; ohne Ziele eine Einladung mit Beispielen.
+    // Statistik: aktive Ziele als aufklappbare Karte in Sektion 1 (unter den globalen Filtern, die für Ziele nicht gelten);
+    // ohne Ziele eine Einladung mit Beispielen.
     // Aufgeklappt-Zustand je Gerät; ohne Gemerktes: zu, sobald es Ziele gibt.
     const STATS_GOALS_OPEN_KEY = 'boulder_stats_goals_open';
     function renderStatsGoals() {
@@ -20477,13 +20476,12 @@
               </div>
             </div>`;
       }
-      box.innerHTML = `<button type="button" onclick="toggleStatsGoals()" aria-expanded="${open}" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-left">
-          <span class="text-lg leading-none" aria-hidden="true">🎯</span>
-          <span class="flex-1 min-w-0">
-            <span class="block text-[11px] font-bold uppercase tracking-wide text-emerald-400">Meine Ziele</span>
-            <span class="block text-[11px] text-slate-400 truncate">${summary}</span>
+      box.innerHTML = `<button type="button" onclick="toggleStatsGoals()" aria-expanded="${open}" class="w-full flex items-start justify-between gap-3 p-4 text-left">
+          <span class="min-w-0">
+            <span class="block text-sm font-bold text-slate-100">🎯 Meine Ziele</span>
+            <span class="block text-[11px] text-slate-400 mt-0.5 truncate">${summary}</span>
           </span>
-          <span class="text-slate-400 text-xs transition-transform ${open ? 'rotate-180' : ''}" aria-hidden="true">▾</span>
+          <svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>${body}`;
     }
     function toggleStatsGoals() {
