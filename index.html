@@ -4610,9 +4610,12 @@
         // Community-Hallen: Rolle je Halle; Hallen anderer Mitglieder zusätzlich laden
         myCommunities = Array.isArray(commData) ? commData : [];
         communityGymMeta = {};
-        myCommunities.filter(c => c.my_status === 'accepted').forEach(c => (c.gyms || []).forEach(g => {
-          communityGymMeta[String(g.id)] = { communityId: c.id, communityName: c.name, role: c.my_role === 'admin' ? 'admin' : 'member' };
-        }));
+        myCommunities.filter(c => c.my_status === 'accepted').forEach(c => {
+          const joinedAt = (c.members || []).find(m => m.user_id === currentAuthUser.id)?.joined_at || null;   // Basis der Statistik in fremden Hallen
+          (c.gyms || []).forEach(g => {
+            communityGymMeta[String(g.id)] = { communityId: c.id, communityName: c.name, role: c.my_role === 'admin' ? 'admin' : 'member', joinedAt };
+          });
+        });
         const ownGymIds = new Set((gymsData || []).map(g => String(g.id)));
         const foreignCommGymIds = Object.keys(communityGymMeta).filter(id => !ownGymIds.has(id));
         const { data: commGymRows } = foreignCommGymIds.length
@@ -4654,6 +4657,7 @@
             communityId: comm?.communityId || null,
             communityName: comm?.communityName || null,
             communityRole: comm?.role || null,
+            communityJoinedAt: (comm && !isOwner) ? comm.joinedAt : null,
             partnerSlug: partnerGymMeta[String(g.id)]?.slug || null,
             memberRole: isOwner ? null : (partnerGymMeta[String(g.id)]?.memberRole || null),
             sectorStatus: sectorStatusByGym[String(g.id)] || {},
@@ -10173,6 +10177,7 @@
     }
 
     let authLoadedUserId = null;   // für wen die Daten schon geladen sind (verhindert Neuladen bei Token-Erneuerung)
+    let authLoadingUserId = null;  // für wen gerade geladen wird
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       const mainBtn = document.getElementById('auth-main-btn');
       setGuestMode(!(session && session.user));
@@ -10185,14 +10190,20 @@
       if (session && session.user) {
         // Token-Erneuerung (ca. stündlich) und das erneute SIGNED_IN beim Zurückkehren in den Tab betreffen dieselbe,
         // bereits geladene Person: kein komplettes Neuladen – das würde laufende Eingaben (z. B. den Baumodus) überschreiben
-        const alreadyLoaded = authLoadedUserId === session.user.id && (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN');
+        // Nach dem Bestätigungslink kommen SIGNED_IN und INITIAL_SESSION fast gleichzeitig: ein zweites, paralleles Laden
+        // verbrauchte den mitgebrachten Community-Link und öffnete die Begrüßung über dessen Rückfrage
+        const alreadyLoaded = (authLoadedUserId === session.user.id || authLoadingUserId === session.user.id)
+          && (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION');
         currentAuthUser = session.user;
         mainBtn.innerText = 'Abmelden';
         mainBtn.onclick = logoutUser;
         mainBtn.className = 'flex-shrink-0 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-1.5 px-3 rounded-lg text-xs transition';
         if (alreadyLoaded) return;
-        await ensureProfileExists(currentAuthUser);
-        await fetchAllUserDataFromSupabase();
+        authLoadingUserId = session.user.id;
+        try {
+          await ensureProfileExists(currentAuthUser);
+          await fetchAllUserDataFromSupabase();
+        } finally { authLoadingUserId = null; }
         authLoadedUserId = currentAuthUser.id;
         if (AUTH_SIGNUP_FROM_URL) {
           try { localStorage.removeItem('boulder_signup_email'); } catch (e) { /* egal */ }
@@ -11988,6 +11999,8 @@
       if (privacySettings && privacySettings.welcome) return;
       if (Object.keys(scales).length) return;   // wer schon Hallen hat, wird nicht mehr gefragt
       if (document.querySelector('[data-signup-welcome]')) return;   // kommt nach der Begrüßung „E-Mail bestätigt“
+      // Offene Rückfrage zu Community- bzw. Freundes-Link: kommt nach deren Schließen (wer beitritt, hat dann schon eine Halle)
+      if (['community-link-accept-modal', 'friend-invite-accept-modal'].some(id => !document.getElementById(id).classList.contains('hidden'))) return;
       welcomeShownThisSession = true;
       welcomeAnswer = null;
       renderWelcome();
@@ -17420,8 +17433,16 @@
       const t = v ? Date.parse(v) : 0;
       return Number.isFinite(t) ? t : 0;
     }
+    // Community-Halle einer anderen Person: Routen, die schon vor deinem Beitritt abgebaut waren, konntest du nie klettern –
+    // sie zählen nicht. Ausnahme: eigener Status an der Route (z. B. aus übernommenem Fortschritt der eigenen Fassung).
+    function routeBeforeCommunityJoin(r) {
+      const joined = Date.parse(scales[r.gymName]?.communityJoinedAt || '');
+      if (!joined || !r.archivedAt || routeStatusOf(r) !== 'open') return false;
+      return Date.parse(r.archivedAt) < dayStartMs(joined);
+    }
     function routeCountsInStats(r, settings = privacySettings) {
       if (r.interaction && r.interaction.hiddenInStats) return false;
+      if (settings === privacySettings && routeBeforeCommunityJoin(r)) return false;   // nur eigene Statistik (Freundesprofile: deren Beitritt ist unbekannt)
       const since = statsSinceFor(r.gymName, settings);
       if (!since) return true;
       // Schraubwochen werden mit der Woche des Neustarts verglichen: in der Neustart-Woche geschraubte Routen zählen
@@ -19079,14 +19100,16 @@
         return routeIsClimb(r) === (gStats.disc === 'climb') && (gStats.gym === 'ALL' || r.gymName === gStats.gym) && n > 0 && n >= w.lo && n <= w.hi;
       });
       const nHidden = all.filter(r => r.interaction?.hiddenInStats).length;
-      const nReset = all.filter(r => !r.interaction?.hiddenInStats && !routeCountsInStats(r)).length;
+      const nJoin = all.filter(r => !r.interaction?.hiddenInStats && routeBeforeCommunityJoin(r)).length;
+      const nReset = all.filter(r => !r.interaction?.hiddenInStats && !routeBeforeCommunityJoin(r) && !routeCountsInStats(r)).length;
       const nOutside = sc.graded.length - sc.inRange.length;
       const nInactive = sc.inRange.length - sc.routes.length;
       const excluded = [
         nOutside ? `${fmt(nOutside)} nicht im Zeitraum gehangen` : '',
         nInactive ? `${fmt(nInactive)} in Pausen bzw. inaktiven Zeiten` : '',
         nHidden ? `${fmt(nHidden)} ausgeblendet` : '',
-        nReset ? `${fmt(nReset)} vor Neustart` : ''
+        nReset ? `${fmt(nReset)} vor Neustart` : '',
+        nJoin ? `${fmt(nJoin)} vor deinem Community-Beitritt abgebaut` : ''
       ].filter(Boolean);
 
       const basisNote = sc.live ? `${word}, die gerade in der Halle hängen.`
@@ -21769,6 +21792,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImpress
   Object.assign(I18N_EN, {"Nächster Grad, Flash-Quote oder regelmäßig bouldern – im Logbuch siehst du, wie nah du dran bist.": "Next grade, flash rate or climbing regularly – the logbook shows how close you are.", "Starte die Session beim Hallenbesuch – Startzeit und Dauer laufen automatisch mit.": "Start the session when you're at the gym – start time and duration are tracked automatically.", "Vergangene Session nachtragen ›": "Log a past session ›", "Eine Route, an der du dranbleiben willst? Setz sie auf der Hallenkarte auf „🎯 Projekt“ – Versuche und Tage zählen mit.": "A route you want to keep working on? Set it to “🎯 Project” on the gym map – attempts and days are counted.", "Tippe auf eine Route, an der du dranbleiben willst, und wähle als Status „🎯 Projekt“. Deine Projekte findest du danach im Logbuch.": "Tap a route you want to keep working on and choose “🎯 Project” as its status. You'll then find your projects in the logbook.", "In einer Community pflegt ihr eure Halle gemeinsam: neue Routen setzen, abgeschraubte entfernen, die Karte aktuell halten. Lade deine Freund*innen zu Boulderlytics ein und teilt euch die Arbeit.": "In a community you look after your gym together: set new routes, remove old ones, keep the map up to date. Invite your friends to Boulderlytics and share the work.", "Noch nicht bei Boulderlytics? Schick deinen persönlichen Link – wer sich anmeldet, ist direkt mit dir vernetzt.": "Not on Boulderlytics yet? Send your personal link – whoever signs up is connected with you right away.", "Schon ein Profil? Such sie über ihren Benutzernamen.": "Already have a profile? Find them by their username.", "Lade deine Freund*innen direkt in die Halle ein – Admins bauen und schrauben mit, alle haken ab. Weitere Leute kommen später auch per Link dazu.": "Invite your friends straight into the gym – admins help build and set, everyone ticks off routes. More people can join later via link.", "Karte gebaut, erste Route gesetzt – ab jetzt hakst du Routen ab, verfolgst Projekte und siehst deine Statistik pro Wand.": "Map built, first route set – from now on you tick off routes, track projects and see your stats per wall.", "Ziel gesetzt, Session angelegt, Projekt gestartet – du kennst jetzt die wichtigsten Werkzeuge. Alles davon findest du jederzeit im Logbuch.": "Goal set, session logged, project started – you now know the most important tools. You'll find all of them in the logbook any time."});
   /* Community-Link */
   Object.assign(I18N_EN, {"Per Link in die Community einladen": "Invite to the community via link", "Wer den Link öffnet und sich anmeldet, ist nach einer kurzen Bestätigung Mitglied der Community und mit dir vernetzt. Ohne Konto wird man zuerst zur Registrierung geführt.": "Whoever opens the link and signs in joins the community after a quick confirmation and is connected with you. People without an account are taken to sign-up first.", "Neue Mitglieder kommen ohne Admin-Rechte dazu. Der Link gilt, solange du Admin der Community bist.": "New members join without admin rights. The link works as long as you're an admin of the community.", "Tritt der Community bei – ihr seid dann auch miteinander vernetzt und könnt euch z. B. zu Challenges einladen.": "Join the community – you'll also be connected and can, for example, invite each other to challenges.", "Tritt der Community bei, um die gemeinsamen Hallen zu nutzen.": "Join the community to use its shared gyms.", "Du bist schon Mitglied der Community. Wollt ihr euch auch vernetzen?": "You're already a member of the community. Do you also want to connect?", "Beitreten": "Join", "📩 Du wurdest eingeladen!": "📩 You've been invited!", "Erstelle ein Konto – danach bist du direkt in der Community und mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be in the community right away and connected with the person who invited you. Already have an account? Just sign in.", "Erstelle ein Konto – danach bist du direkt mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be connected right away with the person who invited you. Already have an account? Just sign in.", "Community-Links sind noch nicht eingerichtet (supabase_community_links.sql fehlt).": "Community links aren't set up yet (supabase_community_links.sql is missing).", "Komm in unsere Boulderlytics-Community": "Join our Boulderlytics community", "Über diesen Link bist du direkt dabei und mit mir vernetzt:": "With this link you're in right away and connected with me:", "Du bist bereits Mitglied von": "You're already a member of", "Dieser Community-Link ist nicht mehr gültig. Bitte lass dir einen neuen schicken.": "This community link is no longer valid. Please ask for a new one.", "Die Community ist voll (höchstens 300 Mitglieder).": "The community is full (300 members at most).", "✓ Willkommen in der Community!": "✓ Welcome to the community!"});
+  Object.assign(I18N_EN, {"vor deinem Community-Beitritt abgebaut": "removed before you joined the community"});
   I18N_PAT.push(["^seit (\\d{1,2}:\\d{2}) Uhr$", "since $1", false], ["^\\(abzüglich (\\d+) Min Pause\\)$", "(minus $1 min break)", false]);
   window.I18N_EN = I18N_EN; window.I18N_X = I18N_X;
   var LANG_KEY='boulder_lang', lang='de';
