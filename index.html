@@ -1104,6 +1104,9 @@
         <div id="pas-body" class="space-y-4"></div>
       </section>
 
+      <!-- Eigene Ziele aus dem Logbuch: aufklappbar (renderStatsGoals) -->
+      <section id="stats-goals" class="rounded-2xl border border-slate-700/60 bg-slate-800/40"></section>
+
       <!-- GLOBALE FILTER: kleben oben und steuern alle Sektionen -->
       <section id="gs-panel" class="sticky z-30 rounded-2xl border border-emerald-500/30 bg-slate-900/90 backdrop-blur shadow-lg shadow-black/30" style="top: calc(0.5rem + env(safe-area-inset-top, 0px));">
         <button id="gs-head" type="button" onclick="gsToggleCollapse()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-left" aria-controls="gs-body">
@@ -17814,7 +17817,7 @@
       (() => { try { return loadStorage(GS_STORE_KEY, {}) || {}; } catch (e) { return {}; } })()
     );
     delete gStats.bucket;   // Monat/Quartal-Umschalter entfällt: die Granularität folgt dem Zeitraum
-    if (!['live', 'hist'].includes(gStats.mode)) gStats.mode = 'hist';
+    gStats.mode = 'live';   // Statistik startet immer mit dem aktuellen Hallenstand; „Historisch“ gilt nur bis zum Neuladen
     if (gStats.period === 'YEAR') gStats.period = '365';
     if (!GS_PERIODS.some(p => p[0] === gStats.period)) gStats.period = 'ALL';
     if (!['asc', 'desc'].includes(gStats.pyrOrder)) gStats.pyrOrder = 'desc';
@@ -19234,6 +19237,7 @@
     function renderStatsAll() {
       if (typeof currentTab === 'undefined' || currentTab !== 'stats') return;
       destroyStatCharts();
+      renderStatsGoals();
       renderStatsOverview();
       if (partnerUiRole === 'hall_admin') renderPartnerAdminStats();
     }
@@ -20413,6 +20417,7 @@
     }
 
     function renderLogbookGoals() {
+      renderStatsGoals();   // Kurzübersicht in der Statistik bleibt mit jeder Änderung aktuell
       const box = document.getElementById('logbook-goals-list');
       if (!box) return;
       const hint = currentAuthUser && goalsDbMissing
@@ -20426,6 +20431,65 @@
       const done = goals.filter(goalIsDone).sort((a, b) => ts(b.endedAt || b.achievedAt) - ts(a.endedAt || a.achievedAt));
       const section = (title, list) => list.length ? `<div class="space-y-2"><h4 class="text-[11px] uppercase font-bold text-slate-400">${title} · ${list.length}</h4>${list.map(goalCardHtml).join('')}</div>` : '';
       box.innerHTML = hint + section('Aktive Ziele', active) + section('Erreicht & beendet', done);
+    }
+    // Statistik: aktive Ziele als aufklappbare Kurzübersicht oben auf der Seite; ohne Ziele eine Einladung mit Beispielen.
+    // Aufgeklappt-Zustand je Gerät; ohne Gemerktes: zu, sobald es Ziele gibt.
+    const STATS_GOALS_OPEN_KEY = 'boulder_stats_goals_open';
+    function renderStatsGoals() {
+      const box = document.getElementById('stats-goals');
+      if (!box) return;
+      const active = goals.filter(g => !goalIsDone(g));
+      let open = null;
+      try { const v = localStorage.getItem(STATS_GOALS_OPEN_KEY); if (v != null) open = v === '1'; } catch (e) { /* egal */ }
+      if (open == null) open = !active.length;
+      const evs = active.map(g => ({ g, ev: goalEval(g) }));
+      const met = evs.filter(({ g, ev }) => g.type !== 'next_level' && ev.met).length;
+      const summary = !active.length ? 'Noch keine aktiven Ziele'
+        : `${active.length} aktiv${met ? ` · ${met} erfüllt` : ''}`;
+      const btn = 'rounded-lg px-3 py-1.5 text-[11px] font-semibold transition';
+      let body = '';
+      if (open) {
+        body = !active.length
+          ? `<div class="px-4 pb-4 pt-1 space-y-3">
+              <p class="text-xs text-slate-300 leading-snug">Lege jetzt Ziele für deinen Kletterfortschritt an – die App verfolgt sie automatisch mit deinen Routen und Sessions. Zum Beispiel:</p>
+              <ul class="space-y-1.5 text-[11px] text-slate-400">
+                <li class="flex gap-2"><span>${GOAL_TYPES.next_level.icon}</span><span><b class="text-slate-200">Next Level:</b> deinen ersten Boulder im nächsten Grad toppen</span></li>
+                <li class="flex gap-2"><span>${GOAL_TYPES.any_percent.icon}</span><span><b class="text-slate-200">Any Percent:</b> 70 % der hängenden Boulder eines Grades getoppt haben</span></li>
+                <li class="flex gap-2"><span>${GOAL_TYPES.regular.icon}</span><span><b class="text-slate-200">Regular:</b> im Schnitt 2-mal pro Woche bouldern gehen</span></li>
+              </ul>
+              <button type="button" onclick="openGoalModal()" class="${btn} bg-emerald-600 hover:bg-emerald-500 text-white">🎯 Ziel setzen</button>
+            </div>`
+          : `<div class="px-4 pb-4 pt-1 space-y-2.5">
+              ${evs.map(({ g, ev }) => `<div class="rounded-xl border border-slate-700/50 bg-slate-900/50 px-3 py-2.5 space-y-2">
+                  <div class="flex items-start gap-2.5">
+                    <span class="text-lg leading-none mt-0.5">${GOAL_TYPES[g.type]?.icon || '🎯'}</span>
+                    <span class="flex-1 min-w-0">
+                      <span class="block text-xs font-semibold text-slate-200 leading-snug break-words">${escapeHtmlText(goalTitle(g))}</span>
+                      <span class="block text-[10px] text-slate-500 truncate">${escapeHtmlText(g.gym || 'Alle Hallen')}</span>
+                    </span>
+                    ${goalStatusHtml(g, ev)}
+                  </div>
+                  ${goalNotStarted(g) ? '' : `<div class="space-y-1.5">${goalProgressHtml(g, ev)}</div>`}
+                </div>`).join('')}
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button type="button" onclick="openGoalModal()" class="${btn} bg-emerald-600 hover:bg-emerald-500 text-white">+ Ziel setzen</button>
+                <button type="button" onclick="openLogbook('goals')" class="${btn} bg-slate-700 hover:bg-slate-600 text-slate-200">Im Logbuch verwalten</button>
+              </div>
+            </div>`;
+      }
+      box.innerHTML = `<button type="button" onclick="toggleStatsGoals()" aria-expanded="${open}" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-left">
+          <span class="text-lg leading-none" aria-hidden="true">🎯</span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-[11px] font-bold uppercase tracking-wide text-emerald-400">Meine Ziele</span>
+            <span class="block text-[11px] text-slate-400 truncate">${summary}</span>
+          </span>
+          <span class="text-slate-400 text-xs transition-transform ${open ? 'rotate-180' : ''}" aria-hidden="true">▾</span>
+        </button>${body}`;
+    }
+    function toggleStatsGoals() {
+      const open = document.querySelector('#stats-goals > button')?.getAttribute('aria-expanded') === 'true';
+      try { localStorage.setItem(STATS_GOALS_OPEN_KEY, open ? '0' : '1'); } catch (e) { /* egal */ }
+      renderStatsGoals();
     }
     function toggleGoalCard(id) {
       goalsOpenId = goalsOpenId === String(id) ? null : String(id);
@@ -21793,6 +21857,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeImpress
   /* Community-Link */
   Object.assign(I18N_EN, {"Per Link in die Community einladen": "Invite to the community via link", "Wer den Link öffnet und sich anmeldet, ist nach einer kurzen Bestätigung Mitglied der Community und mit dir vernetzt. Ohne Konto wird man zuerst zur Registrierung geführt.": "Whoever opens the link and signs in joins the community after a quick confirmation and is connected with you. People without an account are taken to sign-up first.", "Neue Mitglieder kommen ohne Admin-Rechte dazu. Der Link gilt, solange du Admin der Community bist.": "New members join without admin rights. The link works as long as you're an admin of the community.", "Tritt der Community bei – ihr seid dann auch miteinander vernetzt und könnt euch z. B. zu Challenges einladen.": "Join the community – you'll also be connected and can, for example, invite each other to challenges.", "Tritt der Community bei, um die gemeinsamen Hallen zu nutzen.": "Join the community to use its shared gyms.", "Du bist schon Mitglied der Community. Wollt ihr euch auch vernetzen?": "You're already a member of the community. Do you also want to connect?", "Beitreten": "Join", "📩 Du wurdest eingeladen!": "📩 You've been invited!", "Erstelle ein Konto – danach bist du direkt in der Community und mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be in the community right away and connected with the person who invited you. Already have an account? Just sign in.", "Erstelle ein Konto – danach bist du direkt mit der Person vernetzt, die dich eingeladen hat. Schon ein Konto? Dann melde dich einfach an.": "Create an account – you'll then be connected right away with the person who invited you. Already have an account? Just sign in.", "Community-Links sind noch nicht eingerichtet (supabase_community_links.sql fehlt).": "Community links aren't set up yet (supabase_community_links.sql is missing).", "Komm in unsere Boulderlytics-Community": "Join our Boulderlytics community", "Über diesen Link bist du direkt dabei und mit mir vernetzt:": "With this link you're in right away and connected with me:", "Du bist bereits Mitglied von": "You're already a member of", "Dieser Community-Link ist nicht mehr gültig. Bitte lass dir einen neuen schicken.": "This community link is no longer valid. Please ask for a new one.", "Die Community ist voll (höchstens 300 Mitglieder).": "The community is full (300 members at most).", "✓ Willkommen in der Community!": "✓ Welcome to the community!"});
   Object.assign(I18N_EN, {"vor deinem Community-Beitritt abgebaut": "removed before you joined the community"});
+  Object.assign(I18N_EN, {"Noch keine aktiven Ziele": "No active goals yet", "Lege jetzt Ziele für deinen Kletterfortschritt an – die App verfolgt sie automatisch mit deinen Routen und Sessions. Zum Beispiel:": "Set goals for your climbing progress now – the app tracks them automatically from your routes and sessions. For example:", "deinen ersten Boulder im nächsten Grad toppen": "top your first boulder in the next grade", "70 % der hängenden Boulder eines Grades getoppt haben": "have topped 70% of the current boulders in a grade", "im Schnitt 2-mal pro Woche bouldern gehen": "go bouldering twice a week on average", "+ Ziel setzen": "+ Set goal", "Im Logbuch verwalten": "Manage in logbook"});
+  I18N_PAT.push(["^(\\d+) aktiv$", "$1 active", false], ["^(\\d+) erfüllt$", "$1 met", false]);
   I18N_PAT.push(["^seit (\\d{1,2}:\\d{2}) Uhr$", "since $1", false], ["^\\(abzüglich (\\d+) Min Pause\\)$", "(minus $1 min break)", false]);
   window.I18N_EN = I18N_EN; window.I18N_X = I18N_X;
   var LANG_KEY='boulder_lang', lang='de';
